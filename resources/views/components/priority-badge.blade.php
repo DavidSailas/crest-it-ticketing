@@ -14,9 +14,17 @@
         'high' => 'bg-orange-500',
         'critical' => 'bg-red-600',
     ][$priority] ?? 'bg-gray-400';
+
+    $level = [
+        'low' => 'P4',
+        'medium' => 'P3',
+        'high' => 'P2',
+        'critical' => 'P1',
+    ][$priority] ?? '';
 @endphp
 
-<span {{ $attributes->merge(['class' => "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize $styles"]) }}>
+<span {{ $attributes->merge(['class' => "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap $styles"]) }}>
     <span class="w-1.5 h-1.5 rounded-full {{ $dot }}"></span>
+    @if($level)<span class="font-semibold">{{ $level }}</span>@endif
     {{ $priority }}
 </span>

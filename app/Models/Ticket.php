@@ -11,15 +11,52 @@ class Ticket extends Model
 
     protected $fillable = [
         'user_id',
+        'on_behalf_of_user_id',
+        'on_behalf_of_name',
         'assigned_to',
         'department',
+        'location',
         'title',
         'description',
+        'attachment_path',
+        'attachment_name',
         'category',
         'subcategory',
         'priority',
         'status',
+        'resolved_at',
     ];
+
+    protected $casts = [
+        'resolved_at' => 'datetime',
+    ];
+
+    /**
+     * The colleague this ticket was raised for, when somebody else had to
+     * submit it on their behalf (e.g. their machine wouldn't boot).
+     */
+    public function onBehalfOf()
+    {
+        return $this->belongsTo(User::class, 'on_behalf_of_user_id');
+    }
+
+    /**
+     * Who the ticket is actually about — the colleague if it was raised on
+     * someone's behalf, otherwise the person who submitted it.
+     */
+    public function affectedPersonName(): string
+    {
+        if ($this->on_behalf_of_user_id) {
+            return $this->onBehalfOf?->name ?? $this->on_behalf_of_name ?? $this->creator->name;
+        }
+
+        return $this->on_behalf_of_name ?? $this->creator->name;
+    }
+
+    public function isOnBehalf(): bool
+    {
+        return $this->on_behalf_of_user_id !== null || filled($this->on_behalf_of_name);
+    }
 
     public function creator()
     {
@@ -34,5 +71,19 @@ class Ticket extends Model
     public function comments()
     {
         return $this->hasMany(TicketComment::class)->latest();
+    }
+
+    public function getAttachmentUrlAttribute(): ?string
+    {
+        return $this->attachment_path ? \Illuminate\Support\Facades\Storage::url($this->attachment_path) : null;
+    }
+
+    /**
+     * A professional, branded ticket reference (e.g. "INC00001") used anywhere
+     * the ticket ID is shown to a user, instead of the raw database "#1".
+     */
+    public function getTicketNumberAttribute(): string
+    {
+        return 'INC'.str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
     }
 }

@@ -40,20 +40,20 @@
         {{-- Tickets Overview --}}
         <div>
             <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Tickets Overview</h3>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 @foreach([
-                    ['label' => 'Total', 'value' => $stats['total'], 'icon' => 'M9 12h.01M15 12h.01M9 16h.01M15 16h.01M4 7h16a1 1 0 011 1v2a2 2 0 000 4v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2a2 2 0 000-4V8a1 1 0 011-1z', 'bg' => 'bg-gray-100', 'fg' => 'text-gray-600'],
-                    ['label' => 'Open', 'value' => $stats['open'], 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'bg' => 'bg-amber-50', 'fg' => 'text-amber-600'],
-                    ['label' => 'In Progress', 'value' => $stats['in_progress'], 'icon' => 'M13 10V3L4 14h7v7l9-11h-7z', 'bg' => 'bg-blue-50', 'fg' => 'text-blue-600'],
-                    ['label' => 'Resolved', 'value' => $stats['resolved'], 'icon' => 'M5 13l4 4L19 7', 'bg' => 'bg-green-50', 'fg' => 'text-green-700'],
-                    ['label' => 'Closed', 'value' => $stats['closed'], 'icon' => 'M6 18L18 6M6 6l12 12', 'bg' => 'bg-gray-100', 'fg' => 'text-gray-500'],
+                    ['label' => 'Unassigned', 'hint' => 'Waiting for pickup', 'value' => $stats['unassigned'], 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'bg' => 'bg-amber-50', 'fg' => 'text-amber-600'],
+                    ['label' => 'Critical', 'hint' => 'Active, high urgency', 'value' => $stats['critical'], 'icon' => 'M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z', 'bg' => 'bg-red-50', 'fg' => 'text-red-600'],
+                    ['label' => 'Active', 'hint' => 'Not yet resolved', 'value' => $stats['active'], 'icon' => 'M13 10V3L4 14h7v7l9-11h-7z', 'bg' => 'bg-blue-50', 'fg' => 'text-blue-600'],
+                    ['label' => 'Resolved', 'hint' => 'This week', 'value' => $stats['resolved_this_week'], 'icon' => 'M5 13l4 4L19 7', 'bg' => 'bg-green-50', 'fg' => 'text-green-700'],
                 ] as $stat)
                     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                         <div class="w-9 h-9 rounded-lg {{ $stat['bg'] }} flex items-center justify-center mb-3">
                             <svg class="w-4.5 h-4.5 {{ $stat['fg'] }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $stat['icon'] }}" /></svg>
                         </div>
                         <p class="text-2xl font-semibold text-gray-800 leading-none">{{ $stat['value'] }}</p>
-                        <p class="text-xs text-gray-500 mt-1.5">{{ $stat['label'] }}</p>
+                        <p class="text-xs font-medium text-gray-600 mt-1.5">{{ $stat['label'] }}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">{{ $stat['hint'] }}</p>
                     </div>
                 @endforeach
             </div>

@@ -5,15 +5,40 @@
 
     <div class="py-8 max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+        @if(session('status') && !in_array(session('status'), ['profile-updated', 'verification-link-sent']))
+            <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
+        @endif
+
         {{-- Masthead --}}
         <div class="relative overflow-hidden rounded-xl" style="background-color:#123f24;">
             <svg class="absolute -right-6 -top-10 w-48 h-48 opacity-[0.07] pointer-events-none" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="1.5">
                 <circle cx="50" cy="35" r="14"/>
                 <path d="M20 85 a30 30 0 0 1 60 0"/>
             </svg>
-            <div class="relative px-6 py-6 sm:px-8 sm:py-7 flex items-center gap-4">
-                <div class="w-14 h-14 rounded-full bg-white/15 flex items-center justify-center text-white text-xl font-bold shrink-0">
-                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+            <div class="relative px-6 py-6 sm:px-8 sm:py-7 flex items-center gap-5">
+                <div class="shrink-0 flex flex-col items-center gap-1.5">
+                    <form method="POST" action="{{ route('profile.avatar.update') }}" enctype="multipart/form-data" id="avatar-form">
+                        @csrf
+                        @method('PATCH')
+                        <label for="avatar-input" class="relative group block cursor-pointer rounded-full">
+                            <x-avatar size="lg" class="ring-4 ring-white/10" />
+                            <span class="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574v10.176c0 1.19.966 2.25 2.15 2.25h15.2c1.184 0 2.15-1.06 2.15-2.25V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                                </svg>
+                            </span>
+                        </label>
+                        <input type="file" id="avatar-input" name="avatar" accept="image/png,image/jpeg,image/webp"
+                               class="hidden" onchange="this.form.submit()">
+                    </form>
+                    @if(auth()->user()->avatar)
+                        <form method="POST" action="{{ route('profile.avatar.destroy') }}">
+                            @csrf
+                            @method('DELETE')
+                            <button class="text-[11px] text-green-100/70 hover:text-white underline">Remove photo</button>
+                        </form>
+                    @endif
                 </div>
                 <div>
                     <p class="text-white text-lg font-semibold">{{ auth()->user()->name }}</p>
@@ -38,12 +63,9 @@
             @include('profile.partials.update-profile-information-form')
         </div>
 
+
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 sm:p-8">
             <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Recent Activity</p>
-
-            @php
-                $activityLogs = \App\Models\ActivityLog::forUser(auth()->id())->latest()->take(15)->get();
-            @endphp
 
             @if ($activityLogs->isEmpty())
                 <p class="text-sm text-gray-400">No activity recorded yet.</p>
@@ -72,6 +94,8 @@
                         </li>
                     @endforeach
                 </ul>
+
+                <div class="mt-4">{{ $activityLogs->links() }}</div>
             @endif
         </div>
 

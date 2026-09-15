@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\ActivityLog;
+use App\Models\User;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -16,17 +19,36 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+
+        $activityLogs = ActivityLog::forUser($user->id)
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'activityLogs' => $activityLogs,
         ]);
     }
 
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(Request $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $request->user()->id],
+        ], [
+            'name.required' => 'Please enter your name.',
+            'name.max' => 'Name is too long — please keep it under 255 characters.',
+            'email.required' => 'Please enter your email address.',
+            'email.email' => 'Please enter a valid email address.',
+            'email.unique' => 'That email is already in use by another account.',
+        ]);
+
+        $request->user()->fill($validated);
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
@@ -44,6 +66,9 @@ class ProfileController extends Controller
     {
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
+        ], [
+            'password.required' => 'Please enter your password to confirm account deletion.',
+            'password.current_password' => 'That password doesn\'t match your account — please try again.',
         ]);
 
         $user = $request->user();

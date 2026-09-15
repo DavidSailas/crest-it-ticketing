@@ -1,76 +1,92 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Manage Users</h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Manage Users</h2>
+            <div class="flex gap-2">
+                <a href="{{ route('admin.users.export') }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">
+                    Export CSV
+                </a>
+                <label class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 cursor-pointer">
+                    Import CSV
+                    <form id="import-form" method="POST" action="{{ route('admin.users.import') }}" enctype="multipart/form-data" class="hidden">
+                        @csrf
+                        <input type="file" name="file" accept=".csv" onchange="document.getElementById('import-form').submit()">
+                    </form>
+                    <input type="file" accept=".csv" class="hidden" onchange="
+                        const dt = new DataTransfer(); dt.items.add(this.files[0]);
+                        document.querySelector('#import-form input[type=file]').files = dt.files;
+                        document.getElementById('import-form').submit();">
+                </label>
+                <a href="{{ route('admin.users.create') }}" class="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    Add User
+                </a>
+            </div>
+        </div>
     </x-slot>
 
-    <div class="py-8 max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
+    <div class="py-8 max-w-5xl mx-auto sm:px-6 lg:px-8">
         @if(session('status'))
-            <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
+            <div class="mb-4 p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
+        @endif
+        @if(session('error'))
+            <div class="mb-4 p-3 bg-red-50 text-red-800 text-sm rounded-lg border border-red-100">{{ session('error') }}</div>
         @endif
 
-        <div class="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3">
-            <svg class="w-4 h-4 text-amber-500 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5l2.29 4.64 5.12.74-3.7 3.61.87 5.1L10 13.9l-4.58 2.4.87-5.1-3.7-3.61 5.12-.74L10 1.5z" /></svg>
-            <p class="text-xs text-amber-800">
-                VIP accounts (owners, executives, or other high-priority stakeholders) automatically have every ticket they submit set to
-                <strong>Critical</strong> priority — no manual escalation needed.
-            </p>
+        {{-- Tabs --}}
+        <div class="flex gap-1 mb-5 border-b border-gray-200">
+            @foreach([
+                ['key' => 'staff', 'label' => 'Staff', 'count' => $counts['staff']],
+                ['key' => 'it_support', 'label' => 'IT Support', 'count' => $counts['it_support']],
+                ['key' => 'vip', 'label' => 'VIP', 'count' => $counts['vip']],
+            ] as $t)
+                <a href="{{ route('admin.users.index', ['tab' => $t['key']]) }}"
+                   class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition {{ $tab === $t['key'] ? 'border-green-700 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+                    {{ $t['label'] }}
+                    <span class="ml-1 px-1.5 py-0.5 rounded-full text-xs {{ $tab === $t['key'] ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">{{ $t['count'] }}</span>
+                </a>
+            @endforeach
         </div>
 
+        <p class="text-xs text-gray-400 mb-3">CSV import expects columns: <span class="font-mono">Name, Email, Role, VIP</span> (Role: staff / it_support / admin). New accounts get a random temporary password.</p>
+
         <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
-            <table class="min-w-full text-sm border-collapse">
+            <table class="w-full text-sm border-collapse">
                 <thead>
                     <tr class="bg-gray-50 border-b-2 border-gray-200">
-                        <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Name</th>
-                        <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Email</th>
-                        <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Role</th>
-                        <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">VIP Status</th>
-                        <th class="px-5 py-3"></th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Name</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Email</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Role</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">VIP</th>
+                        <th class="px-4 py-3"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($users as $user)
+                    @forelse($users as $user)
                         <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition">
-                            <td class="px-5 py-3.5 font-medium text-gray-800 border-r border-gray-100">{{ $user->name }}</td>
-                            <td class="px-5 py-3.5 text-gray-600 border-r border-gray-100">{{ $user->email }}</td>
-                            <td class="px-5 py-3.5 capitalize text-gray-600 border-r border-gray-100">{{ str_replace('_',' ',$user->role) }}</td>
-                            <td class="px-5 py-3.5 border-r border-gray-100">
-                                @if($user->is_vip)
-                                    <x-vip-badge />
-                                @else
-                                    <span class="text-xs text-gray-400">Standard</span>
-                                @endif
+                            <td class="px-4 py-3.5 font-medium text-gray-800 border-r border-gray-100">{{ $user->name }}</td>
+                            <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $user->email }}</td>
+                            <td class="px-4 py-3.5 capitalize text-gray-600 border-r border-gray-100">{{ str_replace('_',' ',$user->role) }}</td>
+                            <td class="px-4 py-3.5 border-r border-gray-100">
+                                <form method="POST" action="{{ route('admin.users.vip', $user) }}">
+                                    @csrf @method('PATCH')
+                                    <button class="text-xs px-2 py-1 rounded-full font-medium {{ $user->is_vip ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500' }}">
+                                        {{ $user->is_vip ? 'VIP' : 'Standard' }}
+                                    </button>
+                                </form>
                             </td>
-                            <td class="px-5 py-3.5">
-                                <div class="flex gap-2 items-center justify-end">
-                                    <form method="POST" action="{{ route('admin.users.role', $user) }}" class="flex gap-2 items-center">
-                                        @csrf
-                                        @method('PATCH')
-                                        <select name="role" class="rounded-lg border-gray-300 text-xs focus:border-green-700 focus:ring-green-700">
-                                            @foreach(['staff','it_support','admin'] as $role)
-                                                <option value="{{ $role }}" @selected($user->role === $role)>{{ str_replace('_',' ', ucfirst($role)) }}</option>
-                                            @endforeach
-                                        </select>
-                                        <button class="px-3 py-1.5 bg-gray-800 text-white rounded-lg text-xs font-medium hover:bg-gray-700">Update</button>
-                                    </form>
-
-                                    <form method="POST" action="{{ route('admin.users.vip', $user) }}"
-                                          @if($user->is_vip) onsubmit="return confirm('Remove VIP status from {{ $user->name }}? Their future tickets will no longer auto-escalate to Critical.');" @endif>
-                                        @csrf
-                                        @method('PATCH')
-                                        @if($user->is_vip)
-                                            <button class="px-3 py-1.5 rounded-lg text-xs font-medium border border-red-200 text-red-600 hover:bg-red-50 transition whitespace-nowrap">
-                                                Revoke VIP
-                                            </button>
-                                        @else
-                                            <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition whitespace-nowrap" style="background-color:#b45309;" onmouseover="this.style.backgroundColor='#92400e'" onmouseout="this.style.backgroundColor='#b45309'">
-                                                Grant VIP
-                                            </button>
-                                        @endif
-                                    </form>
-                                </div>
+                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                <a href="{{ route('admin.users.edit', $user) }}" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</a>
+                                <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="inline"
+                                      onsubmit="return confirm('Delete {{ $user->name }}? This cannot be undone.')">
+                                    @csrf @method('DELETE')
+                                    <button class="text-red-500 hover:underline font-medium text-xs">Delete</button>
+                                </form>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr><td colspan="5" class="px-5 py-14 text-center text-gray-400">No users in this group yet.</td></tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

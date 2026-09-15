@@ -85,7 +85,7 @@
                 </a>
             </div>
 
-            <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+            <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-x-auto">
                 @if($recentTickets->isEmpty())
                     <div class="flex flex-col items-center justify-center text-center px-6 py-14">
                         <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4">
@@ -106,20 +106,24 @@
                     <table class="min-w-full text-sm border-collapse">
                         <thead>
                             <tr class="bg-gray-50 border-b-2 border-gray-200">
+                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Ticket ID</th>
                                 <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Title</th>
                                 <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Priority</th>
                                 <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Status</th>
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Submitted</th>
+                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Created</th>
+                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Resolved</th>
                                 <th class="px-5 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($recentTickets as $ticket)
                                 <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition">
+                                    <td class="px-5 py-3.5 font-mono text-xs text-gray-500 border-r border-gray-100">#{{ $ticket->id }}</td>
                                     <td class="px-5 py-3.5 font-medium text-gray-800 border-r border-gray-100">{{ $ticket->title }}</td>
                                     <td class="px-5 py-3.5 border-r border-gray-100"><x-priority-badge :priority="$ticket->priority" /></td>
                                     <td class="px-5 py-3.5 border-r border-gray-100"><x-status-badge :status="$ticket->status" /></td>
-                                    <td class="px-5 py-3.5 text-gray-500 border-r border-gray-100">{{ $ticket->created_at->diffForHumans() }}</td>
+                                    <td class="px-5 py-3.5 text-gray-500 border-r border-gray-100 whitespace-nowrap">{{ $ticket->created_at->format('M j, Y g:i A') }}</td>
+                                    <td class="px-5 py-3.5 text-gray-500 border-r border-gray-100 whitespace-nowrap">{{ $ticket->resolved_at?->format('M j, Y g:i A') ?? '—' }}</td>
                                     <td class="px-5 py-3.5 text-right">
                                         <a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium">View</a>
                                     </td>
