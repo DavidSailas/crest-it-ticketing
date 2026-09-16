@@ -7,9 +7,15 @@ use App\Models\Asset;
 use App\Models\Department;
 use App\Models\Ticket;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
@@ -212,26 +218,141 @@ class UserController extends Controller
     }
 
     /**
+     * Same tab filter used by index(), reused by every export format so
+     * "Export" always reflects whichever tab (Staff / IT Support / VIP)
+     * the admin currently has open.
+     */
+    private function filteredUsers(Request $request)
+    {
+        $tab = $request->query('tab', 'all');
+
+        $query = User::query();
+
+        if ($tab === 'it_support') {
+            $query->where('role', 'it_support');
+        } elseif ($tab === 'vip') {
+            $query->where('is_vip', true);
+        } elseif ($tab === 'staff') {
+            $query->where('role', 'staff');
+        }
+        // 'all' (default for exports) applies no filter.
+
+        return $query->orderBy('name')->get();
+    }
+
+    /**
+     * Download users as a professionally formatted PDF report — letterhead,
+     * generated timestamp, and a clean table. Respects the current tab
+     * filter via ?tab=staff|it_support|vip (omit for everyone).
+     */
+    public function exportPdf(Request $request)
+    {
+        $users = $this->filteredUsers($request);
+        $tab = $request->query('tab', 'all');
+
+        $pdf = Pdf::loadView('admin.users.export-pdf', [
+            'users' => $users,
+            'tab' => $tab,
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'users-'.($tab === 'all' ? 'all' : $tab).'-'.now()->format('Y-m-d').'.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Download users as a polished .xlsx workbook — bold header row, brand
+     * color fill, borders, autosized columns, and a frozen header so it
+     * reads like a real report rather than a raw data dump.
+     */
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $users = $this->filteredUsers($request);
+        $tab = $request->query('tab', 'all');
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Users');
+
+        // Title row
+        $sheet->setCellValue('A1', 'Crest IT Service Desk — User Directory');
+        $sheet->mergeCells('A1:D1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getFont()->getColor()->setRGB('123F24');
+
+        $sheet->setCellValue('A2', 'Generated '.now()->format('F j, Y g:i A').' · '.($tab === 'all' ? 'All users' : ucfirst(str_replace('_', ' ', $tab))));
+        $sheet->mergeCells('A2:D2');
+        $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(9);
+        $sheet->getStyle('A2')->getFont()->getColor()->setRGB('6B7280');
+
+        // Header row
+        $headers = ['Name', 'Email', 'Role', 'VIP'];
+        $sheet->fromArray($headers, null, 'A4');
+        $sheet->getStyle('A4:D4')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A4:D4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1A6B3C');
+        $sheet->getStyle('A4:D4')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+
+        // Data rows
+        $row = 5;
+        foreach ($users as $user) {
+            $sheet->setCellValue("A{$row}", $user->name);
+            $sheet->setCellValue("B{$row}", $user->email);
+            $sheet->setCellValue("C{$row}", ucfirst(str_replace('_', ' ', $user->role)));
+            $sheet->setCellValue("D{$row}", $user->is_vip ? 'Yes' : 'No');
+            $row++;
+        }
+
+        $lastRow = $row - 1;
+
+        // Borders around the whole table
+        $sheet->getStyle("A4:D{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
+
+        // Zebra striping for readability
+        for ($i = 5; $i <= $lastRow; $i++) {
+            if ($i % 2 === 0) {
+                $sheet->getStyle("A{$i}:D{$i}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9FAFB');
+            }
+        }
+
+        // Autosize columns
+        foreach (['A', 'B', 'C', 'D'] as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Freeze header row so it stays visible while scrolling
+        $sheet->freezePane('A5');
+
+        $filename = 'users-'.($tab === 'all' ? 'all' : $tab).'-'.now()->format('Y-m-d').'.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
      * Download every user as a CSV file.
      */
-    public function export(): StreamedResponse
+    public function export(Request $request): StreamedResponse
     {
-        $filename = 'users-'.now()->format('Y-m-d').'.csv';
+        $tab = $request->query('tab', 'all');
+        $filename = 'users-'.($tab === 'all' ? 'all' : $tab).'-'.now()->format('Y-m-d').'.csv';
 
-        $callback = function () {
+        $callback = function () use ($request) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, ['Name', 'Email', 'Role', 'VIP']);
 
-            User::orderBy('name')->chunk(200, function ($users) use ($handle) {
-                foreach ($users as $user) {
-                    fputcsv($handle, [
-                        $user->name,
-                        $user->email,
-                        $user->role,
-                        $user->is_vip ? 'Yes' : 'No',
-                    ]);
-                }
-            });
+            foreach ($this->filteredUsers($request) as $user) {
+                fputcsv($handle, [
+                    $user->name,
+                    $user->email,
+                    $user->role,
+                    $user->is_vip ? 'Yes' : 'No',
+                ]);
+            }
 
             fclose($handle);
         };
@@ -242,34 +363,45 @@ class UserController extends Controller
     }
 
     /**
-     * Bulk-create users from an uploaded CSV. Expected columns (with header
-     * row): Name, Email, Role, VIP (optional). New accounts get a random
-     * temporary password — share it with each person, or have them use
-     * "Forgot password" to set their own.
+     * Bulk-create users from an uploaded CSV or Excel (.xlsx) file. Expected
+     * columns (with header row): Name, Email, Role, VIP (optional). New
+     * accounts get a random temporary password — share it with each person,
+     * or have them use "Forgot password" to set their own.
      */
     public function import(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt'],
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls'],
         ], [
-            'file.required' => 'Please choose a CSV file to import.',
-            'file.mimes' => 'The file must be a CSV.',
+            'file.required' => 'Please choose a file to import.',
+            'file.mimes' => 'The file must be a CSV or Excel (.xlsx) file.',
         ]);
 
-        $handle = fopen($request->file('file')->getRealPath(), 'r');
-        $header = fgetcsv($handle);
-        $header = array_map(fn ($h) => strtolower(trim($h)), $header);
+        $path = $request->file('file')->getRealPath();
+        $extension = strtolower($request->file('file')->getClientOriginalExtension());
+
+        $rows = in_array($extension, ['xlsx', 'xls'])
+            ? $this->readExcelRows($path)
+            : $this->readCsvRows($path);
+
+        if (empty($rows)) {
+            return back()->with('error', 'The file appears to be empty or missing a header row.');
+        }
+
+        $header = array_map(fn ($h) => strtolower(trim((string) $h)), array_shift($rows));
 
         $created = 0;
         $skipped = 0;
 
-        while (($row = fgetcsv($handle)) !== false) {
+        foreach ($rows as $row) {
+            // Pad/truncate so array_combine never fails on a short row.
+            $row = array_pad(array_slice($row, 0, count($header)), count($header), '');
             $row = array_combine($header, $row);
 
-            $name = trim($row['name'] ?? '');
-            $email = trim($row['email'] ?? '');
-            $role = strtolower(trim($row['role'] ?? 'staff'));
-            $isVip = in_array(strtolower(trim($row['vip'] ?? 'no')), ['yes', 'true', '1']);
+            $name = trim((string) ($row['name'] ?? ''));
+            $email = trim((string) ($row['email'] ?? ''));
+            $role = strtolower(trim((string) ($row['role'] ?? 'staff')));
+            $isVip = in_array(strtolower(trim((string) ($row['vip'] ?? 'no'))), ['yes', 'true', '1']);
 
             if ($name === '' || $email === '' || User::where('email', $email)->exists()) {
                 $skipped++;
@@ -292,8 +424,37 @@ class UserController extends Controller
             $created++;
         }
 
+        return back()->with('status', "Imported {$created} user(s)." . ($skipped > 0 ? " Skipped {$skipped} (missing data or duplicate email)." : ''));
+    }
+
+    /**
+     * Read a CSV file into a plain array of rows (first row is the header,
+     * left untouched here — normalized by the caller).
+     */
+    private function readCsvRows(string $path): array
+    {
+        $rows = [];
+        $handle = fopen($path, 'r');
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $rows[] = $row;
+        }
+
         fclose($handle);
 
-        return back()->with('status', "Imported {$created} user(s)." . ($skipped > 0 ? " Skipped {$skipped} (missing data or duplicate email)." : ''));
+        return $rows;
+    }
+
+    /**
+     * Read an Excel (.xlsx/.xls) file's first sheet into the same plain
+     * array-of-rows shape as readCsvRows(), so both formats can be
+     * processed identically afterward.
+     */
+    private function readExcelRows(string $path): array
+    {
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        return $sheet->toArray(null, true, true, false);
     }
 }

@@ -106,6 +106,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
+        Route::get('/users/export/pdf', [UserController::class, 'exportPdf'])->name('users.export.pdf');
+        Route::get('/users/export/excel', [UserController::class, 'exportExcel'])->name('users.export.excel');
         Route::post('/users/import', [UserController::class, 'import'])->name('users.import');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
