@@ -82,6 +82,9 @@ Route::middleware('auth')->group(function () {
         Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
         Route::get('/tickets/queue/poll', [TicketController::class, 'pollQueue'])->name('tickets.queue.poll');
 
+        // Asset inventory — viewable by both roles; create/edit/delete stay admin-only below.
+        Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
+
         // Read-only staff directory — IT Support can look someone up
         // while working a ticket, but can't edit or delete accounts here.
         Route::get('/users-directory', [UserController::class, 'directory'])->name('users.directory');

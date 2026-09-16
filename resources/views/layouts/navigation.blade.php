@@ -28,9 +28,15 @@
                         <x-nav-link :href="route('admin.departments.index')" :active="request()->routeIs('admin.departments.*')">
                             {{ __('Departments') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
+                            {{ __('Assets') }}
+                        </x-nav-link>
                     @elseif(auth()->user()->role === 'it_support')
                         <x-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory')">
                             {{ __('Users') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
+                            {{ __('Assets') }}
                         </x-nav-link>
                     @endif
                 </div>
@@ -171,9 +177,15 @@
                 <x-responsive-nav-link :href="route('admin.departments.index')" :active="request()->routeIs('admin.departments.*')">
                     {{ __('Departments') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
+                    {{ __('Assets') }}
+                </x-responsive-nav-link>
             @elseif(auth()->user()->role === 'it_support')
                 <x-responsive-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory')">
                     {{ __('Users') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
+                    {{ __('Assets') }}
                 </x-responsive-nav-link>
             @endif
         </div>

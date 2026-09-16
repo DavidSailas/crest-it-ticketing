@@ -11,6 +11,36 @@ use Illuminate\Http\Request;
 class AssetController extends Controller
 {
     /**
+     * Inventory list — every asset across all users. Admins get full
+     * create/edit/delete controls on this page; IT Support sees the same
+     * table read-only (enforced in the view, not here, since both roles
+     * are allowed to view this route).
+     */
+    public function index(Request $request)
+    {
+        $assets = Asset::with(['user', 'department'])
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('asset_tag', 'like', "%{$search}%")
+                        ->orWhere('device_name', 'like', "%{$search}%")
+                        ->orWhere('serial_number', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->filled('department_id'), function ($query) use ($request) {
+                $query->where('department_id', $request->integer('department_id'));
+            })
+            ->orderBy('asset_tag')
+            ->paginate(20)
+            ->withQueryString();
+
+        $users = User::orderBy('name')->get(['id', 'name']);
+        $departments = Department::orderBy('name')->get();
+
+        return view('admin.assets.index', compact('assets', 'users', 'departments'));
+    }
+
+    /**
      * Assign a new asset to a user. The asset tag (e.g. CFI-CEB-IT-LT-001)
      * is generated automatically from the company, location, department
      * code, device type, and the next number in that sequence — it isn't
