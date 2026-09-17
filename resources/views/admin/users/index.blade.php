@@ -67,7 +67,7 @@
             @endforeach
         </div>
 
-        <p class="text-xs text-gray-400 mb-3">CSV or Excel (.xlsx) import expects columns: <span class="font-mono">Name, Email, Role, VIP</span> (Role: staff / it_support / admin). New accounts get a random temporary password.</p>
+        <p class="text-xs text-gray-400 mb-3">CSV or Excel (.xlsx) import expects columns: <span class="font-mono">Name, Email, Role, Branch, VIP</span> (Role: staff / it_support / admin. Branch: Cebu / Manila / Cagayan de Oro / Davao, or CEB / MNL / CDO / DVO). New accounts get a random temporary password.</p>
 
         <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
             <table class="w-full text-sm border-collapse">
@@ -76,6 +76,7 @@
                         <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Name</th>
                         <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Email</th>
                         <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Role</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Branch</th>
                         <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">VIP</th>
                         <th class="px-4 py-3"></th>
                     </tr>
@@ -86,6 +87,7 @@
                             <td class="px-4 py-3.5 font-medium text-gray-800 border-r border-gray-100">{{ $user->name }}</td>
                             <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $user->email }}</td>
                             <td class="px-4 py-3.5 capitalize text-gray-600 border-r border-gray-100">{{ str_replace('_',' ',$user->role) }}</td>
+                            <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $user->branch_name ?? '—' }}</td>
                             <td class="px-4 py-3.5 border-r border-gray-100">
                                 <form method="POST" action="{{ route('admin.users.vip', $user) }}">
                                     @csrf @method('PATCH')
@@ -104,7 +106,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-5 py-14 text-center text-gray-400">No users in this group yet.</td></tr>
+                        <tr><td colspan="6" class="px-5 py-14 text-center text-gray-400">No users in this group yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>

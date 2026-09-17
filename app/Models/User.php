@@ -16,6 +16,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'location',
     ];
 
     protected $hidden = [
@@ -54,5 +55,15 @@ class User extends Authenticatable
     public function isStaff(): bool
     {
         return $this->role === 'staff';
+    }
+
+    /**
+     * Full branch name for display (e.g. "Cebu") from the stored short code
+     * (e.g. "CEB"). Reuses Asset::LOCATIONS as the single source of truth
+     * for branch names across users and assets.
+     */
+    public function getBranchNameAttribute(): ?string
+    {
+        return $this->location ? (Asset::LOCATIONS[$this->location] ?? $this->location) : null;
     }
 }

@@ -9,7 +9,7 @@
                 <div class="shrink-0 flex items-center gap-2">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
                         <img src="{{ asset('images/logo.png') }}" alt="Crest Forwarder Inc." class="h-9 w-9 object-contain">
-                        <span class="font-semibold text-gray-700 hidden sm:inline">IT Service Ticketing</span>
+                        <span class="font-semibold text-gray-700 hidden sm:inline">ITSM</span>
                     </a>
                 </div>
 

@@ -19,10 +19,21 @@ class DashboardController extends Controller
             // history lives under the Tickets nav item, and conversation with IT
             // support lives under Chat.
             $departments = Department::orderBy('name')->pluck('name');
+
+            // Mapped the same way TicketController::create() builds this list,
+            // so both paths that render the ticket form stay in sync and the
+            // colleague picker's email never silently goes missing again.
             $colleagues = User::where('role', 'staff')
                 ->where('id', '!=', $user->id)
                 ->orderBy('name')
-                ->get(['id', 'name']);
+                ->get()
+                ->map(function ($colleague) {
+                    return [
+                        'id' => $colleague->id,
+                        'name' => $colleague->name,
+                        'email' => $colleague->email ?? $colleague->email_address ?? null,
+                    ];
+                });
 
             return view('tickets.create', compact('departments', 'colleagues'));
         }

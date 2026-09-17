@@ -34,7 +34,7 @@ class AssetController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $users = User::orderBy('name')->get(['id', 'name']);
+        $users = User::orderBy('name')->get(['id', 'name', 'email']);
         $departments = Department::orderBy('name')->get();
 
         return view('admin.assets.index', compact('assets', 'users', 'departments'));
@@ -55,12 +55,14 @@ class AssetController extends Controller
             'type' => ['required', 'in:'.implode(',', array_keys(Asset::TYPES))],
             'device_name' => ['required', 'string', 'max:255'],
             'serial_number' => ['nullable', 'string', 'max:255'],
+            'assigned_date' => ['nullable', 'date', 'before_or_equal:today'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
             'company.required' => 'Choose which company this asset belongs to.',
             'location.required' => 'Choose a location.',
             'department_id.required' => 'Choose a department.',
             'type.required' => 'Choose a device type.',
+            'assigned_date.before_or_equal' => 'Assigned date can\'t be in the future.',
         ]);
 
         $department = Department::findOrFail($validated['department_id']);
@@ -81,6 +83,9 @@ class AssetController extends Controller
             'asset_tag' => $tag,
             'device_name' => $validated['device_name'],
             'serial_number' => $validated['serial_number'] ?? null,
+            // Defaults to today if left blank, since most assets are logged
+            // the same day they're physically handed over.
+            'assigned_date' => $validated['assigned_date'] ?? now()->toDateString(),
             'notes' => $validated['notes'] ?? null,
         ]);
 
@@ -101,11 +106,13 @@ class AssetController extends Controller
             'serial_number' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'in:'.implode(',', array_keys(Asset::STATUSES))],
             'sequence' => ['required', 'integer', 'min:1', 'max:999'],
+            'assigned_date' => ['nullable', 'date', 'before_or_equal:today'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
             'sequence.required' => 'Enter a sequence number.',
             'sequence.min' => 'Sequence number must be at least 1.',
             'sequence.max' => 'Sequence number can\'t exceed 999 (three digits).',
+            'assigned_date.before_or_equal' => 'Assigned date can\'t be in the future.',
         ]);
 
         $department = $asset->department;
@@ -120,6 +127,7 @@ class AssetController extends Controller
             'device_name' => $validated['device_name'],
             'serial_number' => $validated['serial_number'] ?? null,
             'status' => $validated['status'],
+            'assigned_date' => $validated['assigned_date'] ?? $asset->assigned_date,
             'notes' => $validated['notes'] ?? null,
             'sequence' => $validated['sequence'],
             'asset_tag' => $newTag,

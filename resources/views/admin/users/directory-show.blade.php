@@ -25,10 +25,14 @@
                     </div>
                     <p class="text-sm text-gray-500 mt-0.5">{{ $user->email }}</p>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-5 pt-5 border-t border-gray-100 text-sm">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5 pt-5 border-t border-gray-100 text-sm">
                         <div>
                             <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Role</p>
                             <p class="text-gray-800 font-medium capitalize">{{ str_replace('_', ' ', $user->role) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Branch</p>
+                            <p class="text-gray-800 font-medium">{{ $user->branch_name ?? '—' }}</p>
                         </div>
                         <div>
                             <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Account Created</p>

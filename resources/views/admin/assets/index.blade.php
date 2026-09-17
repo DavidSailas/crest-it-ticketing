@@ -16,12 +16,32 @@
     <style>[x-cloak] { display: none !important; }</style>
 
     <div class="py-8 max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6"
-         x-data="{
+         x-data='{
             showCreate: false,
             editingId: null,
             viewingId: null,
-            newUserId: '',
-         }">
+            newUserId: "",
+            newUserQuery: "",
+            userDropdownOpen: false,
+            userDirectory: @json($users->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email]), JSON_HEX_APOS),
+            get filteredUsers() {
+                const q = this.newUserQuery.trim().toLowerCase();
+                const list = q === ""
+                    ? this.userDirectory
+                    : this.userDirectory.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+                return list.slice(0, 30);
+            },
+            selectUser(u) {
+                this.newUserId = u.id;
+                this.newUserQuery = `${u.name} \u2014 ${u.email}`;
+                this.userDropdownOpen = false;
+            },
+            resetUserPicker() {
+                this.newUserId = "";
+                this.newUserQuery = "";
+                this.userDropdownOpen = false;
+            },
+         }'>
 
         @if(session('status'))
             <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
@@ -33,7 +53,7 @@
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <p class="text-sm text-gray-500">{{ $assets->total() }} asset{{ $assets->total() === 1 ? '' : 's' }} found</p>
             @if($isAdmin)
-                <button @click="showCreate = true"
+                <button @click="showCreate = true; resetUserPicker()"
                         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold shadow-sm transition"
                         style="background-color:#1a6b3c;" onmouseover="this.style.backgroundColor='#145530'" onmouseout="this.style.backgroundColor='#1a6b3c'">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
@@ -82,6 +102,7 @@
                             <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Type</th>
                             <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Department</th>
                             <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Assigned To</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Assigned Since</th>
                             <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Status</th>
                             <th class="px-4 py-3 text-right font-semibold text-gray-600"></th>
                         </tr>
@@ -99,6 +120,14 @@
                                 <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</td>
                                 <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $asset->department->name ?? '—' }}</td>
                                 <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $asset->user->name ?? '—' }}</td>
+                                <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">
+                                    @if($asset->assigned_date)
+                                        <p class="whitespace-nowrap">{{ $asset->assigned_date->format('M j, Y') }}</p>
+                                        <p class="text-xs text-gray-400 mt-0.5">{{ $asset->assigned_duration }} ago</p>
+                                    @else
+                                        <span class="text-gray-300">—</span>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3.5 border-r border-gray-100">
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ring-1 ring-inset {{ $statusStyles[$asset->status] ?? 'bg-gray-100 text-gray-500 ring-gray-200' }}">
                                         {{ \App\Models\Asset::STATUSES[$asset->status] ?? ucfirst($asset->status) }}
@@ -158,6 +187,15 @@
                                                     <p class="text-gray-800 font-medium">{{ $asset->user->name ?? '—' }}</p>
                                                 </div>
                                                 <div>
+                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Assigned Since</p>
+                                                    @if($asset->assigned_date)
+                                                        <p class="text-gray-800 font-medium">{{ $asset->assigned_date->format('M j, Y') }}</p>
+                                                        <p class="text-xs text-gray-400 mt-0.5">{{ $asset->assigned_duration }} ago</p>
+                                                    @else
+                                                        <p class="text-gray-800 font-medium">—</p>
+                                                    @endif
+                                                </div>
+                                                <div>
                                                     <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Serial Number</p>
                                                     <p class="text-gray-800 font-medium">{{ $asset->serial_number ?? '—' }}</p>
                                                 </div>
@@ -205,6 +243,12 @@
                                                     <div>
                                                         <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
                                                         <input type="text" name="serial_number" value="{{ old('serial_number', $asset->serial_number) }}"
+                                                               class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
+                                                    </div>
+
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Assigned Date</label>
+                                                        <input type="date" name="assigned_date" value="{{ old('assigned_date', $asset->assigned_date?->toDateString()) }}" max="{{ now()->toDateString() }}"
                                                                class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
                                                     </div>
 
@@ -261,14 +305,37 @@
                           @submit="if (!newUserId) { $event.preventDefault(); alert('Please choose a user.'); }">
                         @csrf
 
-                        <div>
+                        <div class="relative" @click.outside="userDropdownOpen = false">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
-                            <select x-model="newUserId" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
-                                <option value="">Select user</option>
-                                @foreach($users as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                @endforeach
-                            </select>
+                            <div class="relative">
+                                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
+                                <input type="text"
+                                       x-model="newUserQuery"
+                                       @focus="userDropdownOpen = true"
+                                       @input="newUserId = ''; userDropdownOpen = true"
+                                       placeholder="Search by name or email..."
+                                       autocomplete="off"
+                                       class="block w-full pl-9 pr-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700"
+                                       required>
+                                <button type="button" x-show="newUserQuery" @click="resetUserPicker()" x-cloak
+                                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
+
+                            <div x-show="userDropdownOpen" x-cloak
+                                 class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                                <template x-for="u in filteredUsers" :key="u.id">
+                                    <button type="button" @click="selectUser(u)"
+                                            class="w-full text-left px-3.5 py-2.5 hover:bg-green-50 transition border-b border-gray-50 last:border-0">
+                                        <p class="text-sm font-medium text-gray-800" x-text="u.name"></p>
+                                        <p class="text-xs text-gray-400" x-text="u.email"></p>
+                                    </button>
+                                </template>
+                                <div x-show="filteredUsers.length === 0" class="px-3.5 py-3 text-sm text-gray-400">No matching users</div>
+                            </div>
+
+                            <p class="text-xs text-gray-400 mt-1">Matched by name or email — pick the exact person if names repeat.</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -321,6 +388,13 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
                             <input type="text" name="serial_number" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Assigned Date</label>
+                            <input type="date" name="assigned_date" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}"
+                                   class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
+                            <p class="text-xs text-gray-400 mt-1">Defaults to today — change it if the device was actually handed over earlier.</p>
                         </div>
 
                         <div>

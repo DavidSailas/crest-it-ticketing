@@ -43,6 +43,17 @@
                     </select>
                 </div>
 
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Branch</label>
+                    <select name="location" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                        <option value="" disabled @selected(old('location') === null)>Select branch</option>
+                        @foreach(\App\Models\Asset::LOCATIONS as $value => $label)
+                            <option value="{{ $value }}" @selected(old('location') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('location') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
+                </div>
+
                 <label class="flex items-center gap-2">
                     <input type="checkbox" name="is_vip" value="1" class="rounded border-gray-300 text-green-700 focus:ring-green-700" @checked(old('is_vip'))>
                     <span class="text-sm text-gray-600">Mark as VIP (tickets auto-escalate to Critical)</span>

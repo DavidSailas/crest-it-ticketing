@@ -63,10 +63,12 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', 'in:staff,it_support,admin'],
+            'location' => ['required', 'in:'.implode(',', array_keys(Asset::LOCATIONS))],
             'is_vip' => ['nullable', 'boolean'],
         ], [
             'email.unique' => 'That email is already registered.',
             'password.min' => 'Password must be at least 8 characters.',
+            'location.required' => 'Choose which branch this person works out of.',
         ]);
 
         $user = new User();
@@ -75,6 +77,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
+            'location' => $validated['location'],
             'is_vip' => $request->boolean('is_vip'),
         ])->save();
 
@@ -100,16 +103,19 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'password' => ['nullable', 'string', 'min:8'],
             'role' => ['required', 'in:staff,it_support,admin'],
+            'location' => ['required', 'in:'.implode(',', array_keys(Asset::LOCATIONS))],
             'is_vip' => ['nullable', 'boolean'],
         ], [
             'email.unique' => 'That email is already registered.',
             'password.min' => 'Password must be at least 8 characters.',
+            'location.required' => 'Choose which branch this person works out of.',
         ]);
 
         $fill = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'role' => $validated['role'],
+            'location' => $validated['location'],
             'is_vip' => $request->boolean('is_vip'),
         ];
 
@@ -277,21 +283,21 @@ class UserController extends Controller
 
         // Title row
         $sheet->setCellValue('A1', 'Crest IT Service Desk — User Directory');
-        $sheet->mergeCells('A1:D1');
+        $sheet->mergeCells('A1:E1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getFont()->getColor()->setRGB('123F24');
 
         $sheet->setCellValue('A2', 'Generated '.now()->format('F j, Y g:i A').' · '.($tab === 'all' ? 'All users' : ucfirst(str_replace('_', ' ', $tab))));
-        $sheet->mergeCells('A2:D2');
+        $sheet->mergeCells('A2:E2');
         $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(9);
         $sheet->getStyle('A2')->getFont()->getColor()->setRGB('6B7280');
 
         // Header row
-        $headers = ['Name', 'Email', 'Role', 'VIP'];
+        $headers = ['Name', 'Email', 'Role', 'Branch', 'VIP'];
         $sheet->fromArray($headers, null, 'A4');
-        $sheet->getStyle('A4:D4')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A4:D4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1A6B3C');
-        $sheet->getStyle('A4:D4')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('A4:E4')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A4:E4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1A6B3C');
+        $sheet->getStyle('A4:E4')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
 
         // Data rows
         $row = 5;
@@ -299,24 +305,25 @@ class UserController extends Controller
             $sheet->setCellValue("A{$row}", $user->name);
             $sheet->setCellValue("B{$row}", $user->email);
             $sheet->setCellValue("C{$row}", ucfirst(str_replace('_', ' ', $user->role)));
-            $sheet->setCellValue("D{$row}", $user->is_vip ? 'Yes' : 'No');
+            $sheet->setCellValue("D{$row}", $user->branch_name ?? '—');
+            $sheet->setCellValue("E{$row}", $user->is_vip ? 'Yes' : 'No');
             $row++;
         }
 
         $lastRow = $row - 1;
 
         // Borders around the whole table
-        $sheet->getStyle("A4:D{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
+        $sheet->getStyle("A4:E{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
 
         // Zebra striping for readability
         for ($i = 5; $i <= $lastRow; $i++) {
             if ($i % 2 === 0) {
-                $sheet->getStyle("A{$i}:D{$i}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9FAFB');
+                $sheet->getStyle("A{$i}:E{$i}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9FAFB');
             }
         }
 
         // Autosize columns
-        foreach (['A', 'B', 'C', 'D'] as $col) {
+        foreach (['A', 'B', 'C', 'D', 'E'] as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -343,13 +350,14 @@ class UserController extends Controller
 
         $callback = function () use ($request) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Name', 'Email', 'Role', 'VIP']);
+            fputcsv($handle, ['Name', 'Email', 'Role', 'Branch', 'VIP']);
 
             foreach ($this->filteredUsers($request) as $user) {
                 fputcsv($handle, [
                     $user->name,
                     $user->email,
                     $user->role,
+                    $user->branch_name ?? '',
                     $user->is_vip ? 'Yes' : 'No',
                 ]);
             }
@@ -403,6 +411,22 @@ class UserController extends Controller
             $role = strtolower(trim((string) ($row['role'] ?? 'staff')));
             $isVip = in_array(strtolower(trim((string) ($row['vip'] ?? 'no'))), ['yes', 'true', '1']);
 
+            // Accept either the short code (CEB) or full name (Cebu) in the
+            // Branch column, matching whatever format the sheet was exported
+            // with or typed in by hand.
+            $branchInput = trim((string) ($row['branch'] ?? ''));
+            $location = null;
+            if ($branchInput !== '') {
+                $upper = strtoupper($branchInput);
+                if (array_key_exists($upper, Asset::LOCATIONS)) {
+                    $location = $upper;
+                } else {
+                    $match = array_search($branchInput, Asset::LOCATIONS, true)
+                        ?: array_search(ucfirst(strtolower($branchInput)), Asset::LOCATIONS, true);
+                    $location = $match ?: null;
+                }
+            }
+
             if ($name === '' || $email === '' || User::where('email', $email)->exists()) {
                 $skipped++;
                 continue;
@@ -418,6 +442,7 @@ class UserController extends Controller
                 'email' => $email,
                 'password' => Hash::make(str()->random(12)),
                 'role' => $role,
+                'location' => $location,
                 'is_vip' => $isVip,
             ])->save();
 

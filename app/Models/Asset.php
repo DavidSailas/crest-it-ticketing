@@ -57,8 +57,16 @@ class Asset extends Model
         'device_name',
         'serial_number',
         'status',
+        'assigned_date',
         'notes',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'assigned_date' => 'date',
+        ];
+    }
 
     public function user()
     {
@@ -68,6 +76,20 @@ class Asset extends Model
     public function department()
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Human-readable "how long has this person had it" string, e.g.
+     * "8 months" or "3 days". Used in the inventory table and detail view
+     * so IT/admin can see asset tenure at a glance without doing date math.
+     */
+    public function getAssignedDurationAttribute(): ?string
+    {
+        if (! $this->assigned_date) {
+            return null;
+        }
+
+        return $this->assigned_date->diffForHumans(now(), true);
     }
 
     /**

@@ -54,6 +54,7 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Branch</th>
                 <th>VIP</th>
             </tr>
         </thead>
@@ -63,6 +64,7 @@
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
                     <td style="text-transform: capitalize;">{{ str_replace('_', ' ', $user->role) }}</td>
+                    <td>{{ $user->branch_name ?? '—' }}</td>
                     <td>
                         <span class="badge {{ $user->is_vip ? 'badge-vip' : 'badge-standard' }}">
                             {{ $user->is_vip ? 'VIP' : 'Standard' }}
@@ -70,7 +72,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="4" style="text-align:center; color:#9ca3af; padding: 18px;">No users found.</td></tr>
+                <tr><td colspan="5" style="text-align:center; color:#9ca3af; padding: 18px;">No users found.</td></tr>
             @endforelse
         </tbody>
     </table>

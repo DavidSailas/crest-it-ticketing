@@ -56,15 +56,23 @@ class TicketController extends Controller
     }
 
     public function create()
-    {
-        $departments = Department::orderBy('name')->pluck('name');
-        $colleagues = User::where('role', 'staff')
-            ->where('id', '!=', auth()->id())
-            ->orderBy('name')
-            ->get(['id', 'name']);
+{
+    $departments = Department::orderBy('name')->pluck('name');
+    
+    $colleagues = User::where('role', 'staff')
+        ->where('id', '!=', auth()->id())
+        ->orderBy('name')
+        ->get()
+        ->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email ?? $user->email_address ?? null, // ensures email is captured regardless of column name
+            ];
+        });
 
-        return view('tickets.create', compact('departments', 'colleagues'));
-    }
+    return view('tickets.create', compact('departments', 'colleagues'));
+}
 
     public function store(StoreTicketRequest $request)
     {
@@ -210,6 +218,10 @@ class TicketController extends Controller
     public function updateStatus(Request $request, Ticket $ticket)
     {
         abort_unless($request->user()->isItSupport() || $request->user()->isAdmin(), 403);
+
+        if (is_null($ticket->assigned_to)) {
+            return back()->with('error', 'This ticket must be assigned to an IT agent before its status can be changed.');
+        }
 
         $request->validate(['status' => 'required|in:open,in_progress,pending,resolved,closed']);
 
@@ -379,6 +391,17 @@ class TicketController extends Controller
     public function comment(Request $request, Ticket $ticket)
     {
         abort_if($ticket->status === 'closed', 403, 'This ticket is closed — the conversation can no longer be replied to.');
+
+        $user = $request->user();
+        if (($user->isItSupport() || $user->isAdmin()) && is_null($ticket->assigned_to)) {
+            $message = 'This ticket must be assigned before IT can comment on it. Accept it first.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $message], 403);
+            }
+
+            return back()->with('error', $message);
+        }
 
         $request->validate(['body' => 'required|string|max:2000'], [
             'body.required' => 'Please type a message before sending.',

@@ -73,6 +73,17 @@
                                 <option value="admin" @selected(old('role', $user->role) === 'admin')>Admin</option>
                             </select>
                         </div>
+
+                        <div class="sm:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Branch</label>
+                            <select name="location" class="block w-full sm:w-1/2 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                <option value="" disabled @selected(old('location', $user->location) === null)>Select branch</option>
+                                @foreach(\App\Models\Asset::LOCATIONS as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('location', $user->location) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('location') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
+                        </div>
                     </div>
 
                     <label class="flex items-center gap-2.5 rounded-lg border border-amber-100 bg-amber-50/60 px-4 py-3 cursor-pointer">

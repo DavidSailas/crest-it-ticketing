@@ -127,34 +127,95 @@
                         </div>
                     </div>
 
-                    {{-- Section: Description --}}
-                    <div class="pt-6 border-t border-gray-100" x-data="{ onBehalf: {{ old('on_behalf_of_user_id') || old('on_behalf_of_name') ? 'true' : 'false' }} }">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Who is this for?</p>
+                    {{-- Section: Who is this for --}}
+                    <div class="pt-6 border-t border-gray-100"
+                         x-data="{
+                            forWhom: '{{ old('on_behalf_of_user_id') || old('on_behalf_of_name') ? 'colleague' : 'self' }}',
+                            colleagueId: '{{ old('on_behalf_of_user_id', '') }}',
+                            directoryOpen: false
+                         }">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Who is this for?</p>
+                        <p class="text-xs text-gray-400 mb-4">Choose "A colleague" when their computer won't start or they can't log in, so they can't raise the ticket themselves.</p>
 
-                        <label class="flex items-start gap-2.5 rounded-lg border border-gray-200 px-3.5 py-3 cursor-pointer hover:bg-gray-50/70 transition">
-                            <input type="checkbox" x-model="onBehalf" class="rounded border-gray-300 text-green-700 focus:ring-green-700 mt-0.5">
-                            <span>
-                                <span class="block text-sm font-medium text-gray-700">I'm reporting this for a colleague</span>
-                                <span class="block text-xs text-gray-400 mt-0.5">Use this when their computer won't start or they can't log in, so they can't raise the ticket themselves.</span>
-                            </span>
-                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="cursor-pointer">
+                                <input type="radio" value="self" x-model="forWhom" @change="colleagueId = ''" class="peer sr-only">
+                                <div class="flex items-center gap-2.5 px-4 py-3 rounded-lg border border-gray-300 text-gray-600 transition peer-checked:border-green-700 peer-checked:bg-green-50 peer-checked:text-green-800">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                                    <span class="text-sm font-medium">Myself</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" value="colleague" x-model="forWhom" class="peer sr-only">
+                                <div class="flex items-center gap-2.5 px-4 py-3 rounded-lg border border-gray-300 text-gray-600 transition peer-checked:border-green-700 peer-checked:bg-green-50 peer-checked:text-green-800">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>
+                                    <span class="text-sm font-medium">A colleague</span>
+                                </div>
+                            </label>
+                        </div>
 
-                        <div x-show="onBehalf" x-cloak class="mt-3 grid sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Colleague's account</label>
-                                <select name="on_behalf_of_user_id" class="block w-full rounded-lg border-gray-300 text-sm bg-white focus:border-green-700 focus:ring-green-700">
-                                    <option value="">Select a colleague…</option>
-                                    @foreach($colleagues as $colleague)
-                                        <option value="{{ $colleague->id }}" @selected(old('on_behalf_of_user_id') == $colleague->id)>{{ $colleague->name }}</option>
-                                    @endforeach
-                                </select>
+                        <div x-show="forWhom === 'colleague'" x-cloak class="mt-4 space-y-3 rounded-lg bg-gray-50/70 border border-gray-100 p-4">
+                            <div class="relative"
+                                 x-data="{
+                                    query: '{{ old('on_behalf_of_user_id') ? addslashes(optional($colleagues->firstWhere('id', (int) old('on_behalf_of_user_id')))->name) : '' }}',
+                                    directory: {{ $colleagues->map(fn ($c) => is_array($c) ? $c : ['id' => $c->id, 'name' => $c->name, 'email' => $c->email])->values()->toJson() }},
+                                    get results() {
+                                        const q = this.query.trim().toLowerCase();
+                                        if (!q) return this.directory;
+                                        return this.directory.filter(c =>
+                                            (c.name ?? '').toLowerCase().includes(q) || (c.email ?? '').toLowerCase().includes(q)
+                                        );
+                                    },
+                                    pick(c) { this.query = c.name; colleagueId = c.id; directoryOpen = false; },
+                                    reset() { this.query = ''; colleagueId = ''; directoryOpen = false; $refs.search.focus(); }
+                                 }"
+                                 @click.outside="directoryOpen = false">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Select from directory</label>
+
+                                <div class="relative">
+                                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                                    <input type="text" x-ref="search" x-model="query" @focus="directoryOpen = true" @input="directoryOpen = true; colleagueId = ''"
+                                        :disabled="forWhom !== 'colleague'" autocomplete="off" placeholder="Search by name or email…"
+                                        class="block w-full rounded-lg border-gray-300 text-sm bg-white pl-9 pr-8 focus:border-green-700 focus:ring-green-700">
+                                    <button type="button" x-show="query" @click="reset()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+
+                                <div x-show="directoryOpen" x-cloak class="absolute z-10 mt-1.5 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    <button type="button" @click="reset()" class="w-full text-left px-3.5 py-2.5 text-sm text-gray-500 hover:bg-gray-50 border-b border-gray-100">
+                                        Not listed — I'll type their name below
+                                    </button>
+                                    <template x-for="c in results" :key="c.id">
+                                        <button type="button" @click="pick(c)"
+                                            class="w-full text-left px-3.5 py-2 flex items-center gap-2.5 hover:bg-green-50"
+                                            :class="colleagueId == c.id ? 'bg-green-50' : ''">
+                                            <span class="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-500 text-[11px] font-semibold shrink-0" x-text="(c.name || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase()"></span>
+                                            <span class="min-w-0">
+                                                <span class="block text-sm font-medium text-gray-800 truncate" x-text="c.name"></span>
+                                                <span class="block text-xs text-gray-400 truncate" x-text="c.email || '—'"></span>
+                                            </span>
+                                        </button>
+                                    </template>
+                                    <p x-show="results.length === 0" class="px-3.5 py-3 text-xs text-gray-400 text-center">No one matches "<span x-text="query"></span>".</p>
+                                </div>
+
+                                <input type="hidden" name="on_behalf_of_user_id" :value="colleagueId">
+                                @error('on_behalf_of_user_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Or type their name <span class="text-gray-400 font-normal">(if not listed)</span></label>
-                                <input type="text" name="on_behalf_of_name" value="{{ old('on_behalf_of_name') }}" placeholder="e.g. Maria Santos"
-                                    class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+
+                            <div x-show="!colleagueId" x-cloak>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Full name <span class="text-gray-400 font-normal">(optional)</span></label>
+                                <input type="text" name="on_behalf_of_name" :disabled="forWhom !== 'colleague'"
+                                    value="{{ old('on_behalf_of_name') }}" placeholder="e.g. Maria Santos"
+                                    class="block w-full rounded-lg border-gray-300 text-sm bg-white focus:border-green-700 focus:ring-green-700">
+                                @error('on_behalf_of_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
-                            <p class="sm:col-span-2 text-xs text-gray-400">Their name and desk location help IT go straight to the right machine — mention the location in the description below too.</p>
+
+                            <p class="flex items-start gap-1.5 text-xs text-gray-400">
+                                <svg class="w-3.5 h-3.5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                                Mention their desk location and extension in the description below so IT can go straight to the right spot.
+                            </p>
                         </div>
                     </div>
 
