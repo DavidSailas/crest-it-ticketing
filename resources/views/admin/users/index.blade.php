@@ -69,40 +69,54 @@
 
         <p class="text-xs text-gray-400 mb-3">CSV or Excel (.xlsx) import expects columns: <span class="font-mono">First Name, Last Name, Username, Email, Department, Position, Role, Branch, VIP</span> (Role: staff / it_support / admin. Branch: Cebu / Manila / Cagayan de Oro / Davao, or CEB / MNL / CDO / DVO. Department and Position must each match an existing name exactly). New accounts get a random temporary password.</p>
 
-        <div class="bg-white shadow-sm rounded-xl overflow-x-auto border border-gray-200">
-            <table class="w-full text-sm border-collapse">
+        {{-- Name carries the folded columns on narrow screens; wider screens progressively
+             reveal Username/Email/Department/Position/Role/Branch. Nothing ever needs to
+             scroll horizontally. --}}
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+            <table class="w-full text-sm">
                 <thead>
-                    <tr class="bg-gray-50 border-b-2 border-gray-200">
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Name</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Username</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Email</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Department</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Position</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Role</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Branch</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">VIP</th>
-                        <th class="px-4 py-3"></th>
+                    <tr class="bg-gray-50/80 border-b border-gray-200">
+                        <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Name</th>
+                        <th class="hidden lg:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Department / Position</th>
+                        <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Role</th>
+                        <th class="hidden xl:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Branch</th>
+                        <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">VIP</th>
+                        <th class="w-20 sm:w-28 px-3 sm:px-5 py-3"></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-100">
                     @forelse($users as $user)
-                        <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition">
-                            <td class="px-4 py-3.5 font-medium text-gray-800 border-r border-gray-100">{{ $user->name }}</td>
-                            <td class="px-4 py-3.5 text-gray-500 border-r border-gray-100">{{ $user->username ?? '—' }}</td>
-                            <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $user->email }}</td>
-                            <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $user->department->name ?? '—' }}</td>
-                            <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $user->position->name ?? '—' }}</td>
-                            <td class="px-4 py-3.5 capitalize text-gray-600 border-r border-gray-100">{{ str_replace('_',' ',$user->role) }}</td>
-                            <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $user->branch_name ?? '—' }}</td>
-                            <td class="px-4 py-3.5 border-r border-gray-100">
+                        <tr class="hover:bg-gray-50/60 transition-colors">
+                            <td class="px-4 sm:px-5 py-3.5 max-w-0 w-full">
+                                <p class="font-medium text-gray-800 truncate">{{ $user->name }}</p>
+                                <p class="text-xs text-gray-400 truncate">{{ $user->username ?? '—' }} · {{ $user->email }}</p>
+                                {{-- Folds in whatever is hidden at this breakpoint --}}
+                                <div class="lg:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
+                                    <span class="truncate max-w-[10rem]">{{ $user->department->name ?? '—' }}</span>
+                                    <span class="text-gray-300">/</span>
+                                    <span class="truncate max-w-[10rem]">{{ $user->position->name ?? '—' }}</span>
+                                    <span class="md:hidden text-gray-300">·</span>
+                                    <span class="md:hidden capitalize">{{ str_replace('_',' ',$user->role) }}</span>
+                                    <span class="xl:hidden text-gray-300">·</span>
+                                    <span class="xl:hidden">{{ $user->branch_name ?? '—' }}</span>
+                                    <span class="sm:hidden inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-medium {{ $user->is_vip ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500' }}">{{ $user->is_vip ? 'VIP' : 'Standard' }}</span>
+                                </div>
+                            </td>
+                            <td class="hidden lg:table-cell px-5 py-3.5 text-gray-600">
+                                <p class="truncate max-w-[14rem]">{{ $user->department->name ?? '—' }}</p>
+                                <p class="text-xs text-gray-400 truncate max-w-[14rem]">{{ $user->position->name ?? '—' }}</p>
+                            </td>
+                            <td class="hidden md:table-cell px-5 py-3.5 capitalize text-gray-600 whitespace-nowrap">{{ str_replace('_',' ',$user->role) }}</td>
+                            <td class="hidden xl:table-cell px-5 py-3.5 text-gray-600 whitespace-nowrap">{{ $user->branch_name ?? '—' }}</td>
+                            <td class="hidden sm:table-cell px-5 py-3.5">
                                 <form method="POST" action="{{ route('admin.users.vip', $user) }}">
                                     @csrf @method('PATCH')
-                                    <button class="text-xs px-2 py-1 rounded-full font-medium {{ $user->is_vip ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500' }}">
+                                    <button class="text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap {{ $user->is_vip ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500' }}">
                                         {{ $user->is_vip ? 'VIP' : 'Standard' }}
                                     </button>
                                 </form>
                             </td>
-                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                            <td class="px-3 sm:px-5 py-3.5 text-right whitespace-nowrap">
                                 <a href="{{ route('admin.users.edit', $user) }}" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</a>
                                 <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="inline"
                                       onsubmit="return confirm('Delete {{ $user->name }}? This cannot be undone.')">
@@ -112,12 +126,12 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="px-5 py-14 text-center text-gray-400">No users in this group yet.</td></tr>
+                        <tr><td colspan="6" class="px-5 py-14 text-center text-gray-400">No users in this group yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="mt-5">{{ $users->links() }}</div>
+        <div class="mt-4 bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $users->links() }}</div>
     </div>
 </x-app-layout>

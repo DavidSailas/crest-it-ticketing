@@ -67,36 +67,9 @@
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 sm:p-8">
             <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Recent Activity</p>
 
-            @if ($activityLogs->isEmpty())
-                <p class="text-sm text-gray-400">No activity recorded yet.</p>
-            @else
-                <ul class="divide-y divide-gray-100">
-                    @foreach ($activityLogs as $log)
-                        <li class="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                            <span @class([
-                                'mt-1 inline-flex w-2 h-2 rounded-full shrink-0',
-                                'bg-green-500' => in_array($log->action, ['login', 'ticket_created', 'ticket_accepted', 'ticket_approved']),
-                                'bg-gray-400' => $log->action === 'logout',
-                                'bg-blue-500' => $log->action === 'ticket_status_updated',
-                                'bg-amber-500' => $log->action === 'ticket_comment_added',
-                                'bg-red-500' => $log->action === 'login_failed',
-                            ])></span>
-                            <div class="min-w-0">
-                                <p class="text-sm text-gray-700">{{ $log->description }}</p>
-                                <p class="text-xs text-gray-400 mt-0.5">
-                                    {{ $log->created_at->diffForHumans() }}
-                                    &middot; {{ $log->created_at->format('M j, Y g:i A') }}
-                                    @if ($log->ip_address)
-                                        &middot; {{ $log->ip_address }}
-                                    @endif
-                                </p>
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-
-                <div class="mt-4">{{ $activityLogs->links() }}</div>
-            @endif
+            <div id="activity-log-panel" class="transition-opacity duration-150">
+                @include('profile.partials.activity-log-list')
+            </div>
         </div>
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 sm:p-8">
@@ -109,4 +82,50 @@
             @include('profile.partials.delete-user-form')
         </div>
     </div>
+
+    <script>
+        // Loads Recent Activity pages in place (no full page reload), so the
+        // browser never resets scroll position back to the top of the page.
+        document.addEventListener('DOMContentLoaded', function () {
+            const panel = document.getElementById('activity-log-panel');
+            if (!panel) return;
+
+            const loadPage = async (url) => {
+                panel.classList.add('opacity-40', 'pointer-events-none');
+
+                try {
+                    const response = await fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    });
+
+                    if (!response.ok) throw new Error('Request failed');
+
+                    const html = await response.text();
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const fresh = doc.getElementById('activity-log-panel');
+
+                    if (fresh) {
+                        panel.innerHTML = fresh.innerHTML;
+                        window.history.replaceState(window.history.state, '', url);
+                    } else {
+                        window.location.href = url;
+                    }
+                } catch (e) {
+                    // Fall back to a normal navigation if the fetch fails.
+                    window.location.href = url;
+                } finally {
+                    panel.classList.remove('opacity-40', 'pointer-events-none');
+                }
+            };
+
+            panel.addEventListener('click', function (e) {
+                const link = e.target.closest('a');
+                if (!link || !panel.contains(link)) return;
+                if (!link.closest('nav[role="navigation"]')) return;
+
+                e.preventDefault();
+                loadPage(link.href);
+            });
+        });
+    </script>
 </x-app-layout>

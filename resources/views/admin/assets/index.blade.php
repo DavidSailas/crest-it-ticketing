@@ -84,8 +84,9 @@
             @endif
         </form>
 
-        {{-- Table --}}
-        <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-x-auto">
+        {{-- Table: Asset Tag + Device always show; everything else folds progressively
+             so the table never needs a horizontal scrollbar. --}}
+        <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
             @if($assets->isEmpty())
                 <div class="flex flex-col items-center justify-center text-center px-6 py-14">
                     @if(request('search') || request('department_id'))
@@ -97,47 +98,60 @@
                     @endif
                 </div>
             @else
-                <table class="min-w-full text-sm border-collapse">
+                <table class="w-full text-sm">
                     <thead>
-                        <tr class="bg-gray-50 border-b-2 border-gray-200">
-                            <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Asset Tag</th>
-                            <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Device</th>
-                            <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Type</th>
-                            <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Department</th>
-                            <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Assigned To</th>
-                            <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Assigned Since</th>
-                            <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Status</th>
-                            <th class="px-4 py-3 text-right font-semibold text-gray-600"></th>
+                        <tr class="bg-gray-50/80 border-b border-gray-200">
+                            <th class="px-3 sm:px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Asset Tag</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Device</th>
+                            <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Department</th>
+                            <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned To</th>
+                            <th class="hidden xl:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Assigned Since</th>
+                            <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                            <th class="w-20 sm:w-32 px-3 sm:px-4 py-3"></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-gray-100">
                         @foreach($assets as $asset)
-                            <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition">
-                                <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-700 border-r border-gray-100">{{ $asset->asset_tag }}</td>
-                                <td class="px-4 py-3.5 border-r border-gray-100">
-                                    <p class="font-medium text-gray-800">{{ $asset->device_name }}</p>
+                            <tr class="hover:bg-gray-50/60 transition-colors">
+                                <td class="px-3 sm:px-4 py-3.5 font-mono text-xs font-semibold text-gray-700 whitespace-nowrap align-top">{{ $asset->asset_tag }}</td>
+                                <td class="px-4 py-3.5 max-w-0 w-full align-top">
+                                    <p class="font-medium text-gray-800 truncate">{{ $asset->device_name }}</p>
                                     @if($asset->serial_number)
-                                        <p class="text-xs text-gray-400 mt-0.5">SN: {{ $asset->serial_number }}</p>
+                                        <p class="text-xs text-gray-400 mt-0.5 truncate">SN: {{ $asset->serial_number }}</p>
                                     @endif
+                                    {{-- Folds in whatever's hidden at this breakpoint --}}
+                                    <div class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500 mt-1">
+                                        <span>{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</span>
+                                        <span class="lg:hidden text-gray-300">·</span>
+                                        <span class="lg:hidden truncate max-w-[9rem]">{{ $asset->department->name ?? '—' }}</span>
+                                        <span class="md:hidden text-gray-300">·</span>
+                                        <span class="md:hidden truncate max-w-[9rem]">{{ $asset->user->name ?? 'Unassigned' }}</span>
+                                        <span class="sm:hidden inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ring-1 ring-inset {{ $statusStyles[$asset->status] ?? 'bg-gray-100 text-gray-500 ring-gray-200' }}">
+                                            {{ \App\Models\Asset::STATUSES[$asset->status] ?? ucfirst($asset->status) }}
+                                        </span>
+                                    </div>
                                 </td>
-                                <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</td>
-                                <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $asset->department->name ?? '—' }}</td>
-                                <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ $asset->user->name ?? '—' }}</td>
-                                <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">
+                                <td class="hidden lg:table-cell px-4 py-3.5 text-gray-600 align-top">
+                                    <p class="truncate max-w-[10rem]">{{ $asset->department->name ?? '—' }}</p>
+                                </td>
+                                <td class="hidden md:table-cell px-4 py-3.5 text-gray-600 align-top">
+                                    <p class="truncate max-w-[10rem]">{{ $asset->user->name ?? '—' }}</p>
+                                </td>
+                                <td class="hidden xl:table-cell px-4 py-3.5 text-gray-600 align-top whitespace-nowrap">
                                     @if($asset->assigned_date)
-                                        <p class="whitespace-nowrap">{{ $asset->assigned_date->format('M j, Y') }}</p>
+                                        <p>{{ $asset->assigned_date->format('M j, Y') }}</p>
                                         <p class="text-xs text-gray-400 mt-0.5">{{ $asset->assigned_duration }} ago</p>
                                     @else
                                         <span class="text-gray-300">—</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3.5 border-r border-gray-100">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ring-1 ring-inset {{ $statusStyles[$asset->status] ?? 'bg-gray-100 text-gray-500 ring-gray-200' }}">
+                                <td class="hidden sm:table-cell px-4 py-3.5 align-top">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ring-1 ring-inset whitespace-nowrap {{ $statusStyles[$asset->status] ?? 'bg-gray-100 text-gray-500 ring-gray-200' }}">
                                         {{ \App\Models\Asset::STATUSES[$asset->status] ?? ucfirst($asset->status) }}
                                     </span>
                                 </td>
                                 @if($isAdmin)
-                                    <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                    <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap align-top">
                                         <button @click="viewingId = {{ $asset->id }}" class="text-gray-500 hover:underline font-medium text-xs mr-3">View</button>
                                         <button @click="editingId = {{ $asset->id }}" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</button>
                                         <form method="POST" action="{{ route('admin.assets.destroy', $asset) }}" class="inline"
@@ -148,7 +162,7 @@
                                         </form>
                                     </td>
                                 @else
-                                    <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                    <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap align-top">
                                         <button @click="viewingId = {{ $asset->id }}" class="text-green-700 hover:underline font-medium text-xs">View</button>
                                     </td>
                                 @endif
@@ -293,7 +307,7 @@
             @endif
         </div>
 
-        <div>{{ $assets->links() }}</div>
+        <div class="bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $assets->links() }}</div>
 
         {{-- Create modal --}}
         @if($canAddAsset)

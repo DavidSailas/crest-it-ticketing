@@ -91,7 +91,7 @@
                 </a>
             </div>
 
-            <div class="bg-white shadow-sm rounded-xl overflow-x-auto border border-gray-100">
+            <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
                 @if($recentTickets->isEmpty())
                     <div class="flex flex-col items-center justify-center text-center px-6 py-14">
                         <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4">
@@ -101,22 +101,34 @@
                         <p class="text-gray-400 text-sm mt-1">Once employees start submitting requests, they'll show up here.</p>
                     </div>
                 @else
-                    <table class="min-w-full text-sm border-collapse">
+                    <table class="w-full text-sm">
                         <thead>
-                            <tr class="bg-gray-50 border-b-2 border-gray-200">
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Title</th>
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Status</th>
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Requested by</th>
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Assigned to</th>
-                                <th class="px-5 py-3"></th>
+                            <tr class="bg-gray-50/80 border-b border-gray-200">
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Title</th>
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                                <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Requested by</th>
+                                <th class="hidden lg:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned to</th>
+                                <th class="w-16 px-4 sm:px-5 py-3"></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-gray-100">
                             @foreach($recentTickets as $ticket)
-                                <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition">
-                                    <td class="px-5 py-3.5 font-medium text-gray-800 border-r border-gray-100">{{ $ticket->title }}</td>
-                                    <td class="px-5 py-3.5 border-r border-gray-100"><x-status-badge :status="$ticket->status" /></td>
-                                    <td class="px-5 py-3.5 text-gray-600 border-r border-gray-100">
+                                <tr class="hover:bg-gray-50/60 transition-colors">
+                                    <td class="px-4 sm:px-5 py-3.5 max-w-0 w-full">
+                                        <p class="font-medium text-gray-800 truncate">{{ $ticket->title }}</p>
+                                        <div class="md:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
+                                            <span class="inline-flex items-center gap-1">
+                                                {{ $ticket->creator->name }}
+                                                @if($ticket->creator->is_vip)
+                                                    <x-vip-badge size="compact" />
+                                                @endif
+                                            </span>
+                                            <span class="lg:hidden text-gray-300">→</span>
+                                            <span class="lg:hidden">{{ $ticket->assignee->name ?? 'Unassigned' }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 sm:px-5 py-3.5"><x-status-badge :status="$ticket->status" /></td>
+                                    <td class="hidden md:table-cell px-5 py-3.5 text-gray-600">
                                         <span class="inline-flex items-center gap-1.5">
                                             {{ $ticket->creator->name }}
                                             @if($ticket->creator->is_vip)
@@ -124,8 +136,8 @@
                                             @endif
                                         </span>
                                     </td>
-                                    <td class="px-5 py-3.5 text-gray-600 border-r border-gray-100">{{ $ticket->assignee->name ?? '—' }}</td>
-                                    <td class="px-5 py-3.5 text-right"><a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium">View</a></td>
+                                    <td class="hidden lg:table-cell px-5 py-3.5 text-gray-600">{{ $ticket->assignee->name ?? '—' }}</td>
+                                    <td class="px-4 sm:px-5 py-3.5 text-right"><a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a></td>
                                 </tr>
                             @endforeach
                         </tbody>

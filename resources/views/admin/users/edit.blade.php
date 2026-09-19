@@ -169,56 +169,67 @@
                         <p class="text-sm text-gray-400">No assets assigned yet.</p>
                     </div>
                 @else
-                    <div class="border border-gray-200 rounded-lg overflow-x-auto mb-6">
-                        <table class="w-full text-sm border-collapse">
+                    {{-- A single flexible data column keeps every field (including the inline
+                         edit inputs) always on-screen — nothing is ever hidden behind a
+                         breakpoint, so editing works the same on any screen and the table
+                         never needs to scroll sideways. --}}
+                    <div class="border border-gray-200 rounded-lg overflow-hidden mb-6">
+                        <table class="w-full text-sm">
                             <thead>
-                                <tr class="bg-gray-50 border-b-2 border-gray-200">
-                                    <th class="px-3 py-2.5 text-left font-semibold text-gray-600 border-r border-gray-200">Tag</th>
-                                    <th class="px-3 py-2.5 text-left font-semibold text-gray-600 border-r border-gray-200">Device</th>
-                                    <th class="px-3 py-2.5 text-left font-semibold text-gray-600 border-r border-gray-200">Serial</th>
-                                    <th class="px-3 py-2.5 text-left font-semibold text-gray-600 border-r border-gray-200">Status</th>
-                                    <th class="px-3 py-2.5"></th>
+                                <tr class="bg-gray-50/80 border-b border-gray-200">
+                                    <th class="px-3 sm:px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Asset</th>
+                                    <th class="hidden sm:table-cell px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                                    <th class="w-24 sm:w-40 px-3 sm:px-4 py-2.5"></th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="divide-y divide-gray-100">
                                 @foreach($assets as $asset)
-                                    <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition" x-data="{ editing: false }">
-                                        <td class="px-3 py-2.5 border-r border-gray-100">
-                                            <div x-show="!editing" class="inline-flex font-mono text-xs font-semibold text-gray-700 bg-gray-100 rounded px-1.5 py-1">{{ $asset->asset_tag }}</div>
-                                            <div x-show="editing" class="flex items-center gap-1">
-                                                <span class="font-mono text-xs text-gray-400">{{ $asset->company }}-{{ $asset->location }}-{{ $asset->department->code }}-{{ $asset->type }}-</span>
-                                                <input type="number" min="1" max="999" name="sequence" form="asset-form-{{ $asset->id }}" value="{{ $asset->sequence }}"
-                                                    class="w-16 rounded-md border-gray-300 text-xs py-1 font-mono focus:border-green-700 focus:ring-green-700" title="Sequence number">
+                                    <tr class="hover:bg-gray-50/60 transition-colors" x-data="{ editing: false }">
+                                        <td class="px-3 sm:px-4 py-2.5 max-w-0 w-full align-top">
+                                            <div x-show="!editing" class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                <span class="inline-flex font-mono text-xs font-semibold text-gray-700 bg-gray-100 rounded px-1.5 py-1 shrink-0">{{ $asset->asset_tag }}</span>
+                                                <span class="text-gray-700 truncate">{{ $asset->device_name }}</span>
+                                                <span class="text-xs text-gray-400">{{ $asset->serial_number ?? '—' }}</span>
+                                                <span class="sm:hidden"><x-asset-status-badge :status="$asset->status" /></span>
+                                            </div>
+                                            <div x-show="editing" x-cloak class="space-y-1.5">
+                                                <div class="flex items-center gap-1">
+                                                    <span class="font-mono text-xs text-gray-400 shrink-0">{{ $asset->company }}-{{ $asset->location }}-{{ $asset->department->code }}-{{ $asset->type }}-</span>
+                                                    <input type="number" min="1" max="999" name="sequence" form="asset-form-{{ $asset->id }}" value="{{ $asset->sequence }}"
+                                                        class="w-16 rounded-md border-gray-300 text-xs py-1 font-mono focus:border-green-700 focus:ring-green-700" title="Sequence number">
+                                                </div>
+                                                <input type="text" name="device_name" form="asset-form-{{ $asset->id }}" value="{{ $asset->device_name }}"
+                                                    placeholder="Device name"
+                                                    class="w-full rounded-md border-gray-300 text-xs py-1 focus:border-green-700 focus:ring-green-700" required>
+                                                <input type="text" name="serial_number" form="asset-form-{{ $asset->id }}" value="{{ $asset->serial_number }}"
+                                                    placeholder="Serial number"
+                                                    class="w-full rounded-md border-gray-300 text-xs py-1 focus:border-green-700 focus:ring-green-700">
+                                                <select name="status" form="asset-form-{{ $asset->id }}"
+                                                    class="sm:hidden w-full rounded-md border-gray-300 text-xs py-1 bg-white focus:border-green-700 focus:ring-green-700">
+                                                    @foreach(\App\Models\Asset::STATUSES as $value => $label)
+                                                        <option value="{{ $value }}" @selected($asset->status === $value)>{{ $label }}</option>
+                                                    @endforeach
+                                                </select>
                                             </div>
                                         </td>
-                                        <td class="px-3 py-2.5 border-r border-gray-100">
-                                            <div x-show="!editing" class="text-gray-700">{{ $asset->device_name }}</div>
-                                            <input x-show="editing" type="text" name="device_name" form="asset-form-{{ $asset->id }}" value="{{ $asset->device_name }}"
-                                                class="w-full rounded-md border-gray-300 text-xs py-1 focus:border-green-700 focus:ring-green-700" required>
-                                        </td>
-                                        <td class="px-3 py-2.5 border-r border-gray-100">
-                                            <div x-show="!editing" class="text-gray-500">{{ $asset->serial_number ?? '—' }}</div>
-                                            <input x-show="editing" type="text" name="serial_number" form="asset-form-{{ $asset->id }}" value="{{ $asset->serial_number }}"
-                                                class="w-full rounded-md border-gray-300 text-xs py-1 focus:border-green-700 focus:ring-green-700">
-                                        </td>
-                                        <td class="px-3 py-2.5 border-r border-gray-100">
+                                        <td class="hidden sm:table-cell px-4 py-2.5 align-top">
                                             <div x-show="!editing"><x-asset-status-badge :status="$asset->status" /></div>
-                                            <select x-show="editing" name="status" form="asset-form-{{ $asset->id }}"
+                                            <select x-show="editing" x-cloak name="status" form="asset-form-{{ $asset->id }}"
                                                 class="w-full rounded-md border-gray-300 text-xs py-1 bg-white focus:border-green-700 focus:ring-green-700">
                                                 @foreach(\App\Models\Asset::STATUSES as $value => $label)
                                                     <option value="{{ $value }}" @selected($asset->status === $value)>{{ $label }}</option>
                                                 @endforeach
                                             </select>
+                                        </td>
+                                        <td class="px-3 sm:px-4 py-2.5 text-right whitespace-nowrap align-top">
                                             <form id="asset-form-{{ $asset->id }}" method="POST" action="{{ route('admin.assets.update', $asset) }}" class="hidden">
                                                 @csrf @method('PUT')
                                                 <input type="hidden" name="notes" value="{{ $asset->notes }}">
                                             </form>
-                                        </td>
-                                        <td class="px-3 py-2.5 text-right whitespace-nowrap">
-                                            <button type="button" @click="editing = !editing" class="text-xs text-gray-500 hover:text-gray-700 mr-3">
+                                            <button type="button" @click="editing = !editing" class="text-xs text-gray-500 hover:text-gray-700 mr-2">
                                                 <span x-text="editing ? 'Cancel' : 'Edit'"></span>
                                             </button>
-                                            <button x-show="editing" type="submit" form="asset-form-{{ $asset->id }}" class="text-xs text-green-700 font-medium mr-3">Save</button>
+                                            <button x-show="editing" x-cloak type="submit" form="asset-form-{{ $asset->id }}" class="text-xs text-green-700 font-medium mr-2">Save</button>
                                             <form method="POST" action="{{ route('admin.assets.destroy', $asset) }}" class="inline"
                                                   onsubmit="return confirm('Remove asset {{ $asset->asset_tag }}?')">
                                                 @csrf @method('DELETE')

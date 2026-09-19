@@ -65,33 +65,39 @@
         {{-- Assets --}}
         <div>
             <h3 class="text-base font-semibold text-gray-800 mb-3">Assigned Assets</h3>
-            <div class="bg-white shadow-sm rounded-xl overflow-x-auto border border-gray-200">
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
                 @if($assets->isEmpty())
                     <div class="flex flex-col items-center justify-center text-center px-6 py-12">
                         <svg class="w-9 h-9 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" /></svg>
                         <p class="text-sm text-gray-400">No assets issued to this user.</p>
                     </div>
                 @else
-                    <table class="w-full text-sm border-collapse">
+                    <table class="w-full text-sm">
                         <thead>
-                            <tr class="bg-gray-50 border-b-2 border-gray-200">
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Tag</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Type</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Device</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Serial</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
+                            <tr class="bg-gray-50/80 border-b border-gray-200">
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Device</th>
+                                <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Type</th>
+                                <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Serial</th>
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-gray-100">
                             @foreach($assets as $asset)
-                                <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition">
-                                    <td class="px-4 py-3.5 border-r border-gray-100">
-                                        <span class="inline-flex font-mono text-xs font-semibold text-gray-700 bg-gray-100 rounded px-1.5 py-1">{{ $asset->asset_tag }}</span>
+                                <tr class="hover:bg-gray-50/60 transition-colors">
+                                    <td class="px-4 sm:px-5 py-3.5 max-w-0 w-full">
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-flex font-mono text-xs font-semibold text-gray-700 bg-gray-100 rounded px-1.5 py-1 shrink-0">{{ $asset->asset_tag }}</span>
+                                            <p class="text-gray-800 font-medium truncate">{{ $asset->device_name }}</p>
+                                        </div>
+                                        <div class="sm:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
+                                            <span>{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</span>
+                                            <span class="md:hidden text-gray-300">·</span>
+                                            <span class="md:hidden">{{ $asset->serial_number ?? '—' }}</span>
+                                        </div>
                                     </td>
-                                    <td class="px-4 py-3.5 text-gray-600 border-r border-gray-100">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</td>
-                                    <td class="px-4 py-3.5 text-gray-800 font-medium border-r border-gray-100">{{ $asset->device_name }}</td>
-                                    <td class="px-4 py-3.5 text-gray-500 border-r border-gray-100">{{ $asset->serial_number ?? '—' }}</td>
-                                    <td class="px-4 py-3.5"><x-asset-status-badge :status="$asset->status" /></td>
+                                    <td class="hidden sm:table-cell px-5 py-3.5 text-gray-600">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</td>
+                                    <td class="hidden md:table-cell px-5 py-3.5 text-gray-500">{{ $asset->serial_number ?? '—' }}</td>
+                                    <td class="px-4 sm:px-5 py-3.5"><x-asset-status-badge :status="$asset->status" /></td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -103,33 +109,37 @@
         {{-- Recent tickets --}}
         <div>
             <h3 class="text-base font-semibold text-gray-800 mb-3">Recent Tickets</h3>
-            <div class="bg-white shadow-sm rounded-xl overflow-x-auto border border-gray-200">
+            <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
                 @if($tickets->isEmpty())
                     <div class="px-6 py-12 text-center">
                         <p class="text-sm text-gray-400">This user hasn't submitted any tickets yet.</p>
                     </div>
                 @else
-                    <table class="w-full text-sm border-collapse">
+                    <table class="w-full text-sm">
                         <thead>
-                            <tr class="bg-gray-50 border-b-2 border-gray-200">
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Ticket</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Priority</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Status</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Submitted</th>
-                                <th class="px-4 py-3"></th>
+                            <tr class="bg-gray-50/80 border-b border-gray-200">
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket</th>
+                                <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Priority</th>
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                                <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Submitted</th>
+                                <th class="w-16 px-4 sm:px-5 py-3"></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-gray-100">
                             @foreach($tickets as $ticket)
-                                <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition">
-                                    <td class="px-4 py-3.5 border-r border-gray-100">
-                                        <span class="font-mono text-xs text-gray-400 mr-1">{{ $ticket->ticket_number }}</span>
-                                        <span class="font-medium text-gray-800">{{ $ticket->title }}</span>
+                                <tr class="hover:bg-gray-50/60 transition-colors">
+                                    <td class="px-4 sm:px-5 py-3.5 max-w-0 w-full">
+                                        <p class="truncate"><span class="font-mono text-xs text-gray-400 mr-1">{{ $ticket->ticket_number }}</span><span class="font-medium text-gray-800">{{ $ticket->title }}</span></p>
+                                        <div class="sm:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
+                                            <x-priority-badge :priority="$ticket->priority" />
+                                            <span class="md:hidden text-gray-300">·</span>
+                                            <span class="md:hidden">{{ $ticket->created_at->diffForHumans() }}</span>
+                                        </div>
                                     </td>
-                                    <td class="px-4 py-3.5 border-r border-gray-100"><x-priority-badge :priority="$ticket->priority" /></td>
-                                    <td class="px-4 py-3.5 border-r border-gray-100"><x-status-badge :status="$ticket->status" /></td>
-                                    <td class="px-4 py-3.5 text-gray-500 border-r border-gray-100">{{ $ticket->created_at->diffForHumans() }}</td>
-                                    <td class="px-4 py-3.5 text-right">
+                                    <td class="hidden sm:table-cell px-5 py-3.5"><x-priority-badge :priority="$ticket->priority" /></td>
+                                    <td class="px-4 sm:px-5 py-3.5"><x-status-badge :status="$ticket->status" /></td>
+                                    <td class="hidden md:table-cell px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $ticket->created_at->diffForHumans() }}</td>
+                                    <td class="px-4 sm:px-5 py-3.5 text-right">
                                         <a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a>
                                     </td>
                                 </tr>

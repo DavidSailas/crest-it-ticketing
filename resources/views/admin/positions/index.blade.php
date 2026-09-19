@@ -29,7 +29,7 @@
             </button>
         </div>
 
-        <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-x-auto">
+        <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
             @if($positions->isEmpty())
                 <div class="flex flex-col items-center justify-center text-center px-6 py-14">
                     <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4">

@@ -26,35 +26,42 @@
             <p class="text-xs text-gray-400 mt-2">The code is used to build asset tags and is stored on staff profiles, e.g. <span class="font-mono">CEB</span> → <span class="font-mono">CFI-CEB-IT-DT-001</span>.</p>
         </div>
 
-        <div class="bg-white shadow-sm rounded-xl overflow-x-auto border border-gray-200">
-            <table class="w-full text-sm border-collapse">
+        <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
+            <table class="w-full text-sm table-fixed">
                 <thead>
-                    <tr class="bg-gray-50 border-b-2 border-gray-200">
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Branch</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Code</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Staff</th>
-                        <th class="px-4 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Assets</th>
-                        <th class="px-4 py-3"></th>
+                    <tr class="bg-gray-50/80 border-b border-gray-200">
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 w-auto">Branch</th>
+                        <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 w-28">Code</th>
+                        <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 w-20">Staff</th>
+                        <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 w-20">Assets</th>
+                        <th class="px-4 py-3 w-28"></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-100">
                     @forelse($branches as $branch)
-                        <tr class="border-b border-gray-100 last:border-b-0" x-data="{ editing: false }">
-                            <td class="px-4 py-3 border-r border-gray-100">
-                                <div x-show="!editing" class="font-medium text-gray-800" x-text="'{{ $branch->name }}'"></div>
+                        <tr class="hover:bg-gray-50/60 transition-colors" x-data="{ editing: false }">
+                            <td class="px-4 py-3">
+                                <div x-show="!editing" x-text="'{{ $branch->name }}'" class="font-medium text-gray-800 truncate"></div>
                                 <form x-show="editing" method="POST" action="{{ route('admin.branches.update', $branch) }}" class="flex gap-2" id="branch-form-{{ $branch->id }}">
                                     @csrf @method('PUT')
-                                    <input type="text" name="name" value="{{ $branch->name }}" class="rounded-md border-gray-300 text-sm py-1 focus:border-green-700 focus:ring-green-700" required>
+                                    <input type="text" name="name" value="{{ $branch->name }}" class="w-full rounded-md border-gray-300 text-sm py-1 focus:border-green-700 focus:ring-green-700" required>
                                 </form>
+                                {{-- Folds in on mobile where Code/Staff/Assets columns are hidden --}}
+                                <div class="sm:hidden mt-1 flex items-center gap-2 text-xs text-gray-500">
+                                    <span class="font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{{ $branch->code }}</span>
+                                    <span>{{ $branch->users_count }} staff</span>
+                                    <span>·</span>
+                                    <span>{{ $branch->assets_count }} assets</span>
+                                </div>
                             </td>
-                            <td class="px-4 py-3 border-r border-gray-100">
+                            <td class="hidden sm:table-cell px-4 py-3">
                                 <span x-show="!editing" class="font-mono text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{{ $branch->code }}</span>
                                 <input x-show="editing" type="text" name="code" form="branch-form-{{ $branch->id }}" value="{{ $branch->code }}" maxlength="10"
                                     class="w-24 rounded-md border-gray-300 text-sm py-1 uppercase focus:border-green-700 focus:ring-green-700" required>
                                 <button x-show="editing" type="submit" form="branch-form-{{ $branch->id }}" class="text-xs text-green-700 font-medium ml-2">Save</button>
                             </td>
-                            <td class="px-4 py-3 text-gray-500 border-r border-gray-100">{{ $branch->users_count }}</td>
-                            <td class="px-4 py-3 text-gray-500 border-r border-gray-100">{{ $branch->assets_count }}</td>
+                            <td class="hidden md:table-cell px-4 py-3 text-gray-500">{{ $branch->users_count }}</td>
+                            <td class="hidden md:table-cell px-4 py-3 text-gray-500">{{ $branch->assets_count }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <button type="button" @click="editing = !editing" class="text-xs text-gray-500 hover:text-gray-700 mr-3">
                                     <span x-text="editing ? 'Cancel' : 'Edit'"></span>

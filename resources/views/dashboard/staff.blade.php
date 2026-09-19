@@ -85,7 +85,7 @@
                 </a>
             </div>
 
-            <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-x-auto">
+            <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
                 @if($recentTickets->isEmpty())
                     <div class="flex flex-col items-center justify-center text-center px-6 py-14">
                         <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4">
@@ -103,29 +103,34 @@
                         </a>
                     </div>
                 @else
-                    <table class="min-w-full text-sm border-collapse">
+                    <table class="w-full text-sm">
                         <thead>
-                            <tr class="bg-gray-50 border-b-2 border-gray-200">
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Ticket ID</th>
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Title</th>
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Priority</th>
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Status</th>
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Created</th>
-                                <th class="px-5 py-3 text-left font-semibold text-gray-600 border-r border-gray-200">Resolved</th>
-                                <th class="px-5 py-3"></th>
+                            <tr class="bg-gray-50/80 border-b border-gray-200">
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket</th>
+                                <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Priority</th>
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                                <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Created</th>
+                                <th class="hidden lg:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Resolved</th>
+                                <th class="w-16 px-4 sm:px-5 py-3"></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-gray-100">
                             @foreach($recentTickets as $ticket)
-                                <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/70 transition">
-                                    <td class="px-5 py-3.5 font-mono text-xs text-gray-500 border-r border-gray-100">#{{ $ticket->id }}</td>
-                                    <td class="px-5 py-3.5 font-medium text-gray-800 border-r border-gray-100">{{ $ticket->title }}</td>
-                                    <td class="px-5 py-3.5 border-r border-gray-100"><x-priority-badge :priority="$ticket->priority" /></td>
-                                    <td class="px-5 py-3.5 border-r border-gray-100"><x-status-badge :status="$ticket->status" /></td>
-                                    <td class="px-5 py-3.5 text-gray-500 border-r border-gray-100 whitespace-nowrap">{{ $ticket->created_at->format('M j, Y g:i A') }}</td>
-                                    <td class="px-5 py-3.5 text-gray-500 border-r border-gray-100 whitespace-nowrap">{{ $ticket->resolved_at?->format('M j, Y g:i A') ?? '—' }}</td>
-                                    <td class="px-5 py-3.5 text-right">
-                                        <a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium">View</a>
+                                <tr class="hover:bg-gray-50/60 transition-colors">
+                                    <td class="px-4 sm:px-5 py-3.5 max-w-0 w-full">
+                                        <p class="truncate"><span class="font-mono text-xs text-gray-400 mr-1">#{{ $ticket->id }}</span><span class="font-medium text-gray-800">{{ $ticket->title }}</span></p>
+                                        <div class="sm:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
+                                            <x-priority-badge :priority="$ticket->priority" />
+                                            <span class="md:hidden text-gray-300">·</span>
+                                            <span class="md:hidden whitespace-nowrap">{{ $ticket->created_at->format('M j, Y') }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="hidden sm:table-cell px-5 py-3.5"><x-priority-badge :priority="$ticket->priority" /></td>
+                                    <td class="px-4 sm:px-5 py-3.5"><x-status-badge :status="$ticket->status" /></td>
+                                    <td class="hidden md:table-cell px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $ticket->created_at->format('M j, Y g:i A') }}</td>
+                                    <td class="hidden lg:table-cell px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $ticket->resolved_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                                    <td class="px-4 sm:px-5 py-3.5 text-right">
+                                        <a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a>
                                     </td>
                                 </tr>
                             @endforeach

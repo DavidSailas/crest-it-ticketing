@@ -42,7 +42,6 @@
              needs to scroll. Anything not shown here (department, location,
              full description) is one click away on the ticket page. --}}
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-            <div class="overflow-x-auto">
             <table class="w-full text-sm border-collapse">
                 <thead>
                     <tr class="bg-gray-50/80 border-b border-gray-200">
@@ -158,9 +157,8 @@
                     @endforelse
                 </tbody>
             </table>
-            </div>
         </div>
 
-        <div class="mt-5">{{ $tickets->links() }}</div>
+        <div class="mt-4 bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $tickets->links() }}</div>
     </div>
 </x-app-layout>

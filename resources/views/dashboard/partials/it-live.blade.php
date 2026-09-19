@@ -78,15 +78,14 @@
                     <p class="text-gray-400 text-sm mt-1">Nothing waiting right now — great job staying on top of it.</p>
                 </div>
             @else
-                <div class="overflow-x-auto">
                     <table class="w-full text-sm border-collapse">
                         <thead>
-                            <tr class="bg-gray-50 border-b-2 border-gray-200">
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Ticket</th>
-                                <th class="hidden md:table-cell px-4 py-3 text-left font-semibold text-gray-600">Department</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Priority</th>
-                                <th class="hidden lg:table-cell px-4 py-3 text-left font-semibold text-gray-600">Requested by</th>
-                                <th class="px-4 py-3"></th>
+                            <tr class="bg-gray-50/80 border-b border-gray-200">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Department</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Priority</th>
+                                <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Requested by</th>
+                                <th class="w-16 px-4 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -116,12 +115,11 @@
                                             @endif
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3.5 text-right"><a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium">View</a></td>
+                                    <td class="px-4 py-3.5 text-right"><a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a></td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
-                </div>
             @endif
         </div>
     </div>
@@ -161,15 +159,14 @@
                     <p class="text-gray-400 text-sm mt-1">Accept a ticket from the queue above to get started.</p>
                 </div>
             @else
-                <div class="overflow-x-auto">
                     <table class="w-full text-sm border-collapse">
                         <thead>
-                            <tr class="bg-gray-50 border-b-2 border-gray-200">
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Ticket</th>
-                                <th class="hidden md:table-cell px-4 py-3 text-left font-semibold text-gray-600">Assigned to</th>
-                                <th class="hidden sm:table-cell px-4 py-3 text-left font-semibold text-gray-600">Priority</th>
-                                <th class="px-4 py-3 text-left font-semibold text-gray-600">Status</th>
-                                <th class="px-4 py-3"></th>
+                            <tr class="bg-gray-50/80 border-b border-gray-200">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned to</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Priority</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                                <th class="w-16 px-4 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -207,17 +204,16 @@
                                             @endif
                                         </div>
                                     </td>
-                                    <td class="px-4 py-3.5 text-right"><a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium">View</a></td>
+                                    <td class="px-4 py-3.5 text-right"><a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a></td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
-                </div>
             @endif
         </div>
 
         @if($assignedTickets->hasPages())
-            <div class="mt-4">{{ $assignedTickets->links() }}</div>
+            <div class="mt-4 bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $assignedTickets->links() }}</div>
         @endif
     </div>
 </div>
