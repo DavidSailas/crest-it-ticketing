@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTicketRequest;
 use App\Models\ActivityLog;
-use App\Models\Department;
 use App\Models\Ticket;
 use App\Models\TicketRead;
 use App\Models\User;
@@ -57,8 +56,6 @@ class TicketController extends Controller
 
     public function create()
 {
-    $departments = Department::orderBy('name')->pluck('name');
-    
     $colleagues = User::where('role', 'staff')
         ->where('id', '!=', auth()->id())
         ->orderBy('name')
@@ -71,7 +68,7 @@ class TicketController extends Controller
             ];
         });
 
-    return view('tickets.create', compact('departments', 'colleagues'));
+    return view('tickets.create', compact('colleagues'));
 }
 
     public function store(StoreTicketRequest $request)
@@ -182,6 +179,10 @@ class TicketController extends Controller
     {
         abort_unless($request->user()->isAdmin(), 403);
 
+        if ($ticket->isClosed()) {
+            return back()->with('error', 'This ticket is closed and can no longer be reassigned.');
+        }
+
         $validated = $request->validate([
             'assigned_to' => 'required|exists:users,id',
         ], [
@@ -223,7 +224,19 @@ class TicketController extends Controller
             return back()->with('error', 'This ticket must be assigned to an IT agent before its status can be changed.');
         }
 
-        $request->validate(['status' => 'required|in:open,in_progress,pending,resolved,closed']);
+        // Closed is terminal — once here, nothing about status, assignment,
+        // or the solution can change. Enforced here too (not just hidden in
+        // the UI) so a stale page or a crafted request can't reopen it.
+        if ($ticket->isClosed()) {
+            return back()->with('error', 'This ticket is closed and can no longer be updated.');
+        }
+
+        $request->validate([
+            'status' => 'required|in:open,in_progress,pending,resolved,closed',
+            'solution' => ['required_if:status,closed', 'nullable', 'string', 'max:5000'],
+        ], [
+            'solution.required_if' => 'Describe how this was resolved before closing the ticket.',
+        ]);
 
         $oldStatus = $ticket->status;
 
@@ -235,6 +248,14 @@ class TicketController extends Controller
             $updates['resolved_at'] = now();
         } elseif (in_array($request->status, ['open', 'in_progress'])) {
             $updates['resolved_at'] = null;
+        }
+
+        if ($request->status === 'closed') {
+            $updates['solution'] = $request->solution;
+            $updates['closed_at'] = now();
+            // Closing implies the issue was solved, even if it skipped the
+            // "resolved" step — keep resolved_at consistent either way.
+            $updates['resolved_at'] = $ticket->resolved_at ?? now();
         }
 
         $ticket->update($updates);

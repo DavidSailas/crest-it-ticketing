@@ -76,57 +76,95 @@
             </div>
 
             @if((auth()->user()->isItSupport() || auth()->user()->isAdmin()))
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-3 items-center">
-                    @if(!$ticket->assigned_to)
-                        <form method="POST" action="{{ route('tickets.accept', $ticket) }}">
-                            @csrf
-                            <button class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">Accept Ticket</button>
-                        </form>
-                    @endif
+                @if($ticket->isClosed())
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center gap-2.5">
+                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
+                        <p class="text-sm text-gray-500">This ticket is closed — status and assignment are locked. See the solution below.</p>
+                    </div>
+                @else
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100" x-data="{ status: '{{ old('status', $ticket->status) }}' }">
+                        <div class="flex flex-wrap gap-3 items-center">
+                            @if(!$ticket->assigned_to)
+                                <form method="POST" action="{{ route('tickets.accept', $ticket) }}">
+                                    @csrf
+                                    <button class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">Accept Ticket</button>
+                                </form>
+                            @endif
 
-                    <form method="POST" action="{{ route('tickets.status', $ticket) }}" class="flex items-center gap-2">
-                        @csrf
-                        @method('PATCH')
-                        <select name="status"
-                            class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                            {{ !$ticket->assigned_to ? 'disabled' : '' }}
-                            title="{{ !$ticket->assigned_to ? 'Assign this ticket to an IT agent first' : '' }}">
-                            @foreach(['open','in_progress','pending','resolved','closed'] as $status)
-                                <option value="{{ $status }}" @selected($ticket->status === $status)>{{ str_replace('_',' ', ucfirst($status)) }}</option>
-                            @endforeach
-                        </select>
-                        <button
-                            class="px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-                            {{ !$ticket->assigned_to ? 'disabled' : '' }}
-                            title="{{ !$ticket->assigned_to ? 'Assign this ticket to an IT agent first' : '' }}">
-                            Update Status
-                        </button>
-                    </form>
+                            <form id="status-form" method="POST" action="{{ route('tickets.status', $ticket) }}" class="flex items-center gap-2">
+                                @csrf
+                                @method('PATCH')
+                                <select name="status" x-model="status"
+                                    class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                    {{ !$ticket->assigned_to ? 'disabled' : '' }}
+                                    title="{{ !$ticket->assigned_to ? 'Assign this ticket to an IT agent first' : '' }}">
+                                    @foreach(['open','in_progress','pending','resolved','closed'] as $status)
+                                        <option value="{{ $status }}" @selected($ticket->status === $status)>{{ str_replace('_',' ', ucfirst($status)) }}</option>
+                                    @endforeach
+                                </select>
+                                <button
+                                    class="px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                                    {{ !$ticket->assigned_to ? 'disabled' : '' }}
+                                    title="{{ !$ticket->assigned_to ? 'Assign this ticket to an IT agent first' : '' }}">
+                                    Update Status
+                                </button>
+                            </form>
 
-                    @if(!$ticket->assigned_to)
-                        <span class="inline-flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-full px-2.5 py-1">
-                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
-                            Assign this ticket to update its status
-                        </span>
-                    @endif
+                            @if(!$ticket->assigned_to)
+                                <span class="inline-flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-full px-2.5 py-1">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                                    Assign this ticket to update its status
+                                </span>
+                            @endif
 
-                    @if(auth()->user()->isAdmin())
-                        <form method="POST" action="{{ route('admin.tickets.assign', $ticket) }}" class="flex items-center gap-2 ml-auto">
-                            @csrf
-                            @method('PATCH')
-                            <label class="text-sm text-gray-500">Assign to:</label>
-                            <select name="assigned_to" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
-                                <option value="">Choose IT agent…</option>
-                                @foreach(\App\Models\User::where('role', 'it_support')->orderBy('name')->get() as $agent)
-                                    <option value="{{ $agent->id }}" @selected($ticket->assigned_to === $agent->id)>{{ $agent->name }}</option>
-                                @endforeach
-                            </select>
-                            <button class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-100">Assign</button>
-                        </form>
-                    @endif
-                </div>
+                            @if(auth()->user()->isAdmin())
+                                <form method="POST" action="{{ route('admin.tickets.assign', $ticket) }}" class="flex items-center gap-2 ml-auto">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label class="text-sm text-gray-500">Assign to:</label>
+                                    <select name="assigned_to" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
+                                        <option value="">Choose IT agent…</option>
+                                        @foreach(\App\Models\User::where('role', 'it_support')->orderBy('name')->get() as $agent)
+                                            <option value="{{ $agent->id }}" @selected($ticket->assigned_to === $agent->id)>{{ $agent->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-100">Assign</button>
+                                </form>
+                            @endif
+                        </div>
+
+                        <div x-show="status === 'closed'" x-cloak class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3.5">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Solution <span class="text-red-500">*</span></label>
+                            <textarea name="solution" form="status-form" rows="3" :required="status === 'closed'"
+                                placeholder="Describe how this was resolved — this is shown to {{ $ticket->creator->name }} as the answer to their ticket."
+                                class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">{{ old('solution') }}</textarea>
+                            @error('solution') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            <p class="text-xs text-gray-400 mt-1.5">Closing is final — the ticket can't be reopened or reassigned afterward.</p>
+                        </div>
+                    </div>
+                @endif
             @endif
         </div>
+
+        @if($ticket->solution)
+            <div class="bg-white shadow-sm rounded-xl border border-green-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-green-100 bg-green-50/50 flex items-center gap-2.5">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 shrink-0">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Solution</p>
+                        <p class="text-xs text-gray-500">
+                            Resolved by {{ $ticket->assignee->name ?? 'IT Support' }}
+                            @if($ticket->closed_at) · {{ $ticket->closed_at->format('M j, Y g:i A') }} @endif
+                        </p>
+                    </div>
+                </div>
+                <div class="px-6 py-5">
+                    <p class="text-gray-800 leading-relaxed whitespace-pre-line">{{ $ticket->solution }}</p>
+                </div>
+            </div>
+        @endif
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden scroll-mt-6" x-data="ticketComments({
                 ticketId: {{ $ticket->id }},
@@ -152,7 +190,7 @@
                         <span class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 text-xs font-medium" x-text="comments.length"></span>
                     </h3>
                     <p class="text-sm text-gray-400 mt-0.5">
-                        @if($ticket->status === 'closed')
+                        @if($ticket->isClosed())
                             This ticket is closed — comments are now read-only.
                         @elseif((auth()->user()->isItSupport() || auth()->user()->isAdmin()) && !$ticket->assigned_to)
                             Accept this ticket first — you can't comment until it's assigned.
@@ -192,7 +230,7 @@
                 </template>
             </div>
 
-            @if($ticket->status === 'closed')
+            @if($ticket->isClosed())
                 <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex items-center gap-2.5">
                     <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
                     <p class="text-sm text-gray-500">This ticket is closed, so commenting is disabled. Submit a new ticket if you need further help.</p>

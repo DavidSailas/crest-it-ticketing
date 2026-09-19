@@ -20,13 +20,16 @@ class Asset extends Model
 
     /**
      * Branches assets can be tagged to (…-CEB-…, …-MNL-…, etc.).
+     *
+     * Backed by the branches table (see Admin > Branches) rather than a
+     * hardcoded list, so admins can add, rename, or retire a branch without
+     * a code change. Kept as a method instead of a const since it now reads
+     * from the database.
      */
-    public const LOCATIONS = [
-        'CEB' => 'Cebu',
-        'MNL' => 'Manila',
-        'CDO' => 'Cagayan de Oro',
-        'DVO' => 'Davao',
-    ];
+    public static function locations(): array
+    {
+        return Branch::options();
+    }
 
     /**
      * Device types supported by the tag format (…-DT-… / …-LT-…).

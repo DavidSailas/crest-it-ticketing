@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Department;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreTicketRequest extends FormRequest
@@ -26,14 +25,6 @@ class StoreTicketRequest extends FormRequest
         'Other',
     ];
 
-    /** The four Crest branch offices a ticket can be raised from. */
-    public const LOCATIONS = [
-        'Cebu Office',
-        'Davao Office',
-        'Cagayan de Oro Office',
-        'Manila Office',
-    ];
-
     /**
      * Any authenticated user can submit a ticket — role/ownership scoping
      * happens elsewhere (index/show), not on creation.
@@ -43,11 +34,29 @@ class StoreTicketRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Department and branch are no longer picked on the form — they're
+     * pulled straight from the submitter's own profile (set by an admin)
+     * so the request is always tied to their real department/office and
+     * can't be misreported or tampered with client-side.
+     */
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+
+        $this->merge([
+            'department' => $user?->department?->name,
+            'location' => $user?->location
+                ? trim($user->branch_name.' Office')
+                : null,
+        ]);
+    }
+
     public function rules(): array
     {
         return [
             'department' => 'required|exists:departments,name',
-            'location' => 'required|in:'.implode(',', self::LOCATIONS),
+            'location' => 'required|string',
             'description' => 'required|string',
             'category' => 'required|in:'.implode(',', self::CATEGORIES),
             'priority' => 'required|in:low,medium,high,critical',
@@ -71,4 +80,13 @@ class StoreTicketRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'department.required' => "Your account doesn't have a department set yet. Please ask an administrator to update your profile before submitting a ticket.",
+            'department.exists' => "Your profile's department could not be matched — please ask an administrator to check it.",
+            'location.required' => "Your account doesn't have a branch/office set yet. Please ask an administrator to update your profile before submitting a ticket.",
+        ];
+    }
 }
+

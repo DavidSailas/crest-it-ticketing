@@ -27,37 +27,43 @@
                     @csrf
 
                     {{-- Section: Request --}}
+                    @php
+                        $myDepartment = auth()->user()->department?->name;
+                        $myBranch = auth()->user()->branch_name;
+                        $profileComplete = filled($myDepartment) && filled($myBranch);
+                    @endphp
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Request</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Request</p>
+                        <p class="text-xs text-gray-400 mb-4">Your department and office are pulled automatically from your profile — no need to pick them every time.</p>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
-                                <div class="relative">
-                                    <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-4-4" /></svg>
-                                    <select name="department" class="block w-full rounded-lg border-gray-300 pl-10 focus:border-green-700 focus:ring-green-700 text-sm bg-white" required>
-                                        <option value="">Select department</option>
-                                        @foreach($departments as $dept)
-                                            <option value="{{ $dept }}" @selected(old('department') === $dept)>{{ $dept }}</option>
-                                        @endforeach
-                                    </select>
+                        @if($profileComplete)
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-4-4" /></svg>
+                                    <div class="min-w-0">
+                                        <p class="text-xs text-gray-400">Department</p>
+                                        <p class="text-sm font-medium text-gray-800 truncate">{{ $myDepartment }}</p>
+                                    </div>
                                 </div>
-                                @error('department') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Office Location</label>
-                                <div class="relative">
-                                    <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
-                                    <select name="location" class="block w-full rounded-lg border-gray-300 pl-10 focus:border-green-700 focus:ring-green-700 text-sm bg-white" required>
-                                        @foreach(['Cebu Office','Davao Office','Cagayan de Oro Office','Manila Office'] as $branch)
-                                            <option value="{{ $branch }}" @selected(old('location', 'Cebu Office') === $branch)>{{ $branch }}</option>
-                                        @endforeach
-                                    </select>
+                                <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                                    <div class="min-w-0">
+                                        <p class="text-xs text-gray-400">Office / Branch</p>
+                                        <p class="text-sm font-medium text-gray-800 truncate">{{ $myBranch }}</p>
+                                    </div>
                                 </div>
-                                @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
-                        </div>
+                            <p class="text-xs text-gray-400 mt-2">Not right? Ask an administrator to update your profile — it's used to route tickets automatically.</p>
+                        @else
+                            <div class="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                                <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                                <p class="text-sm text-amber-800">
+                                    Your department and/or office branch aren't set on your profile yet, so this ticket can't be routed automatically. Please ask an administrator to update your profile before submitting.
+                                </p>
+                            </div>
+                        @endif
+                        @error('department') <p class="text-red-500 text-xs mt-2">{{ $message }}</p> @enderror
+                        @error('location') <p class="text-red-500 text-xs mt-2">{{ $message }}</p> @enderror
                     </div>
 
                     {{-- Section: Classification --}}
@@ -274,7 +280,8 @@
 
                     <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
                         <a href="{{ route('tickets.index') }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
-                        <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm transition"
+                        <button type="submit" @disabled(! $profileComplete)
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
                             style="background-color:#1a6b3c;" onmouseover="this.style.backgroundColor='#145530'" onmouseout="this.style.backgroundColor='#1a6b3c'">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                             Submit Ticket

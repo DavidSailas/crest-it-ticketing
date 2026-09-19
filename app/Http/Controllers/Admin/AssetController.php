@@ -50,7 +50,7 @@ class AssetController extends Controller
     {
         $validated = $request->validate([
             'company' => ['required', 'in:'.implode(',', array_keys(Asset::COMPANIES))],
-            'location' => ['required', 'in:'.implode(',', array_keys(Asset::LOCATIONS))],
+            'location' => ['required', 'in:'.implode(',', array_keys(Asset::locations()))],
             'department_id' => ['required', 'exists:departments,id'],
             'type' => ['required', 'in:'.implode(',', array_keys(Asset::TYPES))],
             'device_name' => ['required', 'string', 'max:255'],

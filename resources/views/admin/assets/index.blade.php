@@ -1,5 +1,8 @@
 @php
     $isAdmin = auth()->user()->isAdmin();
+    // IT Support can add new assets too, but editing/deleting an existing
+    // asset stays admin-only (kept separate from $isAdmin on purpose).
+    $canAddAsset = $isAdmin || auth()->user()->isItSupport();
 
     $statusStyles = [
         'active' => 'bg-green-50 text-green-700 ring-green-200',
@@ -52,7 +55,7 @@
 
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <p class="text-sm text-gray-500">{{ $assets->total() }} asset{{ $assets->total() === 1 ? '' : 's' }} found</p>
-            @if($isAdmin)
+            @if($canAddAsset)
                 <button @click="showCreate = true; resetUserPicker()"
                         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold shadow-sm transition"
                         style="background-color:#1a6b3c;" onmouseover="this.style.backgroundColor='#145530'" onmouseout="this.style.backgroundColor='#1a6b3c'">
@@ -90,7 +93,7 @@
                         <p class="text-gray-400 text-sm mt-1">Try a different term or clear the filter.</p>
                     @else
                         <p class="text-gray-700 font-medium">No assets yet</p>
-                        <p class="text-gray-400 text-sm mt-1">{{ $isAdmin ? 'Assign your first asset to get started.' : 'Nothing has been logged yet.' }}</p>
+                        <p class="text-gray-400 text-sm mt-1">{{ $canAddAsset ? 'Assign your first asset to get started.' : 'Nothing has been logged yet.' }}</p>
                     @endif
                 </div>
             @else
@@ -176,7 +179,7 @@
                                                 </div>
                                                 <div>
                                                     <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Location</p>
-                                                    <p class="text-gray-800 font-medium">{{ \App\Models\Asset::LOCATIONS[$asset->location] ?? $asset->location }}</p>
+                                                    <p class="text-gray-800 font-medium">{{ \App\Models\Asset::locations()[$asset->location] ?? $asset->location }}</p>
                                                 </div>
                                                 <div>
                                                     <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Department</p>
@@ -293,7 +296,7 @@
         <div>{{ $assets->links() }}</div>
 
         {{-- Create modal --}}
-        @if($isAdmin)
+        @if($canAddAsset)
             <div x-show="showCreate" x-cloak class="fixed inset-0 bg-black/30 z-40 flex items-center justify-center p-4" @click.self="showCreate = false">
                 <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
                     <div class="flex justify-between items-center mb-4">
@@ -352,7 +355,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
                                 <select name="location" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
                                     <option value="">Select location</option>
-                                    @foreach(\App\Models\Asset::LOCATIONS as $value => $label)
+                                    @foreach(\App\Models\Asset::locations() as $value => $label)
                                         <option value="{{ $value }}">{{ $label }}</option>
                                     @endforeach
                                 </select>

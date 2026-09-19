@@ -12,10 +12,15 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
+        'first_name',
+        'last_name',
         'name',
+        'username',
         'email',
         'password',
         'role',
+        'department_id',
+        'position_id',
         'location',
     ];
 
@@ -32,6 +37,20 @@ class User extends Authenticatable
         ];
     }
 
+    protected static function booted()
+    {
+        // 'name' (the combined full name) is what the rest of the app
+        // already reads everywhere — greetings, ticket/asset listings,
+        // exports. Rather than rewriting every one of those call sites to
+        // use first_name/last_name separately, we keep 'name' in sync
+        // automatically whenever either part changes.
+        static::saving(function (User $user) {
+            if ($user->isDirty(['first_name', 'last_name']) || blank($user->name)) {
+                $user->name = trim("{$user->first_name} {$user->last_name}");
+            }
+        });
+    }
+
     public function tickets()
     {
         return $this->hasMany(Ticket::class); // tickets this user created
@@ -40,6 +59,16 @@ class User extends Authenticatable
     public function assignedTickets()
     {
         return $this->hasMany(Ticket::class, 'assigned_to'); // tickets this IT staff is handling
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function position()
+    {
+        return $this->belongsTo(Position::class);
     }
 
     public function isAdmin(): bool
@@ -59,11 +88,16 @@ class User extends Authenticatable
 
     /**
      * Full branch name for display (e.g. "Cebu") from the stored short code
-     * (e.g. "CEB"). Reuses Asset::LOCATIONS as the single source of truth
+     * (e.g. "CEB"). Reuses Branch::options() as the single source of truth
      * for branch names across users and assets.
      */
     public function getBranchNameAttribute(): ?string
     {
-        return $this->location ? (Asset::LOCATIONS[$this->location] ?? $this->location) : null;
+        return Branch::nameForCode($this->location);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'location', 'code');
     }
 }

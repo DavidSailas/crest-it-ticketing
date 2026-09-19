@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Admin\AssetController;
+use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
@@ -82,8 +84,10 @@ Route::middleware('auth')->group(function () {
         Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
         Route::get('/tickets/queue/poll', [TicketController::class, 'pollQueue'])->name('tickets.queue.poll');
 
-        // Asset inventory — viewable by both roles; create/edit/delete stay admin-only below.
+        // Asset inventory — viewable by both roles; IT Support can add new
+        // assets here too. Edit/delete stay admin-only below.
         Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
+        Route::post('/admin/users/{user}/assets', [AssetController::class, 'store'])->name('admin.users.assets.store');
 
         // Read-only staff directory — IT Support can look someone up
         // while working a ticket, but can't edit or delete accounts here.
@@ -115,14 +119,23 @@ Route::middleware('auth')->group(function () {
         Route::patch('/users/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
         Route::patch('/users/{user}/vip', [UserController::class, 'updateVip'])->name('users.vip');
 
-        Route::post('/users/{user}/assets', [AssetController::class, 'store'])->name('users.assets.store');
         Route::put('/assets/{asset}', [AssetController::class, 'update'])->name('assets.update');
         Route::delete('/assets/{asset}', [AssetController::class, 'destroy'])->name('assets.destroy');
+
+        Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
+        Route::post('/branches', [BranchController::class, 'store'])->name('branches.store');
+        Route::put('/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+        Route::delete('/branches/{branch}', [BranchController::class, 'destroy'])->name('branches.destroy');
 
         Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
         Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
         Route::put('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
         Route::delete('/departments/{department}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
+
+        Route::get('/positions', [PositionController::class, 'index'])->name('positions.index');
+        Route::post('/positions', [PositionController::class, 'store'])->name('positions.store');
+        Route::put('/positions/{position}', [PositionController::class, 'update'])->name('positions.update');
+        Route::delete('/positions/{position}', [PositionController::class, 'destroy'])->name('positions.destroy');
     });
 });
 

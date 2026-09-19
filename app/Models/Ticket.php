@@ -25,10 +25,13 @@ class Ticket extends Model
         'priority',
         'status',
         'resolved_at',
+        'solution',
+        'closed_at',
     ];
 
     protected $casts = [
         'resolved_at' => 'datetime',
+        'closed_at' => 'datetime',
     ];
 
     /**
@@ -56,6 +59,16 @@ class Ticket extends Model
     public function isOnBehalf(): bool
     {
         return $this->on_behalf_of_user_id !== null || filled($this->on_behalf_of_name);
+    }
+
+    /**
+     * Closed is a terminal state — status, assignment, and comments all
+     * lock once a ticket gets here. Used throughout the ticket page and
+     * controller instead of repeating the raw string comparison.
+     */
+    public function isClosed(): bool
+    {
+        return $this->status === 'closed';
     }
 
     public function creator()

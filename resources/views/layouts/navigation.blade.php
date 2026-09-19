@@ -9,7 +9,7 @@
                 <div class="shrink-0 flex items-center gap-2">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
                         <img src="{{ asset('images/logo.png') }}" alt="Crest Forwarder Inc." class="h-9 w-9 object-contain">
-                        <span class="font-semibold text-gray-700 hidden sm:inline">ITSM</span>
+                        <span class="font-semibold text-gray-700 hidden sm:inline">IT Service Ticketing</span>
                     </a>
                 </div>
 
@@ -27,6 +27,12 @@
                         </x-nav-link>
                         <x-nav-link :href="route('admin.departments.index')" :active="request()->routeIs('admin.departments.*')">
                             {{ __('Departments') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.branches.index')" :active="request()->routeIs('admin.branches.*')">
+                            {{ __('Branches') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.positions.index')" :active="request()->routeIs('admin.positions.*')">
+                            {{ __('Positions') }}
                         </x-nav-link>
                         <x-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                             {{ __('Assets') }}
@@ -105,9 +111,9 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
-                        <x-dropdown-link :href="auth()->user()->isStaff() ? route('support-chat.show') : route('support-chat.inbox')">
+                        <!-- <x-dropdown-link :href="auth()->user()->isStaff() ? route('support-chat.show') : route('support-chat.inbox')">
                             {{ __('Chat Support') }}
-                        </x-dropdown-link>
+                        </x-dropdown-link> -->
 
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -177,6 +183,12 @@
                 <x-responsive-nav-link :href="route('admin.departments.index')" :active="request()->routeIs('admin.departments.*')">
                     {{ __('Departments') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.branches.index')" :active="request()->routeIs('admin.branches.*')">
+                    {{ __('Branches') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.positions.index')" :active="request()->routeIs('admin.positions.*')">
+                    {{ __('Positions') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                     {{ __('Assets') }}
                 </x-responsive-nav-link>
@@ -210,9 +222,9 @@
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
 
-                <x-responsive-nav-link :href="auth()->user()->isStaff() ? route('support-chat.show') : route('support-chat.inbox')">
+                <!-- <x-responsive-nav-link :href="auth()->user()->isStaff() ? route('support-chat.show') : route('support-chat.inbox')">
                     {{ __('Chat Support') }}
-                </x-responsive-nav-link>
+                </x-responsive-nav-link> -->
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

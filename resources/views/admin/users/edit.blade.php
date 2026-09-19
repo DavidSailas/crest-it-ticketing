@@ -35,7 +35,7 @@
             </div>
 
             <div class="p-6 sm:p-8">
-                @if ($errors->hasAny(['name', 'email', 'password', 'role']))
+                @if ($errors->hasAny(['first_name', 'last_name', 'username', 'email', 'password', 'department_id', 'role', 'location']))
                     <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3.5">
                         <p class="text-sm font-semibold text-red-800 mb-1">Please fix the following:</p>
                         <ul class="text-sm text-red-700 list-disc list-inside space-y-0.5">
@@ -46,43 +46,88 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.users.update', $user) }}" class="space-y-5" novalidate>
+                <form method="POST" action="{{ route('admin.users.update', $user) }}" class="space-y-6" novalidate>
                     @csrf @method('PUT')
 
-                    <div class="grid sm:grid-cols-2 gap-5">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
-                            <input type="text" name="name" value="{{ old('name', $user->name) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Personal Info</p>
+                        <div class="grid sm:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
+                                <input type="text" name="first_name" value="{{ old('first_name', $user->first_name) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
+                                <input type="text" name="last_name" value="{{ old('last_name', $user->last_name) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
+                            </div>
                         </div>
+                    </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-                            <input type="email" name="email" value="{{ old('email', $user->email) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
+                    <div class="pt-5 border-t border-gray-100">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Login</p>
+                        <div class="grid sm:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+                                <input type="text" name="username" value="{{ old('username', $user->username) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                                <input type="email" name="email" value="{{ old('email', $user->email) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">New Password <span class="text-gray-400 font-normal">(optional)</span></label>
+                                <input type="password" name="password" placeholder="Leave blank to keep current" class="block w-full sm:w-1/2 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                            </div>
                         </div>
+                    </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1.5">New Password <span class="text-gray-400 font-normal">(optional)</span></label>
-                            <input type="password" name="password" placeholder="Leave blank to keep current" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
-                        </div>
+                    <div class="pt-5 border-t border-gray-100">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Assignment</p>
+                        <div class="grid sm:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
+                                <select name="department_id" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                    <option value="" disabled @selected(old('department_id', $user->department_id) === null)>Select department</option>
+                                    @foreach($departments as $department)
+                                        <option value="{{ $department->id }}" @selected((string) old('department_id', $user->department_id) === (string) $department->id)>{{ $department->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('department_id') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
+                            </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
-                            <select name="role" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white">
-                                <option value="staff" @selected(old('role', $user->role) === 'staff')>Staff</option>
-                                <option value="it_support" @selected(old('role', $user->role) === 'it_support')>IT Support</option>
-                                <option value="admin" @selected(old('role', $user->role) === 'admin')>Admin</option>
-                            </select>
-                        </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Position</label>
+                                <select name="position_id" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                    <option value="" disabled @selected(old('position_id', $user->position_id) === null)>Select position</option>
+                                    @foreach($positions as $position)
+                                        <option value="{{ $position->id }}" @selected((string) old('position_id', $user->position_id) === (string) $position->id)>{{ $position->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('position_id') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
+                                @if($positions->isEmpty())
+                                    <p class="text-xs text-amber-600 mt-1.5">No positions yet — <a href="{{ route('admin.positions.index') }}" class="underline font-medium">add one first</a>.</p>
+                                @endif
+                            </div>
 
-                        <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Branch</label>
-                            <select name="location" class="block w-full sm:w-1/2 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
-                                <option value="" disabled @selected(old('location', $user->location) === null)>Select branch</option>
-                                @foreach(\App\Models\Asset::LOCATIONS as $value => $label)
-                                    <option value="{{ $value }}" @selected(old('location', $user->location) === $value)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                            @error('location') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
+                                <select name="role" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white">
+                                    <option value="staff" @selected(old('role', $user->role) === 'staff')>Staff</option>
+                                    <option value="it_support" @selected(old('role', $user->role) === 'it_support')>IT Support</option>
+                                    <option value="admin" @selected(old('role', $user->role) === 'admin')>Admin</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Branch</label>
+                                <select name="location" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                    <option value="" disabled @selected(old('location', $user->location) === null)>Select branch</option>
+                                    @foreach(\App\Models\Asset::locations() as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('location', $user->location) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                @error('location') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
+                            </div>
                         </div>
                     </div>
 
@@ -209,7 +254,7 @@
                     <div class="rounded-xl border border-gray-200 bg-gray-50/60 p-5"
                          x-data="{
                             company: '{{ old('company', array_key_first(\App\Models\Asset::COMPANIES)) }}',
-                            location: '{{ old('location', array_key_first(\App\Models\Asset::LOCATIONS)) }}',
+                            location: '{{ old('location', array_key_first(\App\Models\Asset::locations())) }}',
                             department: '{{ old('department_id', $assetDepartments->first()->id) }}',
                             type: '{{ old('type', array_key_first(\App\Models\Asset::TYPES)) }}',
                             deptCodes: {{ $assetDepartments->pluck('code', 'id')->toJson() }}
@@ -234,7 +279,7 @@
                                 <div>
                                     <label class="block text-xs font-medium text-gray-500 mb-1">Location</label>
                                     <select name="location" x-model="location" class="block w-full rounded-lg border-gray-300 text-sm bg-white focus:border-green-700 focus:ring-green-700" required>
-                                        @foreach(\App\Models\Asset::LOCATIONS as $value => $label)
+                                        @foreach(\App\Models\Asset::locations() as $value => $label)
                                             <option value="{{ $value }}">{{ $label }} ({{ $value }})</option>
                                         @endforeach
                                     </select>
