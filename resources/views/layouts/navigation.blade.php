@@ -2,7 +2,7 @@
 
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
     <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <!-- Logo -->
@@ -146,7 +146,7 @@
 
             const toast = document.createElement('a');
             toast.href = n.url || '#';
-            toast.className = 'block bg-white border border-gray-100 shadow-lg rounded-xl px-4 py-3 w-80 pointer-events-auto transition transform translate-x-full opacity-0';
+            toast.className = 'block bg-white border border-gray-100 shadow-lg rounded-xl px-4 py-3 w-[calc(100vw-2rem)] max-w-xs sm:w-80 pointer-events-auto transition transform translate-x-full opacity-0';
             toast.innerHTML = `
                 <div class="flex items-start gap-2.5">
                     <span class="mt-1.5 shrink-0 w-2 h-2 rounded-full" style="background-color:#1a6b3c;"></span>

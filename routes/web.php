@@ -43,6 +43,7 @@ Event::listen(function (Failed $event) {
 Route::middleware('auth')->group(function () {
     // Dashboard — different view per role, resolved inside the controller
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/live', [DashboardController::class, 'live'])->name('dashboard.live');
 
     // Profile (from Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -59,6 +60,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
     Route::get('/tickets/{ticket}/confirmation', [TicketController::class, 'confirmation'])->name('tickets.confirmation');
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+    Route::get('/tickets/{ticket}/live', [TicketController::class, 'live'])->name('tickets.live');
+    Route::post('/tickets/{ticket}/approve', [TicketController::class, 'approve'])->name('tickets.approve');
     Route::post('/tickets/{ticket}/comment', [TicketController::class, 'comment'])->name('tickets.comment');
     Route::get('/tickets/{ticket}/chat/poll', [TicketController::class, 'pollChat'])->name('tickets.chat.poll');
 

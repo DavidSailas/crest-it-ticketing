@@ -5,7 +5,7 @@
 
     <style>[x-cloak] { display: none !important; }</style>
 
-    <div class="py-8 max-w-2xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-8 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
 
             <div class="px-6 py-5 border-b border-gray-100 flex items-center gap-3">

@@ -38,7 +38,7 @@ class TicketStatusUpdatedNotification extends Notification
             ->line("**{$this->ticket->ticket_number}: {$this->ticket->title}**")
             ->action('View Ticket', route('tickets.show', $this->ticket))
             ->line($this->newStatus === 'resolved'
-                ? 'If this did not actually fix the issue, reply on the ticket and IT will reopen it.'
+                ? 'Please open the ticket and click "Approve" if the issue is fixed so IT can close it. If it is not fixed, reply on the ticket and IT will reopen it.'
                 : 'Let us know if you need anything else.');
     }
 

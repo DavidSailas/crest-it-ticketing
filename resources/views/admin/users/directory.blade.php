@@ -3,7 +3,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Users</h2>
     </x-slot>
 
-    <div class="py-8 max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-4">
+    <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         <p class="text-sm text-gray-500">Look up a staff member's account while you work a ticket. This is view-only — head to Manage Users to edit or remove an account.</p>
 
         <form method="GET" action="{{ route('users.directory') }}" class="flex gap-2 max-w-sm">
@@ -12,7 +12,7 @@
             <button class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">Search</button>
         </form>
 
-        <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
+        <div class="bg-white shadow-sm rounded-xl overflow-x-auto border border-gray-200">
             <table class="w-full text-sm border-collapse">
                 <thead>
                     <tr class="bg-gray-50 border-b-2 border-gray-200">

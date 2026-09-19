@@ -18,7 +18,7 @@
 
     <style>[x-cloak] { display: none !important; }</style>
 
-    <div class="py-8 max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6"
+    <div class="py-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
          x-data='{
             showCreate: false,
             editingId: null,

@@ -44,7 +44,7 @@
         </div>
     </x-slot>
 
-    <div class="py-8 max-w-5xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         @if(session('status'))
             <div class="mb-4 p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
         @endif

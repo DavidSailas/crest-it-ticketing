@@ -10,7 +10,7 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-wrap gap-3 justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 @if($isStaff) My Tickets
                 @elseif($isItSupport) My Tickets
@@ -25,7 +25,7 @@
         </div>
     </x-slot>
 
-    <div class="py-8 max-w-6xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-8 max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8">
         @if(session('status'))
             <div class="mb-4 p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
         @endif
@@ -42,44 +42,77 @@
              needs to scroll. Anything not shown here (department, location,
              full description) is one click away on the ticket page. --}}
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-            <table class="w-full text-sm border-collapse table-fixed">
+            <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
                 <thead>
                     <tr class="bg-gray-50/80 border-b border-gray-200">
-                        <th class="w-32 px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket ID</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Category</th>
-                        <th class="w-28 px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Priority</th>
-                        <th class="w-36 px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                        <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Ticket ID</th>
+                        <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Category</th>
+                        <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Priority</th>
+                        <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
                         @if($showRequestedBy)
-                            <th class="w-36 px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Requested by</th>
+                            <th class="hidden lg:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Requested by</th>
                         @endif
                         @if($showAssignedTo)
-                            <th class="w-36 px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned to</th>
+                            <th class="hidden lg:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned to</th>
                         @endif
-                        <th class="w-24 px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Created</th>
-                        <th class="w-14 px-5 py-3"></th>
+                        <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Created</th>
+                        <th class="w-12 px-3 sm:px-5 py-3"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse($tickets as $ticket)
                         <tr class="group hover:bg-gray-50/60 transition-colors">
-                            <td class="px-5 py-4">
+                            <td class="px-4 sm:px-5 py-4 whitespace-nowrap">
                                 <span class="font-mono text-xs font-semibold tracking-tight text-gray-500 group-hover:text-gray-700">{{ $ticket->ticket_number }}</span>
                             </td>
-                            <td class="px-5 py-4">
-                                <p class="font-medium text-gray-800 truncate flex items-center gap-1.5">
+                            <td class="px-4 sm:px-5 py-4 min-w-[10rem]">
+                                <p class="font-medium text-gray-800 flex items-center gap-1.5">
                                     {{ $ticket->category }}
                                     @if($ticket->attachment_path)
                                         <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" title="Has attachment"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" /></svg>
                                     @endif
                                 </p>
                                 @if($ticket->subcategory)
-                                    <p class="text-xs text-gray-400 truncate mt-0.5">{{ $ticket->subcategory }}</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">{{ $ticket->subcategory }}</p>
                                 @endif
+                                {{-- Columns that are hidden on smaller screens fold into this line --}}
+                                <div class="lg:hidden mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                                    <span class="sm:hidden"><x-priority-badge :priority="$ticket->priority" /></span>
+                                    @if($showRequestedBy)
+                                        <span class="inline-flex items-center gap-1.5">
+                                            {{ $ticket->creator->name }}
+                                            @if($ticket->creator->is_vip)
+                                                <x-vip-badge size="compact" />
+                                            @endif
+                                        </span>
+                                    @endif
+                                    @if($showAssignedTo)
+                                        <span class="text-gray-400">{{ $ticket->assignee ? '→ '.$ticket->assignee->name : 'Unassigned' }}</span>
+                                    @endif
+                                    <span class="md:hidden text-gray-400">{{ $ticket->created_at->format('M j, Y') }}</span>
+                                </div>
                             </td>
-                            <td class="px-5 py-4"><x-priority-badge :priority="$ticket->priority" /></td>
-                            <td class="px-5 py-4"><x-status-badge :status="$ticket->status" /></td>
+                            <td class="hidden sm:table-cell px-5 py-4"><x-priority-badge :priority="$ticket->priority" /></td>
+                            <td class="px-4 sm:px-5 py-4">
+                                <div class="flex flex-col items-start gap-1">
+                                    <x-status-badge :status="$ticket->status" />
+                                    @if($ticket->status === 'resolved')
+                                        @if($ticket->isApproved())
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">
+                                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                Approved
+                                            </span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 whitespace-nowrap">
+                                                {{ $ticket->user_id === auth()->id() ? 'Needs your approval' : 'Awaiting approval' }}
+                                            </span>
+                                        @endif
+                                    @endif
+                                </div>
+                            </td>
                             @if($showRequestedBy)
-                                <td class="px-5 py-4 text-gray-600 truncate">
+                                <td class="hidden lg:table-cell px-5 py-4 text-gray-600">
                                     <span class="inline-flex items-center gap-1.5">
                                         {{ $ticket->creator->name }}
                                         @if($ticket->creator->is_vip)
@@ -89,7 +122,7 @@
                                 </td>
                             @endif
                             @if($showAssignedTo)
-                                <td class="px-5 py-4 text-gray-600 truncate">
+                                <td class="hidden lg:table-cell px-5 py-4 text-gray-600">
                                     @if($ticket->assignee)
                                         {{ $ticket->assignee->name }}
                                     @else
@@ -97,10 +130,10 @@
                                     @endif
                                 </td>
                             @endif
-                            <td class="px-5 py-4 text-gray-500 whitespace-nowrap">{{ $ticket->created_at->format('M j, Y') }}</td>
-                            <td class="px-5 py-4 text-right">
+                            <td class="hidden md:table-cell px-5 py-4 text-gray-500 whitespace-nowrap">{{ $ticket->created_at->format('M j, Y') }}</td>
+                            <td class="px-3 sm:px-5 py-4 text-right">
                                 <a href="{{ route('tickets.show', $ticket) }}"
-                                   class="inline-flex items-center justify-center w-7 h-7 rounded-full text-gray-400 hover:text-white transition-colors"
+                                   class="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-400 hover:text-white transition-colors"
                                    onmouseover="this.style.backgroundColor='#1a6b3c'" onmouseout="this.style.backgroundColor='transparent'"
                                    title="View ticket">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
@@ -125,6 +158,7 @@
                     @endforelse
                 </tbody>
             </table>
+            </div>
         </div>
 
         <div class="mt-5">{{ $tickets->links() }}</div>

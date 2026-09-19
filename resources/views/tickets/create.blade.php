@@ -3,7 +3,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Submit a New Ticket</h2>
     </x-slot>
 
-    <div class="py-8 max-w-5xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {{-- Masthead --}}
         <div class="relative overflow-hidden rounded-xl mb-6" style="background-color:#123f24;">

@@ -3,7 +3,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">My Profile</h2>
     </x-slot>
 
-    <div class="py-8 max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
         @if(session('status') && !in_array(session('status'), ['profile-updated', 'verification-link-sent']))
             <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
@@ -75,7 +75,7 @@
                         <li class="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
                             <span @class([
                                 'mt-1 inline-flex w-2 h-2 rounded-full shrink-0',
-                                'bg-green-500' => in_array($log->action, ['login', 'ticket_created', 'ticket_accepted']),
+                                'bg-green-500' => in_array($log->action, ['login', 'ticket_created', 'ticket_accepted', 'ticket_approved']),
                                 'bg-gray-400' => $log->action === 'logout',
                                 'bg-blue-500' => $log->action === 'ticket_status_updated',
                                 'bg-amber-500' => $log->action === 'ticket_comment_added',

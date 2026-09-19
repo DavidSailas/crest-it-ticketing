@@ -8,7 +8,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $user->name }}</h2>
     </x-slot>
 
-    <div class="py-8 max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         @if(session('status'))
             <div class="flex items-center gap-2 p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">
                 <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -169,7 +169,7 @@
                         <p class="text-sm text-gray-400">No assets assigned yet.</p>
                     </div>
                 @else
-                    <div class="border border-gray-200 rounded-lg overflow-hidden mb-6">
+                    <div class="border border-gray-200 rounded-lg overflow-x-auto mb-6">
                         <table class="w-full text-sm border-collapse">
                             <thead>
                                 <tr class="bg-gray-50 border-b-2 border-gray-200">

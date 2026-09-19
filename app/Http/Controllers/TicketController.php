@@ -8,6 +8,7 @@ use App\Models\Ticket;
 use App\Models\TicketRead;
 use App\Models\User;
 use App\Notifications\TicketAcceptedNotification;
+use App\Notifications\TicketApprovedNotification;
 use App\Notifications\TicketAssignedNotification;
 use App\Notifications\TicketStatusUpdatedNotification;
 use Illuminate\Http\Request;
@@ -216,6 +217,85 @@ class TicketController extends Controller
         return back()->with('status', "Assigned to {$agent->name}.");
     }
 
+    /**
+     * Real-time refresh for the ticket page. The browser polls this every few
+     * seconds with the fingerprint of each region it is showing; we only send
+     * back HTML for the regions that actually changed (status, approval,
+     * assignment, solution, comment box), so it stays cheap.
+     *
+     * GET /tickets/{ticket}/live?h[ticket]=...&h[hint]=...&h[composer]=...
+     */
+    public function live(Request $request, Ticket $ticket)
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $user->isAdmin() || $user->isItSupport() || $ticket->user_id === $user->id,
+            403
+        );
+
+        $ticket->load(['creator', 'assignee']);
+
+        $known = (array) $request->query('h', []);
+
+        $regions = [
+            'ticket' => [$ticket->liveHash(), 'tickets.partials.live-ticket'],
+            'hint' => [$ticket->threadHash(), 'tickets.partials.live-hint'],
+            'composer' => [$ticket->threadHash(), 'tickets.partials.live-composer'],
+        ];
+
+        $changed = [];
+        foreach ($regions as $name => [$hash, $view]) {
+            if (($known[$name] ?? null) !== $hash) {
+                $changed[$name] = [
+                    'hash' => $hash,
+                    'html' => view($view, ['ticket' => $ticket])->render(),
+                ];
+            }
+        }
+
+        return response()->json(['regions' => $changed])->header('Cache-Control', 'no-store');
+    }
+
+    /**
+     * The requester confirms that a Resolved ticket is really fixed. This is
+     * the gate IT Support needs before they're allowed to close the ticket.
+     */
+    public function approve(Request $request, Ticket $ticket)
+    {
+        // Only the person who raised the ticket can approve its resolution.
+        abort_unless($ticket->user_id === $request->user()->id, 403);
+
+        if ($ticket->isClosed()) {
+            return back()->with('error', 'This ticket is already closed.');
+        }
+
+        if ($ticket->status !== 'resolved') {
+            return back()->with('error', 'IT Support has not marked this ticket as resolved yet.');
+        }
+
+        if ($ticket->isApproved()) {
+            return back()->with('status', 'You already approved this resolution.');
+        }
+
+        $ticket->update(['approved_at' => now()]);
+
+        ActivityLog::record(
+            'ticket_approved',
+            "Approved the resolution of ticket {$ticket->ticket_number}: {$ticket->title}",
+            ['ticket_id' => $ticket->id]
+        );
+
+        // A failed email shouldn't undo a successful approval.
+        try {
+            $ticket->assignee?->notify(new TicketApprovedNotification($ticket, $request->user()));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('status', 'Thanks! IT Support can now close this ticket.');
+    }
+
     public function updateStatus(Request $request, Ticket $ticket)
     {
         abort_unless($request->user()->isItSupport() || $request->user()->isAdmin(), 403);
@@ -229,6 +309,15 @@ class TicketController extends Controller
         // the UI) so a stale page or a crafted request can't reopen it.
         if ($ticket->isClosed()) {
             return back()->with('error', 'This ticket is closed and can no longer be updated.');
+        }
+
+        // A ticket can only be closed after IT marks it Resolved AND the
+        // requester approves that resolution. Enforced server-side so it
+        // can't be skipped by a stale page or a crafted request.
+        if ($request->input('status') === 'closed' && ! $ticket->canBeClosed()) {
+            return back()->with('error', $ticket->status === 'resolved'
+                ? 'The requester must approve the resolution before this ticket can be closed.'
+                : 'Mark this ticket as Resolved and wait for the requester to approve it before closing.');
         }
 
         $request->validate([
@@ -248,6 +337,13 @@ class TicketController extends Controller
             $updates['resolved_at'] = now();
         } elseif (in_array($request->status, ['open', 'in_progress'])) {
             $updates['resolved_at'] = null;
+        }
+
+        // Approval only means something for the resolution being approved. If
+        // the ticket is reopened (or moved anywhere other than resolved/closed),
+        // the requester has to approve again next time it's resolved.
+        if (! in_array($request->status, ['resolved', 'closed'])) {
+            $updates['approved_at'] = null;
         }
 
         if ($request->status === 'closed') {

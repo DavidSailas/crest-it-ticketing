@@ -3,7 +3,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Chat</h2>
     </x-slot>
 
-    <div class="py-8 max-w-4xl mx-auto sm:px-6 lg:px-8" x-data="chatInbox()">
+    <div class="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8" x-data="chatInbox()">
         {{-- Initial data lives in its own script tag rather than inline inside
              an HTML attribute — embedding a large @json() blob directly in
              x-data="..." is fragile (quoting/escaping edge cases can break

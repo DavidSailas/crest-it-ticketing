@@ -3,7 +3,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Chat Support Inbox</h2>
     </x-slot>
 
-    <div class="py-8 max-w-3xl mx-auto sm:px-6 lg:px-8"
+    <div class="py-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8"
          x-data="supportInbox('{{ route('support-chat.inbox.poll') }}')" x-init="init()">
 
         <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">

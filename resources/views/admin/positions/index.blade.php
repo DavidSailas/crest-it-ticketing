@@ -9,7 +9,7 @@
 
     <style>[x-cloak] { display: none !important; }</style>
 
-    <div class="py-8 max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6"
+    <div class="py-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
          x-data="{ showCreate: {{ $errors->any() ? 'true' : 'false' }}, editingId: null }">
 
         @if(session('status'))
@@ -29,7 +29,7 @@
             </button>
         </div>
 
-        <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+        <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-x-auto">
             @if($positions->isEmpty())
                 <div class="flex flex-col items-center justify-center text-center px-6 py-14">
                     <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4">

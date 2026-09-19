@@ -3,7 +3,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Manage Branches</h2>
     </x-slot>
 
-    <div class="py-8 max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         @if(session('status'))
             <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
         @endif
@@ -26,7 +26,7 @@
             <p class="text-xs text-gray-400 mt-2">The code is used to build asset tags and is stored on staff profiles, e.g. <span class="font-mono">CEB</span> → <span class="font-mono">CFI-CEB-IT-DT-001</span>.</p>
         </div>
 
-        <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
+        <div class="bg-white shadow-sm rounded-xl overflow-x-auto border border-gray-200">
             <table class="w-full text-sm border-collapse">
                 <thead>
                     <tr class="bg-gray-50 border-b-2 border-gray-200">

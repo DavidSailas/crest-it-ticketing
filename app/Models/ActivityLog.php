@@ -58,6 +58,7 @@ class ActivityLog extends Model
             str_starts_with($this->action, 'logout') => 'logout',
             str_starts_with($this->action, 'ticket_created') => 'plus',
             str_starts_with($this->action, 'ticket_accepted') => 'check',
+            str_starts_with($this->action, 'ticket_approved') => 'check',
             str_starts_with($this->action, 'ticket_status') => 'refresh',
             str_starts_with($this->action, 'ticket_comment') => 'chat',
             default => 'dot',

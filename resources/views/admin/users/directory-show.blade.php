@@ -8,7 +8,7 @@
         </div>
     </x-slot>
 
-    <div class="py-8 max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
         {{-- Account card --}}
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
@@ -65,7 +65,7 @@
         {{-- Assets --}}
         <div>
             <h3 class="text-base font-semibold text-gray-800 mb-3">Assigned Assets</h3>
-            <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
+            <div class="bg-white shadow-sm rounded-xl overflow-x-auto border border-gray-200">
                 @if($assets->isEmpty())
                     <div class="flex flex-col items-center justify-center text-center px-6 py-12">
                         <svg class="w-9 h-9 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" /></svg>
@@ -103,7 +103,7 @@
         {{-- Recent tickets --}}
         <div>
             <h3 class="text-base font-semibold text-gray-800 mb-3">Recent Tickets</h3>
-            <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
+            <div class="bg-white shadow-sm rounded-xl overflow-x-auto border border-gray-200">
                 @if($tickets->isEmpty())
                     <div class="px-6 py-12 text-center">
                         <p class="text-sm text-gray-400">This user hasn't submitted any tickets yet.</p>

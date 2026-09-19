@@ -9,7 +9,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Dashboard</h2>
     </x-slot>
 
-    <div class="py-8 max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-8 max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
         @if(session('status'))
             <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
