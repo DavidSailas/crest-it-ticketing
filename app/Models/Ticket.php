@@ -90,13 +90,13 @@ class Ticket extends Model
     }
 
     /**
-     * A ticket can only be closed once it is Resolved *and* the requester
-     * has approved that resolution. Used by both the UI and the controller
-     * so the rule can't be bypassed with a crafted request.
+     * A ticket can only be closed once IT has marked it Resolved. The
+     * requester's confirmation now happens off-platform (a call or message
+     * from IT before closing), so it's a process step, not a system gate.
      */
     public function canBeClosed(): bool
     {
-        return $this->status === 'resolved' && $this->isApproved();
+        return $this->status === 'resolved';
     }
 
     /**

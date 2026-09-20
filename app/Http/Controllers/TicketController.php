@@ -311,13 +311,12 @@ class TicketController extends Controller
             return back()->with('error', 'This ticket is closed and can no longer be updated.');
         }
 
-        // A ticket can only be closed after IT marks it Resolved AND the
-        // requester approves that resolution. Enforced server-side so it
-        // can't be skipped by a stale page or a crafted request.
+        // A ticket can only be closed once IT has marked it Resolved.
+        // Enforced server-side so it can't be skipped by a stale page or a
+        // crafted request. (Confirming the fix with the requester now
+        // happens off-platform — a call or message from IT before closing.)
         if ($request->input('status') === 'closed' && ! $ticket->canBeClosed()) {
-            return back()->with('error', $ticket->status === 'resolved'
-                ? 'The requester must approve the resolution before this ticket can be closed.'
-                : 'Mark this ticket as Resolved and wait for the requester to approve it before closing.');
+            return back()->with('error', 'Mark this ticket as Resolved before it can be closed.');
         }
 
         $request->validate([

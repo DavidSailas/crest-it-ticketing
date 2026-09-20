@@ -194,13 +194,16 @@
                                     <td class="hidden sm:table-cell px-4 py-3.5"><x-priority-badge :priority="$ticket->priority" /></td>
                                     <td class="px-4 py-3.5">
                                         <div class="flex flex-col items-start gap-1">
-                                            <x-status-badge :status="$ticket->status" />
                                             @if($ticket->status === 'resolved')
-                                                @if($ticket->isApproved())
-                                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">Approved · ready to close</span>
-                                                @else
-                                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 whitespace-nowrap">Awaiting approval</span>
-                                                @endif
+                                                <span
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 whitespace-nowrap"
+                                                    title="Call or message {{ $ticket->creator->name }} to confirm the fix before closing this ticket."
+                                                >
+                                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                    Closed
+                                                </span>
+                                            @else
+                                                <x-status-badge :status="$ticket->status" />
                                             @endif
                                         </div>
                                     </td>

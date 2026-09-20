@@ -14,7 +14,7 @@
         {{-- Wide monitors: ticket details on the left, conversation on the right.
              Anything narrower than xl stacks them. --}}
         <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 items-start">
-            {{-- Live region: refreshed automatically when status / approval / assignment change --}}
+            {{-- Live region: refreshed automatically when status / assignment change --}}
             <div class="xl:col-span-3 min-w-0 space-y-6" data-live="ticket" data-hash="{{ $ticket->liveHash() }}">
                 @include('tickets.partials.live-ticket')
             </div>
@@ -85,7 +85,7 @@
 
         <script>
             // Real-time refresh: every few seconds ask the server whether the ticket panel or the
-            // comment box changed (e.g. the requester approved, IT resolved / closed / reassigned)
+            // comment box changed (e.g. IT resolved / closed / reassigned)
             // and swap in only the parts that did. Comment drafts and the chat are never touched.
             (function () {
                 const url = @json(route('tickets.live', $ticket));

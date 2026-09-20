@@ -3,12 +3,6 @@
         <div class="flex flex-wrap items-center gap-2">
             <span class="text-xs font-mono font-semibold text-gray-400 mr-1">{{ $ticket->ticket_number }}</span>
             <x-status-badge :status="$ticket->status" />
-            @if($ticket->isApproved())
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap" title="Approved by {{ $ticket->creator->name }} on {{ $ticket->approved_at->format('M j, Y g:i A') }}">
-                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                    Approved
-                </span>
-            @endif
             <x-priority-badge :priority="$ticket->priority" />
         </div>
         <div class="text-sm text-gray-400">{{ $ticket->created_at->format('M j, Y g:i A') }}</div>
@@ -93,7 +87,7 @@
                             title="{{ !$ticket->assigned_to ? 'Assign this ticket to an IT agent first' : '' }}">
                             @foreach(['open','in_progress','pending','resolved','closed'] as $status)
                                 @php $locked = $status === 'closed' && ! $ticket->canBeClosed(); @endphp
-                                <option value="{{ $status }}" @selected($ticket->status === $status) @disabled($locked)>{{ str_replace('_',' ', ucfirst($status)) }}{{ $locked ? ' (resolve & get approval first)' : '' }}</option>
+                                <option value="{{ $status }}" @selected($ticket->status === $status) @disabled($locked)>{{ str_replace('_',' ', ucfirst($status)) }}{{ $locked ? ' (mark as Resolved first)' : '' }}</option>
                             @endforeach
                         </select>
                         <button
@@ -127,23 +121,20 @@
                     @endif
                 </div>
 
-                @if($ticket->assigned_to)
-                    @if($ticket->isAwaitingApproval())
-                        <p class="mt-3 inline-flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5">
-                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            Waiting for {{ $ticket->creator->name }} to approve the resolution before this ticket can be closed.
-                        </p>
-                    @elseif($ticket->canBeClosed())
-                        <p class="mt-3 inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1.5">
-                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                            {{ $ticket->creator->name }} approved this on {{ $ticket->approved_at->format('M j, Y g:i A') }} — you can close it now.
-                        </p>
-                    @else
-                        <p class="mt-3 text-xs text-gray-400">To close this ticket: set it to Resolved, then the requester approves it.</p>
-                    @endif
+                @if($ticket->assigned_to && $ticket->status === 'resolved')
+                    <p class="mt-3 inline-flex items-center gap-1.5 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1.5">
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h1.5a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106a2.25 2.25 0 00-2.291.593l-.657.657c-.28.28-.7.36-1.076.238a12.35 12.35 0 01-7.286-7.286c-.122-.376-.042-.796.238-1.076l.657-.657a2.25 2.25 0 00.593-2.292l-1.106-4.423A1.125 1.125 0 007.25 2.25H5.875a2.25 2.25 0 00-2.25 2.25v2.25z" /></svg>
+                        Call or message {{ $ticket->creator->name }} to confirm the fix before closing this ticket.
+                    </p>
                 @endif
 
                 <div x-show="status === 'closed'" x-cloak class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3.5">
+                    <div class="flex items-start gap-2 mb-3 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-100">
+                        <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                        <p class="text-xs text-amber-800">
+                            <strong>Before closing:</strong> confirm with {{ $ticket->creator->name }} that the issue is actually fixed — this ticket can't be reopened once closed.
+                        </p>
+                    </div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Solution <span class="text-red-500">*</span></label>
                     <textarea name="solution" form="status-form" rows="3" :required="status === 'closed'"
                         placeholder="Describe how this was resolved — this is shown to {{ $ticket->creator->name }} as the answer to their ticket."
@@ -155,41 +146,6 @@
         @endif
     @endif
 </div>
-
-{{-- Requester sign-off: IT marked it Resolved, now the requester confirms it's really fixed.
-     Until they do, IT Support cannot close the ticket. --}}
-@if(auth()->id() === $ticket->user_id && ! $ticket->isClosed())
-    @if($ticket->isAwaitingApproval())
-        <div class="bg-white shadow-sm rounded-xl border border-green-200 overflow-hidden">
-            <div class="px-4 sm:px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div class="flex items-start gap-3">
-                    <span class="flex items-center justify-center w-9 h-9 rounded-lg bg-green-100 text-green-700 shrink-0">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </span>
-                    <div>
-                        <p class="text-sm font-semibold text-gray-800">Is your issue fixed?</p>
-                        <p class="text-sm text-gray-500 mt-0.5">
-                            {{ $ticket->assignee->name ?? 'IT Support' }} marked this ticket as resolved. Click <strong>Approve</strong> to confirm so IT can close it.
-                            If it's still not working, leave a comment below instead and IT will reopen it.
-                        </p>
-                    </div>
-                </div>
-                <form method="POST" action="{{ route('tickets.approve', $ticket) }}" class="shrink-0">
-                    @csrf
-                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-white text-sm font-semibold shadow-sm transition hover:opacity-90" style="background-color:#1a6b3c;">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                        Approve
-                    </button>
-                </form>
-            </div>
-        </div>
-    @elseif($ticket->isApproved())
-        <div class="px-5 py-3.5 rounded-xl border border-emerald-100 bg-emerald-50/60 flex items-center gap-2.5">
-            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-            <p class="text-sm text-emerald-800">You approved this resolution on {{ $ticket->approved_at->format('M j, Y g:i A') }}. IT Support will close the ticket shortly.</p>
-        </div>
-    @endif
-@endif
 
 @if($ticket->solution)
     <div class="bg-white shadow-sm rounded-xl border border-green-100 overflow-hidden">

@@ -94,21 +94,7 @@
                             </td>
                             <td class="hidden sm:table-cell px-5 py-4"><x-priority-badge :priority="$ticket->priority" /></td>
                             <td class="px-4 sm:px-5 py-4">
-                                <div class="flex flex-col items-start gap-1">
-                                    <x-status-badge :status="$ticket->status" />
-                                    @if($ticket->status === 'resolved')
-                                        @if($ticket->isApproved())
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">
-                                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                                Approved
-                                            </span>
-                                        @else
-                                            <span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 whitespace-nowrap">
-                                                {{ $ticket->user_id === auth()->id() ? 'Needs your approval' : 'Awaiting approval' }}
-                                            </span>
-                                        @endif
-                                    @endif
-                                </div>
+                                <x-status-badge :status="$ticket->status" />
                             </td>
                             @if($showRequestedBy)
                                 <td class="hidden lg:table-cell px-5 py-4 text-gray-600">
