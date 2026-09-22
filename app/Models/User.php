@@ -13,6 +13,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'first_name',
+        'middle_name',
         'last_name',
         'name',
         'username',
@@ -46,8 +47,10 @@ class User extends Authenticatable
         // use first_name/last_name separately, we keep 'name' in sync
         // automatically whenever either part changes.
         static::saving(function (User $user) {
-            if ($user->isDirty(['first_name', 'last_name']) || blank($user->name)) {
-                $user->name = trim("{$user->first_name} {$user->last_name}");
+            if ($user->isDirty(['first_name', 'middle_name', 'last_name']) || blank($user->name)) {
+                $middle = trim((string) $user->middle_name);
+                $middlePart = $middle !== '' ? mb_substr($middle, 0, 1).'. ' : '';
+                $user->name = trim("{$user->first_name} {$middlePart}{$user->last_name}");
             }
         });
     }

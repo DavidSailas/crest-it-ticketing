@@ -35,7 +35,7 @@
             </div>
 
             <div class="p-6 sm:p-8">
-                @if ($errors->hasAny(['first_name', 'last_name', 'username', 'email', 'password', 'department_id', 'role', 'location']))
+                @if ($errors->hasAny(['first_name', 'middle_name', 'last_name', 'username', 'email', 'password', 'department_id', 'role', 'location']))
                     <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3.5">
                         <p class="text-sm font-semibold text-red-800 mb-1">Please fix the following:</p>
                         <ul class="text-sm text-red-700 list-disc list-inside space-y-0.5">
@@ -51,10 +51,17 @@
 
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Personal Info</p>
-                        <div class="grid sm:grid-cols-2 gap-5">
+                        <div class="grid sm:grid-cols-3 gap-5">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
                                 <input type="text" name="first_name" value="{{ old('first_name', $user->first_name) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                                    Middle Name <span class="text-gray-400 font-normal">(optional)</span>
+                                </label>
+                                <input type="text" name="middle_name" value="{{ old('middle_name', $user->middle_name) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                                @error('middle_name') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>

@@ -64,6 +64,7 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:users,username'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -86,6 +87,7 @@ class UserController extends Controller
         $user = new User();
         $user->forceFill([
             'first_name' => $validated['first_name'],
+            'middle_name' => $validated['middle_name'] ?? null,
             'last_name' => $validated['last_name'],
             'username' => $validated['username'],
             'email' => $validated['email'],
@@ -121,6 +123,7 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:users,username,'.$user->id],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
@@ -142,6 +145,7 @@ class UserController extends Controller
 
         $fill = [
             'first_name' => $validated['first_name'],
+            'middle_name' => $validated['middle_name'] ?? null,
             'last_name' => $validated['last_name'],
             'username' => $validated['username'],
             'email' => $validated['email'],
