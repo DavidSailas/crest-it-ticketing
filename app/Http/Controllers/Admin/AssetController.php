@@ -34,25 +34,50 @@ class AssetController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $users = User::orderBy('name')->get(['id', 'name', 'email']);
         $departments = Department::orderBy('name')->get();
+        // For the "Assign To" picker in each row's edit modal.
+        $users = User::orderBy('name')->get(['id', 'name', 'email']);
 
-        return view('admin.assets.index', compact('assets', 'users', 'departments'));
+        return view('admin.assets.index', compact('assets', 'departments', 'users'));
     }
 
     /**
-     * Assign a new asset to a user. The asset tag (e.g. CFI-CEB-IT-LT-001)
-     * is generated automatically from the company, location, department
-     * code, device type, and the next number in that sequence — it isn't
-     * typed in by hand, so it can't be duplicated or miskeyed.
+     * Full-page "Assign New Asset" form — mirrors Admin > Add User rather
+     * than a modal, so it gets its own URL, works better on mobile, and
+     * doesn't need to carry the whole inventory table's Alpine state.
      */
-    public function store(Request $request, User $user)
+    public function create()
+    {
+        $users = User::orderBy('name')->get(['id', 'name', 'email']);
+        $departments = Department::orderBy('name')->get();
+
+        return view('admin.assets.create', compact('users', 'departments'));
+    }
+
+    /**
+     * Assign a new asset to a user, or leave it unassigned in inventory.
+     * The asset tag (e.g. CFI-CEB-IT-LT-001) is normally generated
+     * automatically from the company, location, department code, device
+     * type, and the next number in that sequence — but the tag number can
+     * also be typed in by hand (e.g. to match an existing physical label,
+     * or to backfill assets logged elsewhere). When typed in, it's checked
+     * against the same company/location/department/type group so it still
+     * can't collide with another asset.
+     *
+     * $user is route-bound when this comes from a specific user's "Assign
+     * Asset" form (admin.users.assets.store); it's null on the standalone
+     * "New Asset" page, which posts an optional user_id in the body so the
+     * asset can be left unassigned.
+     */
+    public function store(Request $request, ?User $user = null)
     {
         $validated = $request->validate([
+            'user_id' => ['nullable', 'exists:users,id'],
             'company' => ['required', 'in:'.implode(',', array_keys(Asset::COMPANIES))],
             'location' => ['required', 'in:'.implode(',', array_keys(Asset::locations()))],
             'department_id' => ['required', 'exists:departments,id'],
             'type' => ['required', 'in:'.implode(',', array_keys(Asset::TYPES))],
+            'sequence' => ['nullable', 'integer', 'min:1', 'max:999'],
             'device_name' => ['required', 'string', 'max:255'],
             'serial_number' => ['nullable', 'string', 'max:255'],
             'assigned_date' => ['nullable', 'date', 'before_or_equal:today'],
@@ -62,8 +87,15 @@ class AssetController extends Controller
             'location.required' => 'Choose a location.',
             'department_id.required' => 'Choose a department.',
             'type.required' => 'Choose a device type.',
+            'sequence.integer' => 'Tag number must be a number.',
+            'sequence.min' => 'Tag number must be at least 1.',
+            'sequence.max' => 'Tag number can\'t exceed 999 (three digits).',
             'assigned_date.before_or_equal' => 'Assigned date can\'t be in the future.',
         ]);
+
+        // Route-bound user (from a user's own page) wins; otherwise fall
+        // back to whatever was picked (or left blank) on the New Asset form.
+        $ownerId = $user?->id ?? $validated['user_id'] ?? null;
 
         $department = Department::findOrFail($validated['department_id']);
 
@@ -71,10 +103,21 @@ class AssetController extends Controller
             return back()->with('error', "\"{$department->name}\" doesn't have an asset code yet. Set one on the Departments page first.")->withInput();
         }
 
-        [$sequence, $tag] = Asset::nextTag($validated['company'], $validated['location'], $department->id, $department->code, $validated['type']);
+        if (filled($validated['sequence'] ?? null)) {
+            // A number was typed in by hand — use it, but make sure it
+            // doesn't collide with another asset in the same group.
+            $sequence = (int) $validated['sequence'];
+            $tag = Asset::formatTag($validated['company'], $validated['location'], $department->code, $validated['type'], $sequence);
+
+            if (Asset::where('asset_tag', $tag)->exists()) {
+                return back()->with('error', "{$tag} is already in use — choose a different number.")->withInput();
+            }
+        } else {
+            [$sequence, $tag] = Asset::nextTag($validated['company'], $validated['location'], $department->id, $department->code, $validated['type']);
+        }
 
         Asset::create([
-            'user_id' => $user->id,
+            'user_id' => $ownerId,
             'department_id' => $department->id,
             'company' => $validated['company'],
             'location' => $validated['location'],
@@ -89,7 +132,12 @@ class AssetController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return back()->with('status', "Asset {$tag} assigned to {$user->name}.");
+        $ownerName = $ownerId ? User::find($ownerId)?->name : null;
+        $status = $ownerName
+            ? "Asset {$tag} assigned to {$ownerName}."
+            : "Asset {$tag} added to inventory as unassigned.";
+
+        return redirect()->route('assets.index')->with('status', $status);
     }
 
     /**
@@ -102,6 +150,7 @@ class AssetController extends Controller
     public function update(Request $request, Asset $asset)
     {
         $validated = $request->validate([
+            'user_id' => ['nullable', 'exists:users,id'],
             'device_name' => ['required', 'string', 'max:255'],
             'serial_number' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'in:'.implode(',', array_keys(Asset::STATUSES))],
@@ -124,6 +173,7 @@ class AssetController extends Controller
         }
 
         $asset->update([
+            'user_id' => $validated['user_id'] ?? null,
             'device_name' => $validated['device_name'],
             'serial_number' => $validated['serial_number'] ?? null,
             'status' => $validated['status'],

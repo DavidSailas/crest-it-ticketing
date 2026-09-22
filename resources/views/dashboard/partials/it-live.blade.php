@@ -166,12 +166,15 @@
                                 <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned to</th>
                                 <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Priority</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
-                                <th class="w-16 px-4 py-3"></th>
+                                <th class="w-32 px-4 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($assignedTickets as $ticket)
-                                @php $mine = $ticket->assigned_to === Auth::id(); @endphp
+                                @php
+                                    $mine = $ticket->assigned_to === Auth::id();
+                                    $assisting = $ticket->isAssistedBy(Auth::user());
+                                @endphp
                                 <tr class="border-b border-gray-100 last:border-b-0 transition {{ $ticket->priority === 'critical' ? 'bg-red-50/40 hover:bg-red-50/70' : 'hover:bg-gray-50/70' }}">
                                     <td class="px-4 py-3.5">
                                         <span class="font-mono text-xs text-gray-400 mr-1">{{ $ticket->ticket_number }}</span>
@@ -181,6 +184,8 @@
                                             <span>{{ $ticket->assignee->name ?? '—' }}</span>
                                             @if($mine)
                                                 <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700">You</span>
+                                            @elseif($assisting)
+                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-purple-100 text-purple-700">Assisting</span>
                                             @endif
                                             <span class="sm:hidden"><x-priority-badge :priority="$ticket->priority" /></span>
                                         </p>
@@ -189,6 +194,8 @@
                                         {{ $ticket->assignee->name ?? '—' }}
                                         @if($mine)
                                             <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700">You</span>
+                                        @elseif($assisting)
+                                            <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-purple-100 text-purple-700">You're assisting</span>
                                         @endif
                                     </td>
                                     <td class="hidden sm:table-cell px-4 py-3.5"><x-priority-badge :priority="$ticket->priority" /></td>
@@ -207,7 +214,23 @@
                                             @endif
                                         </div>
                                     </td>
-                                    <td class="px-4 py-3.5 text-right"><a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a></td>
+                                    <td class="px-4 py-3.5 text-right">
+                                        <div class="flex items-center justify-end gap-3">
+                                            @if(!$mine && $assisting)
+                                                <form method="POST" action="{{ route('tickets.unassist', $ticket) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="text-gray-500 hover:underline font-medium text-xs">Leave</button>
+                                                </form>
+                                            @elseif(!$mine && $ticket->canBeAssistedBy(Auth::user()))
+                                                <form method="POST" action="{{ route('tickets.assist', $ticket) }}">
+                                                    @csrf
+                                                    <button class="text-purple-700 hover:underline font-medium text-xs">Assist</button>
+                                                </form>
+                                            @endif
+                                            <a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a>
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

@@ -85,11 +85,21 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:it_support,admin')->group(function () {
         Route::post('/tickets/{ticket}/accept', [TicketController::class, 'accept'])->name('tickets.accept');
         Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
+        Route::patch('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
+        Route::post('/tickets/{ticket}/assist', [TicketController::class, 'assist'])->name('tickets.assist');
+        Route::delete('/tickets/{ticket}/assist', [TicketController::class, 'unassist'])->name('tickets.unassist');
         Route::get('/tickets/queue/poll', [TicketController::class, 'pollQueue'])->name('tickets.queue.poll');
 
         // Asset inventory — viewable by both roles; IT Support can add new
         // assets here too. Edit/delete stay admin-only below.
         Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
+        Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
+        // Standalone "New Asset" page — owner is optional here (an asset can
+        // sit unassigned in inventory), so user_id travels in the request
+        // body instead of the URL.
+        Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
+        // Kept for the "Assign Asset" form on a specific user's edit page,
+        // where the owner is already known from the URL.
         Route::post('/admin/users/{user}/assets', [AssetController::class, 'store'])->name('admin.users.assets.store');
 
         // Read-only staff directory — IT Support can look someone up
@@ -107,8 +117,6 @@ Route::middleware('auth')->group(function () {
 
     // Admin only
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::patch('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
-
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');

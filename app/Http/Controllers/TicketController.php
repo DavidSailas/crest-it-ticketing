@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Notifications\TicketAcceptedNotification;
 use App\Notifications\TicketApprovedNotification;
 use App\Notifications\TicketAssignedNotification;
+use App\Notifications\TicketAssistJoinedNotification;
 use App\Notifications\TicketStatusUpdatedNotification;
 use Illuminate\Http\Request;
 
@@ -139,7 +140,7 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket)
     {
-        $ticket->load('comments.author', 'creator', 'assignee');
+        $ticket->load('comments.author', 'creator', 'assignee', 'assistants');
 
         $currentUserId = auth()->id();
         TicketRead::markRead($ticket->id, $currentUserId);
@@ -173,15 +174,27 @@ class TicketController extends Controller
     }
 
     /**
-     * Admin-only: assign a ticket directly to a specific IT support agent,
-     * rather than waiting for someone to self-accept it from the queue.
+     * Assign a ticket to a specific IT support agent, rather than waiting
+     * for someone to self-accept it from the queue.
+     *
+     * Admins can route any ticket to anyone. IT Support agents can do this
+     * too, but only to redistribute work that's genuinely theirs to move:
+     * an unclaimed ticket, or one already assigned to them. Handing off a
+     * ticket that belongs to a *different* agent still needs an admin, so
+     * ownership can't be taken from someone without them knowing — see
+     * assist() below for how to help on a teammate's ticket instead.
      */
     public function assign(Request $request, Ticket $ticket)
     {
-        abort_unless($request->user()->isAdmin(), 403);
+        $user = $request->user();
+        abort_unless($user->isItSupport() || $user->isAdmin(), 403);
 
         if ($ticket->isClosed()) {
             return back()->with('error', 'This ticket is closed and can no longer be reassigned.');
+        }
+
+        if (! $user->isAdmin() && $ticket->assigned_to && $ticket->assigned_to !== $user->id) {
+            abort(403, 'Only an admin can reassign a ticket that already belongs to another agent.');
         }
 
         $validated = $request->validate([
@@ -197,6 +210,10 @@ class TicketController extends Controller
             'status' => $ticket->status === 'open' ? 'in_progress' : $ticket->status,
         ]);
 
+        // The new owner doesn't need a separate "assisting" record on top of
+        // actually owning it.
+        $ticket->assistants()->detach($agent->id);
+
         ActivityLog::record(
             'ticket_assigned',
             "Assigned ticket {$ticket->ticket_number} to {$agent->name}",
@@ -205,16 +222,66 @@ class TicketController extends Controller
 
         // Notification delivery (email) can fail independently of the actual
         // assignment — e.g. a mail provider's rate limit — and shouldn't turn
-        // a successful save into a 500 for the admin. Only touching this
-        // admin-assign path, nothing else.
+        // a successful save into a 500 for whoever is reassigning it.
         try {
-            $agent->notify(new TicketAssignedNotification($ticket, $request->user()));
+            $agent->notify(new TicketAssignedNotification($ticket, $user));
             $ticket->creator?->notify(new TicketAcceptedNotification($ticket, $agent));
         } catch (\Throwable $e) {
             report($e);
         }
 
         return back()->with('status', "Assigned to {$agent->name}.");
+    }
+
+    /**
+     * IT Support: join in on a teammate's ticket as a second pair of hands,
+     * without taking over ownership. Meant for exactly the situation where
+     * your own queue is empty but the team's isn't — jump in and help.
+     */
+    public function assist(Request $request, Ticket $ticket)
+    {
+        $user = $request->user();
+        abort_unless($user->isItSupport() || $user->isAdmin(), 403);
+
+        if (! $ticket->canBeAssistedBy($user)) {
+            return back()->with('error', 'This ticket is not available to assist on right now.');
+        }
+
+        $ticket->assistants()->syncWithoutDetaching([$user->id]);
+
+        ActivityLog::record(
+            'ticket_assist_joined',
+            "Started assisting on ticket {$ticket->ticket_number}: {$ticket->title}",
+            ['ticket_id' => $ticket->id]
+        );
+
+        try {
+            $ticket->assignee?->notify(new TicketAssistJoinedNotification($ticket, $user));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('status', "You're now assisting on {$ticket->ticket_number}.");
+    }
+
+    /**
+     * Step back from assisting — doesn't touch ownership, just removes you
+     * from the helper list.
+     */
+    public function unassist(Request $request, Ticket $ticket)
+    {
+        $user = $request->user();
+        abort_unless($user->isItSupport() || $user->isAdmin(), 403);
+
+        $ticket->assistants()->detach($user->id);
+
+        ActivityLog::record(
+            'ticket_assist_left',
+            "Stopped assisting on ticket {$ticket->ticket_number}: {$ticket->title}",
+            ['ticket_id' => $ticket->id]
+        );
+
+        return back()->with('status', 'You stopped assisting on this ticket.');
     }
 
     /**
@@ -234,7 +301,7 @@ class TicketController extends Controller
             403
         );
 
-        $ticket->load(['creator', 'assignee']);
+        $ticket->load(['creator', 'assignee', 'assistants']);
 
         $known = (array) $request->query('h', []);
 
@@ -569,6 +636,7 @@ class TicketController extends Controller
             $user->isAdmin()
                 || $ticket->user_id === $user->id
                 || $ticket->assigned_to === $user->id
+                || $ticket->isAssistedBy($user)
                 || ($user->isItSupport() && $ticket->status === 'open'),
             403
         );

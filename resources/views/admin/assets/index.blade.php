@@ -20,29 +20,41 @@
 
     <div class="py-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
          x-data='{
-            showCreate: false,
             editingId: null,
             viewingId: null,
-            newUserId: "",
-            newUserQuery: "",
-            userDropdownOpen: false,
-            userDirectory: @json($users->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email]), JSON_HEX_APOS),
-            get filteredUsers() {
-                const q = this.newUserQuery.trim().toLowerCase();
+            editUserId: "",
+            editUserQuery: "",
+            editUserDropdownOpen: false,
+            userDirectory: @json($users->map(fn ($u) => ["id" => $u->id, "name" => $u->name, "email" => $u->email]), JSON_HEX_APOS),
+            get selectedEditUser() {
+                return this.userDirectory.find(u => u.id == this.editUserId) || null;
+            },
+            get filteredEditUsers() {
+                const q = this.editUserQuery.trim().toLowerCase();
                 const list = q === ""
                     ? this.userDirectory
                     : this.userDirectory.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
                 return list.slice(0, 30);
             },
-            selectUser(u) {
-                this.newUserId = u.id;
-                this.newUserQuery = `${u.name} \u2014 ${u.email}`;
-                this.userDropdownOpen = false;
+            initials(name) {
+                if (!name) return "?";
+                return name.trim().split(/\s+/).slice(0, 2).map(s => s[0].toUpperCase()).join("");
             },
-            resetUserPicker() {
-                this.newUserId = "";
-                this.newUserQuery = "";
-                this.userDropdownOpen = false;
+            openEdit(id, userId) {
+                this.editingId = id;
+                this.editUserId = userId || "";
+                this.editUserQuery = "";
+                this.editUserDropdownOpen = false;
+            },
+            selectEditUser(u) {
+                this.editUserId = u.id;
+                this.editUserQuery = "";
+                this.editUserDropdownOpen = false;
+            },
+            clearEditUser() {
+                this.editUserId = "";
+                this.editUserQuery = "";
+                this.editUserDropdownOpen = false;
             },
          }'>
 
@@ -56,12 +68,12 @@
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <p class="text-sm text-gray-500">{{ $assets->total() }} asset{{ $assets->total() === 1 ? '' : 's' }} found</p>
             @if($canAddAsset)
-                <button @click="showCreate = true; resetUserPicker()"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold shadow-sm transition"
-                        style="background-color:#1a6b3c;" onmouseover="this.style.backgroundColor='#145530'" onmouseout="this.style.backgroundColor='#1a6b3c'">
+                <a href="{{ route('assets.create') }}"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold shadow-sm transition"
+                   style="background-color:#1a6b3c;" onmouseover="this.style.backgroundColor='#145530'" onmouseout="this.style.backgroundColor='#1a6b3c'">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     New Asset
-                </button>
+                </a>
             @endif
         </div>
 
@@ -153,7 +165,7 @@
                                 @if($isAdmin)
                                     <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap align-top">
                                         <button @click="viewingId = {{ $asset->id }}" class="text-gray-500 hover:underline font-medium text-xs mr-3">View</button>
-                                        <button @click="editingId = {{ $asset->id }}" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</button>
+                                        <button @click="openEdit({{ $asset->id }}, '{{ $asset->user_id }}')" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</button>
                                         <form method="POST" action="{{ route('admin.assets.destroy', $asset) }}" class="inline"
                                               onsubmit="return confirm('Remove asset {{ $asset->asset_tag }}? This can\'t be undone.');">
                                             @csrf
@@ -250,6 +262,57 @@
                                                 <form method="POST" action="{{ route('admin.assets.update', $asset) }}" class="space-y-4">
                                                     @csrf
                                                     @method('PUT')
+                                                    <input type="hidden" name="user_id" :value="editUserId">
+
+                                                    <div class="relative" @click.outside="editUserDropdownOpen = false">
+                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To <span class="font-normal text-gray-400">(optional)</span></label>
+
+                                                        {{-- Selected owner: a proper card, not text crammed into an input --}}
+                                                        <div x-show="editUserId && selectedEditUser" x-cloak
+                                                             class="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50/60 px-3 py-2">
+                                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                                <span class="flex items-center justify-center w-8 h-8 rounded-full bg-green-700 text-white text-[11px] font-semibold shrink-0"
+                                                                      x-text="initials(selectedEditUser?.name)"></span>
+                                                                <div class="min-w-0">
+                                                                    <p class="text-sm font-medium text-gray-800 truncate" x-text="selectedEditUser?.name"></p>
+                                                                    <p class="text-xs text-gray-500 truncate" x-text="selectedEditUser?.email"></p>
+                                                                </div>
+                                                            </div>
+                                                            <button type="button" @click="clearEditUser()" class="text-xs font-medium text-green-700 hover:underline shrink-0">Change</button>
+                                                        </div>
+
+                                                        {{-- Search / pick state --}}
+                                                        <div x-show="!editUserId" x-cloak>
+                                                            <input type="text"
+                                                                   x-model="editUserQuery"
+                                                                   @focus="editUserDropdownOpen = true"
+                                                                   @input="editUserDropdownOpen = true"
+                                                                   placeholder="Search by name or email, or leave blank..."
+                                                                   autocomplete="off"
+                                                                   class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
+
+                                                            <div x-show="editUserDropdownOpen" x-cloak
+                                                                 class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                                                <button type="button" @click="clearEditUser(); editUserDropdownOpen = false"
+                                                                        class="w-full text-left px-3.5 py-2 hover:bg-green-50 transition border-b border-gray-100">
+                                                                    <p class="text-sm font-medium text-gray-600">Unassigned</p>
+                                                                    <p class="text-xs text-gray-400">No owner — asset stays in inventory</p>
+                                                                </button>
+                                                                <template x-for="u in filteredEditUsers" :key="u.id">
+                                                                    <button type="button" @click="selectEditUser(u)"
+                                                                            class="w-full flex items-center gap-2.5 text-left px-3.5 py-2 hover:bg-green-50 transition border-b border-gray-50 last:border-0">
+                                                                        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-500 text-[10px] font-semibold shrink-0"
+                                                                              x-text="initials(u.name)"></span>
+                                                                        <div class="min-w-0">
+                                                                            <p class="text-sm font-medium text-gray-800 truncate" x-text="u.name"></p>
+                                                                            <p class="text-xs text-gray-400 truncate" x-text="u.email"></p>
+                                                                        </div>
+                                                                    </button>
+                                                                </template>
+                                                                <div x-show="filteredEditUsers.length === 0" class="px-3.5 py-2.5 text-sm text-gray-400">No matching users</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
                                                     <div>
                                                         <label class="block text-sm font-medium text-gray-700 mb-1">Device Name</label>
@@ -308,124 +371,5 @@
         </div>
 
         <div class="bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $assets->links() }}</div>
-
-        {{-- Create modal --}}
-        @if($canAddAsset)
-            <div x-show="showCreate" x-cloak class="fixed inset-0 bg-black/30 z-40 flex items-center justify-center p-4" @click.self="showCreate = false">
-                <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-base font-semibold text-gray-800">Assign New Asset</h3>
-                        <button @click="showCreate = false" class="text-gray-400 hover:text-gray-600">&times;</button>
-                    </div>
-
-                    <form method="POST" :action="newUserId ? `{{ url('/admin/users') }}/${newUserId}/assets` : '#'" class="space-y-4"
-                          @submit="if (!newUserId) { $event.preventDefault(); alert('Please choose a user.'); }">
-                        @csrf
-
-                        <div class="relative" @click.outside="userDropdownOpen = false">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
-                            <div class="relative">
-                                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
-                                <input type="text"
-                                       x-model="newUserQuery"
-                                       @focus="userDropdownOpen = true"
-                                       @input="newUserId = ''; userDropdownOpen = true"
-                                       placeholder="Search by name or email..."
-                                       autocomplete="off"
-                                       class="block w-full pl-9 pr-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700"
-                                       required>
-                                <button type="button" x-show="newUserQuery" @click="resetUserPicker()" x-cloak
-                                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                            </div>
-
-                            <div x-show="userDropdownOpen" x-cloak
-                                 class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
-                                <template x-for="u in filteredUsers" :key="u.id">
-                                    <button type="button" @click="selectUser(u)"
-                                            class="w-full text-left px-3.5 py-2.5 hover:bg-green-50 transition border-b border-gray-50 last:border-0">
-                                        <p class="text-sm font-medium text-gray-800" x-text="u.name"></p>
-                                        <p class="text-xs text-gray-400" x-text="u.email"></p>
-                                    </button>
-                                </template>
-                                <div x-show="filteredUsers.length === 0" class="px-3.5 py-3 text-sm text-gray-400">No matching users</div>
-                            </div>
-
-                            <p class="text-xs text-gray-400 mt-1">Matched by name or email — pick the exact person if names repeat.</p>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                                <select name="company" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
-                                    <option value="">Select company</option>
-                                    @foreach(\App\Models\Asset::COMPANIES as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                <select name="location" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
-                                    <option value="">Select location</option>
-                                    @foreach(\App\Models\Asset::locations() as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                                <select name="department_id" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
-                                    <option value="">Select department</option>
-                                    @foreach($departments as $department)
-                                        <option value="{{ $department->id }}">{{ $department->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Device Type</label>
-                                <select name="type" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
-                                    <option value="">Select type</option>
-                                    @foreach(\App\Models\Asset::TYPES as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Device Name</label>
-                            <input type="text" name="device_name" placeholder="e.g. Dell Latitude 5420" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
-                            <input type="text" name="serial_number" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Assigned Date</label>
-                            <input type="date" name="assigned_date" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}"
-                                   class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
-                            <p class="text-xs text-gray-400 mt-1">Defaults to today — change it if the device was actually handed over earlier.</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                            <textarea name="notes" rows="2" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700"></textarea>
-                        </div>
-
-                        <div class="flex justify-end gap-3 pt-2">
-                            <button type="button" @click="showCreate = false" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</button>
-                            <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background-color:#1a6b3c;">Assign Asset</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        @endif
     </div>
 </x-app-layout>

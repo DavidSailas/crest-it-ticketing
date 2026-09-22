@@ -8,8 +8,9 @@
                     'mt-1 inline-flex w-2 h-2 rounded-full shrink-0',
                     'bg-green-500' => in_array($log->action, ['login', 'ticket_created', 'ticket_accepted', 'ticket_approved']),
                     'bg-gray-400' => $log->action === 'logout',
-                    'bg-blue-500' => $log->action === 'ticket_status_updated',
+                    'bg-blue-500' => in_array($log->action, ['ticket_status_updated', 'ticket_assigned']),
                     'bg-amber-500' => $log->action === 'ticket_comment_added',
+                    'bg-purple-500' => in_array($log->action, ['ticket_assist_joined', 'ticket_assist_left']),
                     'bg-red-500' => $log->action === 'login_failed',
                 ])></span>
                 <div class="min-w-0">
