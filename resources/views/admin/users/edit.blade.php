@@ -224,17 +224,47 @@
                                         <td class="px-3 sm:px-4 py-2.5 text-right whitespace-nowrap align-top">
                                             <form id="asset-form-{{ $asset->id }}" method="POST" action="{{ route('admin.assets.update', $asset) }}" class="hidden">
                                                 @csrf @method('PUT')
+                                                {{-- Keep the current owner as-is on a normal Save — only the
+                                                     dedicated Unassign action (below) should clear it. --}}
+                                                <input type="hidden" name="user_id" value="{{ $asset->user_id }}">
                                                 <input type="hidden" name="notes" value="{{ $asset->notes }}">
                                             </form>
                                             <button type="button" @click="editing = !editing" class="text-xs text-gray-500 hover:text-gray-700 mr-2">
                                                 <span x-text="editing ? 'Cancel' : 'Edit'"></span>
                                             </button>
                                             <button x-show="editing" x-cloak type="submit" form="asset-form-{{ $asset->id }}" class="text-xs text-green-700 font-medium mr-2">Save</button>
-                                            <form method="POST" action="{{ route('admin.assets.destroy', $asset) }}" class="inline"
-                                                  onsubmit="return confirm('Remove asset {{ $asset->asset_tag }}?')">
-                                                @csrf @method('DELETE')
-                                                <button class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                                            {{-- "Remove" here only unassigns the asset from this user — it stays in
+                                                 inventory. Deleting an asset outright is only available from the
+                                                 main Assets page. --}}
+                                            <form id="unassign-form-{{ $asset->id }}" method="POST" action="{{ route('admin.assets.update', $asset) }}" class="hidden">
+                                                @csrf @method('PUT')
+                                                <input type="hidden" name="user_id" value="">
+                                                <input type="hidden" name="device_name" value="{{ $asset->device_name }}">
+                                                <input type="hidden" name="serial_number" value="{{ $asset->serial_number }}">
+                                                <input type="hidden" name="status" value="{{ $asset->status }}">
+                                                <input type="hidden" name="sequence" value="{{ $asset->sequence }}">
+                                                <input type="hidden" name="assigned_date" value="{{ $asset->assigned_date?->toDateString() }}">
+                                                <input type="hidden" name="notes" value="{{ $asset->notes }}">
                                             </form>
+                                            <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'unassign-asset-{{ $asset->id }}')" class="text-xs text-amber-600 hover:text-amber-700">Unassign</button>
+
+                                            <x-modal name="unassign-asset-{{ $asset->id }}" maxWidth="sm" focusable>
+                                                <div class="p-6">
+                                                    <div class="flex items-start gap-4">
+                                                        <span class="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-amber-50 text-amber-600">
+                                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                                        </span>
+                                                        <div class="flex-1 min-w-0 pt-0.5">
+                                                            <h2 class="text-base font-semibold text-gray-800">Unassign this asset?</h2>
+                                                            <p class="mt-1.5 text-sm text-gray-500">{{ $asset->asset_tag }} will be removed from {{ $user->name }} and stay in inventory as unassigned.</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-6 flex justify-end gap-3">
+                                                        <button type="button" x-on:click="$dispatch('close')" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</button>
+                                                        <button type="submit" form="unassign-form-{{ $asset->id }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition">Unassign</button>
+                                                    </div>
+                                                </div>
+                                            </x-modal>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -268,6 +298,7 @@
                             location: '{{ old('location', array_key_first(\App\Models\Asset::locations())) }}',
                             department: '{{ old('department_id', $assetDepartments->first()->id) }}',
                             type: '{{ old('type', array_key_first(\App\Models\Asset::TYPES)) }}',
+                            sequence: '{{ old('sequence', '') }}',
                             deptCodes: {{ $assetDepartments->pluck('code', 'id')->toJson() }}
                          }">
                         <div class="flex items-center gap-2 mb-4">
@@ -313,7 +344,7 @@
                                 </div>
                             </div>
 
-                            <div class="grid sm:grid-cols-2 gap-3">
+                            <div class="grid sm:grid-cols-3 gap-3">
                                 <div>
                                     <label class="block text-xs font-medium text-gray-500 mb-1">Device</label>
                                     <input type="text" name="device_name" value="{{ old('device_name') }}" placeholder="e.g. Dell Latitude 5420"
@@ -325,13 +356,20 @@
                                     <input type="text" name="serial_number" value="{{ old('serial_number') }}"
                                         class="block w-full rounded-lg border-gray-300 text-sm bg-white focus:border-green-700 focus:ring-green-700">
                                 </div>
+
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 mb-1">Tag Number <span class="text-gray-400 font-normal">(optional)</span></label>
+                                    <input type="number" name="sequence" x-model="sequence" min="1" max="999" placeholder="Auto"
+                                        class="block w-full rounded-lg border-gray-300 text-sm bg-white focus:border-green-700 focus:ring-green-700">
+                                </div>
                             </div>
+                            <p class="text-xs text-gray-400 -mt-2">Leave Tag Number blank to use the next available number, or type one to match an existing physical label.</p>
 
                             <div class="flex items-center justify-between pt-1">
                                 <p class="text-xs text-gray-400">
                                     Tag preview:
                                     <span class="font-mono font-semibold text-gray-600 bg-white border border-gray-200 rounded px-1.5 py-0.5"
-                                          x-text="company + '-' + location + '-' + (deptCodes[department] ?? '???') + '-' + type + '-XXX'"></span>
+                                          x-text="company + '-' + location + '-' + (deptCodes[department] ?? '???') + '-' + type + '-' + (sequence ? String(sequence).padStart(3, '0') : 'XXX')"></span>
                                 </p>
                                 <button type="submit" class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm hover:opacity-90 transition" style="background-color:#1a6b3c;">Assign Asset</button>
                             </div>

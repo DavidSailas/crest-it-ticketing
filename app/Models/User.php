@@ -34,6 +34,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'suspended_at' => 'datetime',
         ];
     }
 
@@ -89,6 +90,16 @@ class User extends Authenticatable
     public function isStaff(): bool
     {
         return $this->role === 'staff';
+    }
+
+    /**
+     * Suspended accounts are blocked from logging in and are signed out
+     * immediately if already logged in (see EnsureAccountIsActive). Only an
+     * admin can suspend/reactivate an account — see Admin\UserController.
+     */
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
     }
 
     /**

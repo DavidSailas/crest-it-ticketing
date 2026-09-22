@@ -35,10 +35,8 @@ class AssetController extends Controller
             ->withQueryString();
 
         $departments = Department::orderBy('name')->get();
-        // For the "Assign To" picker in each row's edit modal.
-        $users = User::orderBy('name')->get(['id', 'name', 'email']);
 
-        return view('admin.assets.index', compact('assets', 'departments', 'users'));
+        return view('admin.assets.index', compact('assets', 'departments'));
     }
 
     /**
@@ -141,6 +139,19 @@ class AssetController extends Controller
     }
 
     /**
+     * Full-page "Edit Asset" form — mirrors the "New Asset" page rather
+     * than a modal, so it gets its own URL, works better on mobile, and
+     * doesn't need to carry the whole inventory table's Alpine state.
+     */
+    public function edit(Asset $asset)
+    {
+        $users = User::orderBy('name')->get(['id', 'name', 'email']);
+        $departments = Department::orderBy('name')->get();
+
+        return view('admin.assets.edit', compact('asset', 'users', 'departments'));
+    }
+
+    /**
      * Edit an asset's details. The sequence number (the 001/002 at the end
      * of the tag) can be corrected here too — useful if two assets were
      * numbered out of order, or a mistake needs fixing. Changing it
@@ -183,7 +194,7 @@ class AssetController extends Controller
             'asset_tag' => $newTag,
         ]);
 
-        return back()->with('status', "Updated asset {$newTag}.");
+        return redirect()->route('assets.index')->with('status', "Updated asset {$newTag}.");
     }
 
     public function destroy(Asset $asset)

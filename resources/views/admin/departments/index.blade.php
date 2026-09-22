@@ -62,11 +62,15 @@
                                 <button type="button" @click="editing = !editing" class="text-xs text-gray-500 hover:text-gray-700 mr-3">
                                     <span x-text="editing ? 'Cancel' : 'Edit'"></span>
                                 </button>
-                                <form method="POST" action="{{ route('admin.departments.destroy', $dept) }}" class="inline"
-                                      onsubmit="return confirm('Delete {{ $dept->name }}?')">
-                                    @csrf @method('DELETE')
-                                    <button class="text-xs text-red-500 hover:text-red-700">Delete</button>
-                                </form>
+                                <x-confirm-action-modal
+                                    id="delete-department-{{ $dept->id }}"
+                                    action="{{ route('admin.departments.destroy', $dept) }}"
+                                    title="Delete this department?"
+                                    message="Delete {{ $dept->name }}? Any linked tickets and users will keep their history, but this department can no longer be assigned. This can't be undone."
+                                    confirm-label="Delete Department"
+                                    trigger-label="Delete"
+                                    trigger-class="text-xs text-red-500 hover:text-red-700"
+                                />
                             </td>
                         </tr>
                     @endforeach

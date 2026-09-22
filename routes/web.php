@@ -40,7 +40,7 @@ Event::listen(function (Failed $event) {
     }
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'account.active'])->group(function () {
     // Dashboard — different view per role, resolved inside the controller
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/live', [DashboardController::class, 'live'])->name('dashboard.live');
@@ -129,7 +129,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::patch('/users/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
         Route::patch('/users/{user}/vip', [UserController::class, 'updateVip'])->name('users.vip');
+        Route::patch('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
+        Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
 
+        Route::get('/assets/{asset}/edit', [AssetController::class, 'edit'])->name('assets.edit');
         Route::put('/assets/{asset}', [AssetController::class, 'update'])->name('assets.update');
         Route::delete('/assets/{asset}', [AssetController::class, 'destroy'])->name('assets.destroy');
 

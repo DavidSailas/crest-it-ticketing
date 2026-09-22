@@ -54,12 +54,15 @@
                                 <td class="px-5 py-3.5 text-gray-500 border-r border-gray-100">{{ $position->users_count }}</td>
                                 <td class="px-5 py-3.5 text-right whitespace-nowrap">
                                     <button @click="editingId = {{ $position->id }}" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</button>
-                                    <form method="POST" action="{{ route('admin.positions.destroy', $position) }}" class="inline"
-                                          onsubmit="return confirm('Remove position \'{{ $position->name }}\'?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:underline font-medium text-xs">Delete</button>
-                                    </form>
+                                    <x-confirm-action-modal
+                                        id="delete-position-{{ $position->id }}"
+                                        action="{{ route('admin.positions.destroy', $position) }}"
+                                        title="Remove this position?"
+                                        message="Remove '{{ $position->name }}'? Users currently in this position will keep their history, but it can no longer be assigned. This can't be undone."
+                                        confirm-label="Remove Position"
+                                        trigger-label="Delete"
+                                        trigger-class="text-red-600 hover:underline font-medium text-xs"
+                                    />
                                 </td>
                             </tr>
 

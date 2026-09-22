@@ -81,7 +81,8 @@
                         <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Role</th>
                         <th class="hidden xl:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Branch</th>
                         <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">VIP</th>
-                        <th class="w-20 sm:w-28 px-3 sm:px-5 py-3"></th>
+                        <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                        <th class="w-20 sm:w-40 px-3 sm:px-5 py-3"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -116,17 +117,49 @@
                                     </button>
                                 </form>
                             </td>
+                            <td class="hidden sm:table-cell px-5 py-3.5">
+                                @if($user->isSuspended())
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 ring-1 ring-inset ring-gray-200">Suspended</span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 ring-1 ring-inset ring-green-200">Active</span>
+                                @endif
+                            </td>
                             <td class="px-3 sm:px-5 py-3.5 text-right whitespace-nowrap">
                                 <a href="{{ route('admin.users.edit', $user) }}" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</a>
-                                <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="inline"
-                                      onsubmit="return confirm('Delete {{ $user->name }}? This cannot be undone.')">
-                                    @csrf @method('DELETE')
-                                    <button class="text-red-500 hover:underline font-medium text-xs">Delete</button>
-                                </form>
+                                @if($user->id !== auth()->id())
+                                    @if($user->isSuspended())
+                                        <form method="POST" action="{{ route('admin.users.activate', $user) }}" class="inline mr-3">
+                                            @csrf @method('PATCH')
+                                            <button class="text-green-700 hover:underline font-medium text-xs">Activate</button>
+                                        </form>
+                                    @else
+                                        <x-confirm-action-modal
+                                            id="suspend-user-{{ $user->id }}"
+                                            action="{{ route('admin.users.suspend', $user) }}"
+                                            method="PATCH"
+                                            tone="warning"
+                                            title="Suspend this account?"
+                                            message="{{ $user->name }} won't be able to sign in until an admin reactivates the account. Nothing is deleted, and this can be reversed at any time."
+                                            confirm-label="Suspend"
+                                            confirm-class="bg-amber-500 hover:bg-amber-600"
+                                            trigger-label="Suspend"
+                                            trigger-class="text-amber-600 hover:underline font-medium text-xs mr-3"
+                                        />
+                                    @endif
+                                @endif
+                                <x-confirm-action-modal
+                                    id="delete-user-{{ $user->id }}"
+                                    action="{{ route('admin.users.destroy', $user) }}"
+                                    title="Delete this account?"
+                                    message="Delete {{ $user->name }}? This permanently removes the account and cannot be undone."
+                                    confirm-label="Delete Account"
+                                    trigger-label="Delete"
+                                    trigger-class="text-red-500 hover:underline font-medium text-xs"
+                                />
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-5 py-14 text-center text-gray-400">No users in this group yet.</td></tr>
+                        <tr><td colspan="7" class="px-5 py-14 text-center text-gray-400">No users in this group yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -168,10 +168,44 @@ class UserController extends Controller
             return back()->with('error', "You can't delete your own account while logged in.");
         }
 
+        if ($user->isAdmin() && User::where('role', 'admin')->count() <= 1) {
+            return back()->with('error', "{$user->name} is the only remaining admin — add another admin before deleting this account.");
+        }
+
         $name = $user->name;
         $user->delete();
 
         return back()->with('status', "Deleted {$name}.");
+    }
+
+    /**
+     * Suspend an account — blocks future logins and immediately signs the
+     * user out if they're already logged in (see EnsureAccountIsActive).
+     * Nothing is deleted, so it's reversible from here at any time.
+     */
+    public function suspend(Request $request, User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', "You can't suspend your own account while logged in.");
+        }
+
+        if ($user->isAdmin() && User::where('role', 'admin')->whereNull('suspended_at')->count() <= 1) {
+            return back()->with('error', "{$user->name} is the only active admin — add another admin before suspending this account.");
+        }
+
+        $user->forceFill(['suspended_at' => now()])->save();
+
+        return back()->with('status', "Suspended {$user->name}. They can no longer sign in.");
+    }
+
+    /**
+     * Reactivate a previously suspended account.
+     */
+    public function activate(Request $request, User $user)
+    {
+        $user->forceFill(['suspended_at' => null])->save();
+
+        return back()->with('status', "Reactivated {$user->name}. They can sign in again.");
     }
 
     public function updateRole(Request $request, User $user)

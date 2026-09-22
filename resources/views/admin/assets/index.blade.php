@@ -20,42 +20,7 @@
 
     <div class="py-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
          x-data='{
-            editingId: null,
             viewingId: null,
-            editUserId: "",
-            editUserQuery: "",
-            editUserDropdownOpen: false,
-            userDirectory: @json($users->map(fn ($u) => ["id" => $u->id, "name" => $u->name, "email" => $u->email]), JSON_HEX_APOS),
-            get selectedEditUser() {
-                return this.userDirectory.find(u => u.id == this.editUserId) || null;
-            },
-            get filteredEditUsers() {
-                const q = this.editUserQuery.trim().toLowerCase();
-                const list = q === ""
-                    ? this.userDirectory
-                    : this.userDirectory.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-                return list.slice(0, 30);
-            },
-            initials(name) {
-                if (!name) return "?";
-                return name.trim().split(/\s+/).slice(0, 2).map(s => s[0].toUpperCase()).join("");
-            },
-            openEdit(id, userId) {
-                this.editingId = id;
-                this.editUserId = userId || "";
-                this.editUserQuery = "";
-                this.editUserDropdownOpen = false;
-            },
-            selectEditUser(u) {
-                this.editUserId = u.id;
-                this.editUserQuery = "";
-                this.editUserDropdownOpen = false;
-            },
-            clearEditUser() {
-                this.editUserId = "";
-                this.editUserQuery = "";
-                this.editUserDropdownOpen = false;
-            },
          }'>
 
         @if(session('status'))
@@ -165,13 +130,16 @@
                                 @if($isAdmin)
                                     <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap align-top">
                                         <button @click="viewingId = {{ $asset->id }}" class="text-gray-500 hover:underline font-medium text-xs mr-3">View</button>
-                                        <button @click="openEdit({{ $asset->id }}, '{{ $asset->user_id }}')" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</button>
-                                        <form method="POST" action="{{ route('admin.assets.destroy', $asset) }}" class="inline"
-                                              onsubmit="return confirm('Remove asset {{ $asset->asset_tag }}? This can\'t be undone.');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:underline font-medium text-xs">Delete</button>
-                                        </form>
+                                        <a href="{{ route('admin.assets.edit', $asset) }}" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</a>
+                                        <x-confirm-action-modal
+                                            id="delete-asset-{{ $asset->id }}"
+                                            action="{{ route('admin.assets.destroy', $asset) }}"
+                                            title="Delete this asset?"
+                                            message="Remove {{ $asset->asset_tag }} ({{ $asset->device_name }}) from inventory? This can't be undone."
+                                            confirm-label="Delete Asset"
+                                            trigger-label="Delete"
+                                            trigger-class="text-red-600 hover:underline font-medium text-xs"
+                                        />
                                     </td>
                                 @else
                                     <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap align-top">
@@ -249,121 +217,6 @@
                                 </td>
                             </tr>
 
-                            @if($isAdmin)
-                                {{-- Edit modal for this row --}}
-                                <tr x-show="editingId === {{ $asset->id }}" x-cloak>
-                                    <td colspan="7" class="px-0 py-0">
-                                        <div class="fixed inset-0 bg-black/30 z-40 flex items-center justify-center p-4" @click.self="editingId = null">
-                                            <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-                                                <div class="flex justify-between items-center mb-4">
-                                                    <h3 class="text-base font-semibold text-gray-800">Edit {{ $asset->asset_tag }}</h3>
-                                                    <button @click="editingId = null" class="text-gray-400 hover:text-gray-600">&times;</button>
-                                                </div>
-                                                <form method="POST" action="{{ route('admin.assets.update', $asset) }}" class="space-y-4">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    <input type="hidden" name="user_id" :value="editUserId">
-
-                                                    <div class="relative" @click.outside="editUserDropdownOpen = false">
-                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Assigned To <span class="font-normal text-gray-400">(optional)</span></label>
-
-                                                        {{-- Selected owner: a proper card, not text crammed into an input --}}
-                                                        <div x-show="editUserId && selectedEditUser" x-cloak
-                                                             class="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50/60 px-3 py-2">
-                                                            <div class="flex items-center gap-2.5 min-w-0">
-                                                                <span class="flex items-center justify-center w-8 h-8 rounded-full bg-green-700 text-white text-[11px] font-semibold shrink-0"
-                                                                      x-text="initials(selectedEditUser?.name)"></span>
-                                                                <div class="min-w-0">
-                                                                    <p class="text-sm font-medium text-gray-800 truncate" x-text="selectedEditUser?.name"></p>
-                                                                    <p class="text-xs text-gray-500 truncate" x-text="selectedEditUser?.email"></p>
-                                                                </div>
-                                                            </div>
-                                                            <button type="button" @click="clearEditUser()" class="text-xs font-medium text-green-700 hover:underline shrink-0">Change</button>
-                                                        </div>
-
-                                                        {{-- Search / pick state --}}
-                                                        <div x-show="!editUserId" x-cloak>
-                                                            <input type="text"
-                                                                   x-model="editUserQuery"
-                                                                   @focus="editUserDropdownOpen = true"
-                                                                   @input="editUserDropdownOpen = true"
-                                                                   placeholder="Search by name or email, or leave blank..."
-                                                                   autocomplete="off"
-                                                                   class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
-
-                                                            <div x-show="editUserDropdownOpen" x-cloak
-                                                                 class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                                                <button type="button" @click="clearEditUser(); editUserDropdownOpen = false"
-                                                                        class="w-full text-left px-3.5 py-2 hover:bg-green-50 transition border-b border-gray-100">
-                                                                    <p class="text-sm font-medium text-gray-600">Unassigned</p>
-                                                                    <p class="text-xs text-gray-400">No owner — asset stays in inventory</p>
-                                                                </button>
-                                                                <template x-for="u in filteredEditUsers" :key="u.id">
-                                                                    <button type="button" @click="selectEditUser(u)"
-                                                                            class="w-full flex items-center gap-2.5 text-left px-3.5 py-2 hover:bg-green-50 transition border-b border-gray-50 last:border-0">
-                                                                        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-500 text-[10px] font-semibold shrink-0"
-                                                                              x-text="initials(u.name)"></span>
-                                                                        <div class="min-w-0">
-                                                                            <p class="text-sm font-medium text-gray-800 truncate" x-text="u.name"></p>
-                                                                            <p class="text-xs text-gray-400 truncate" x-text="u.email"></p>
-                                                                        </div>
-                                                                    </button>
-                                                                </template>
-                                                                <div x-show="filteredEditUsers.length === 0" class="px-3.5 py-2.5 text-sm text-gray-400">No matching users</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div>
-                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Device Name</label>
-                                                        <input type="text" name="device_name" value="{{ old('device_name', $asset->device_name) }}"
-                                                               class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
-                                                    </div>
-
-                                                    <div>
-                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
-                                                        <input type="text" name="serial_number" value="{{ old('serial_number', $asset->serial_number) }}"
-                                                               class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
-                                                    </div>
-
-                                                    <div>
-                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Assigned Date</label>
-                                                        <input type="date" name="assigned_date" value="{{ old('assigned_date', $asset->assigned_date?->toDateString()) }}" max="{{ now()->toDateString() }}"
-                                                               class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">
-                                                    </div>
-
-                                                    <div class="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                                                            <select name="status" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
-                                                                @foreach(\App\Models\Asset::STATUSES as $value => $label)
-                                                                    <option value="{{ $value }}" @selected(old('status', $asset->status) === $value)>{{ $label }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div>
-                                                            <label class="block text-sm font-medium text-gray-700 mb-1">Sequence #</label>
-                                                            <input type="number" name="sequence" min="1" max="999" value="{{ old('sequence', $asset->sequence) }}"
-                                                                   class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700" required>
-                                                            <p class="text-xs text-gray-400 mt-1">Changing this regenerates the tag.</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div>
-                                                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                                                        <textarea name="notes" rows="2" class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700">{{ old('notes', $asset->notes) }}</textarea>
-                                                    </div>
-
-                                                    <div class="flex justify-end gap-3 pt-2">
-                                                        <button type="button" @click="editingId = null" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</button>
-                                                        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background-color:#1a6b3c;">Save changes</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endif
                         @endforeach
                     </tbody>
                 </table>

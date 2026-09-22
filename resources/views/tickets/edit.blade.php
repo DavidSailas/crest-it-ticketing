@@ -131,12 +131,16 @@
                 <p class="text-sm font-semibold text-gray-800">Cancel this ticket</p>
                 <p class="text-xs text-gray-500 mt-0.5">This withdraws your request. You can't undo this — submit a new ticket if you need help again.</p>
             </div>
-            <form method="POST" action="{{ route('tickets.cancel', $ticket) }}" onsubmit="return confirm('Cancel this ticket? This can\'t be undone.');">
-                @csrf
-                <button type="submit" class="shrink-0 px-4 py-2 rounded-lg text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition">
-                    Cancel ticket
-                </button>
-            </form>
+            <x-confirm-action-modal
+                id="cancel-ticket-{{ $ticket->id }}"
+                action="{{ route('tickets.cancel', $ticket) }}"
+                method="POST"
+                title="Cancel this ticket?"
+                message="This withdraws your request. You can't undo this — submit a new ticket if you need help again."
+                confirm-label="Cancel Ticket"
+                trigger-label="Cancel ticket"
+                trigger-class="shrink-0 px-4 py-2 rounded-lg text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition"
+            />
         </div>
     </div>
 </x-app-layout>
