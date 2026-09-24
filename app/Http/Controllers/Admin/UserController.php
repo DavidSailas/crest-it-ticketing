@@ -29,6 +29,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $tab = $request->query('tab', 'staff');
+        $search = trim((string) $request->query('q', ''));
 
         $query = User::query();
 
@@ -41,6 +42,14 @@ class UserController extends Controller
             $query->where('role', 'staff');
         }
 
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%");
+            });
+        }
+
         $users = $query->with(['department', 'position'])->latest()->paginate(10)->withQueryString();
 
         $counts = [
@@ -49,7 +58,7 @@ class UserController extends Controller
             'vip' => User::where('is_vip', true)->count(),
         ];
 
-        return view('admin.users.index', compact('users', 'tab', 'counts'));
+        return view('admin.users.index', compact('users', 'tab', 'counts', 'search'));
     }
 
     public function create()
