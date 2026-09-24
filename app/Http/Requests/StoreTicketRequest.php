@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\User;
 
 class StoreTicketRequest extends FormRequest
 {
@@ -36,18 +37,34 @@ class StoreTicketRequest extends FormRequest
 
     /**
      * Department and branch are no longer picked on the form — they're
-     * pulled straight from the submitter's own profile (set by an admin)
-     * so the request is always tied to their real department/office and
-     * can't be misreported or tampered with client-side.
+     * pulled straight from a profile (set by an admin) so the request is
+     * always tied to a real department/office and can't be misreported or
+     * tampered with client-side.
+     *
+     * When this ticket is raised on behalf of a colleague picked from the
+     * directory, we route using THEIR department/office (that's whose desk
+     * IT actually needs to go to) instead of the submitter's own — so a
+     * staff member or IT Support agent can raise it even if their own
+     * profile happens to be incomplete. If no colleague was selected (self,
+     * or a free-typed name), we fall back to the submitter's own profile.
      */
     protected function prepareForValidation(): void
     {
-        $user = $this->user();
+        $submitter = $this->user();
+
+        $target = $submitter;
+
+        if (filled($this->input('on_behalf_of_user_id'))) {
+            $colleague = User::find($this->input('on_behalf_of_user_id'));
+            if ($colleague) {
+                $target = $colleague;
+            }
+        }
 
         $this->merge([
-            'department' => $user?->department?->name,
-            'location' => $user?->location
-                ? trim($user->branch_name.' Office')
+            'department' => $target?->department?->name,
+            'location' => $target?->location
+                ? trim($target->branch_name.' Office')
                 : null,
         ]);
     }
@@ -82,10 +99,18 @@ class StoreTicketRequest extends FormRequest
 
     public function messages(): array
     {
+        $forColleague = filled($this->input('on_behalf_of_user_id'));
+
         return [
-            'department.required' => "Your account doesn't have a department set yet. Please ask an administrator to update your profile before submitting a ticket.",
-            'department.exists' => "Your profile's department could not be matched — please ask an administrator to check it.",
-            'location.required' => "Your account doesn't have a branch/office set yet. Please ask an administrator to update your profile before submitting a ticket.",
+            'department.required' => $forColleague
+                ? "That colleague's department isn't set on their profile yet, so this ticket can't be routed automatically. Pick someone else, or ask an administrator to update their profile."
+                : "Your account doesn't have a department set yet. Please ask an administrator to update your profile before submitting a ticket.",
+            'department.exists' => $forColleague
+                ? "That colleague's department could not be matched — please ask an administrator to check their profile."
+                : "Your profile's department could not be matched — please ask an administrator to check it.",
+            'location.required' => $forColleague
+                ? "That colleague's branch/office isn't set on their profile yet, so this ticket can't be routed automatically. Pick someone else, or ask an administrator to update their profile."
+                : "Your account doesn't have a branch/office set yet. Please ask an administrator to update your profile before submitting a ticket.",
         ];
     }
 }

@@ -22,16 +22,35 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
             {{-- FORM --}}
+            @php
+                $myDepartment = auth()->user()->department?->name;
+                $myBranch = auth()->user()->branch_name;
+                $profileComplete = filled($myDepartment) && filled($myBranch);
+            @endphp
             <div class="lg:col-span-2 bg-white shadow-sm rounded-xl border border-gray-100">
-                <form method="POST" action="{{ route('tickets.store') }}" class="p-6 sm:p-8 space-y-8" enctype="multipart/form-data">
+                <form method="POST" action="{{ route('tickets.store') }}" class="p-6 sm:p-8 space-y-8" enctype="multipart/form-data"
+                      x-data="{
+                         forWhom: '{{ old('on_behalf_of_user_id') || old('on_behalf_of_name') ? 'colleague' : 'self' }}',
+                         colleagueId: '{{ old('on_behalf_of_user_id', '') }}',
+                         directoryOpen: false,
+                         colleagues: {{ $colleagues->toJson() }},
+                         selfProfileComplete: @js($profileComplete),
+                         get selectedColleague() {
+                             return this.colleagues.find(c => c.id == this.colleagueId) || null;
+                         },
+                         // Which profile actually gets used to route this ticket: the
+                         // colleague's, if one is picked from the directory — otherwise
+                         // the submitter's own (covers 'Myself' and a free-typed name).
+                         get targetProfileComplete() {
+                             if (this.forWhom === 'colleague' && this.colleagueId && this.selectedColleague) {
+                                 return !!this.selectedColleague.profile_complete;
+                             }
+                             return this.selfProfileComplete;
+                         }
+                      }">
                     @csrf
 
                     {{-- Section: Request --}}
-                    @php
-                        $myDepartment = auth()->user()->department?->name;
-                        $myBranch = auth()->user()->branch_name;
-                        $profileComplete = filled($myDepartment) && filled($myBranch);
-                    @endphp
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Request</p>
                         <p class="text-xs text-gray-400 mb-4">Your department and office are pulled automatically from your profile — no need to pick them every time.</p>
@@ -53,12 +72,19 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-400 mt-2">Not right? Ask an administrator to update your profile — it's used to route tickets automatically.</p>
+                            <p class="text-xs text-gray-400 mt-2" x-show="!(forWhom === 'colleague' && colleagueId)">Not right? Ask an administrator to update your profile — it's used to route tickets automatically.</p>
+                            <p class="text-xs text-gray-400 mt-2" x-show="forWhom === 'colleague' && colleagueId" x-cloak>When you're submitting for a colleague, we route using <span class="font-medium text-gray-500" x-text="selectedColleague?.name"></span>'s department and office instead of yours.</p>
                         @else
-                            <div class="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                            <div class="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3" x-show="!(forWhom === 'colleague' && colleagueId && selectedColleague?.profile_complete)">
                                 <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
                                 <p class="text-sm text-amber-800">
-                                    Your department and/or office branch aren't set on your profile yet, so this ticket can't be routed automatically. Please ask an administrator to update your profile before submitting.
+                                    Your department and/or office branch aren't set on your profile yet, so this ticket can't be routed automatically. Please ask an administrator to update your profile before submitting — or, if this is for a colleague, pick them from the directory below and we'll route using their profile instead.
+                                </p>
+                            </div>
+                            <div class="flex items-start gap-2.5 rounded-lg border border-green-200 bg-green-50 px-4 py-3" x-show="forWhom === 'colleague' && colleagueId && selectedColleague?.profile_complete" x-cloak>
+                                <svg class="w-4 h-4 text-green-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <p class="text-sm text-green-800">
+                                    Your own profile isn't complete, but that's fine here — we'll route this using <span class="font-medium" x-text="selectedColleague?.name"></span>'s department and office instead.
                                 </p>
                             </div>
                         @endif
@@ -134,12 +160,7 @@
                     </div>
 
                     {{-- Section: Who is this for --}}
-                    <div class="pt-6 border-t border-gray-100"
-                         x-data="{
-                            forWhom: '{{ old('on_behalf_of_user_id') || old('on_behalf_of_name') ? 'colleague' : 'self' }}',
-                            colleagueId: '{{ old('on_behalf_of_user_id', '') }}',
-                            directoryOpen: false
-                         }">
+                    <div class="pt-6 border-t border-gray-100">
                         <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Who is this for?</p>
                         <p class="text-xs text-gray-400 mb-4">Choose "A colleague" when their computer won't start or they can't log in, so they can't raise the ticket themselves.</p>
 
@@ -164,11 +185,10 @@
                             <div class="relative"
                                  x-data="{
                                     query: '{{ old('on_behalf_of_user_id') ? addslashes(optional($colleagues->firstWhere('id', (int) old('on_behalf_of_user_id')))->name) : '' }}',
-                                    directory: {{ $colleagues->map(fn ($c) => is_array($c) ? $c : ['id' => $c->id, 'name' => $c->name, 'email' => $c->email])->values()->toJson() }},
                                     get results() {
                                         const q = this.query.trim().toLowerCase();
-                                        if (!q) return this.directory;
-                                        return this.directory.filter(c =>
+                                        if (!q) return this.colleagues;
+                                        return this.colleagues.filter(c =>
                                             (c.name ?? '').toLowerCase().includes(q) || (c.email ?? '').toLowerCase().includes(q)
                                         );
                                     },
@@ -197,8 +217,11 @@
                                             class="w-full text-left px-3.5 py-2 flex items-center gap-2.5 hover:bg-green-50"
                                             :class="colleagueId == c.id ? 'bg-green-50' : ''">
                                             <span class="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-500 text-[11px] font-semibold shrink-0" x-text="(c.name || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase()"></span>
-                                            <span class="min-w-0">
-                                                <span class="block text-sm font-medium text-gray-800 truncate" x-text="c.name"></span>
+                                            <span class="min-w-0 flex-1">
+                                                <span class="flex items-center gap-1.5">
+                                                    <span class="block text-sm font-medium text-gray-800 truncate" x-text="c.name"></span>
+                                                    <span x-show="!c.profile_complete" class="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700">Profile incomplete</span>
+                                                </span>
                                                 <span class="block text-xs text-gray-400 truncate" x-text="c.email || '—'"></span>
                                             </span>
                                         </button>
@@ -208,6 +231,14 @@
 
                                 <input type="hidden" name="on_behalf_of_user_id" :value="colleagueId">
                                 @error('on_behalf_of_user_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div x-show="colleagueId && selectedColleague && !selectedColleague.profile_complete" x-cloak
+                                 class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5">
+                                <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                                <p class="text-xs text-amber-800">
+                                    <span x-text="selectedColleague?.name"></span>'s department/office isn't set on their profile yet, so we can't route this ticket automatically. Pick someone else, or ask an administrator to complete their profile first.
+                                </p>
                             </div>
 
                             <div x-show="!colleagueId" x-cloak>
@@ -280,7 +311,8 @@
 
                     <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
                         <a href="{{ route('tickets.index') }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
-                        <button type="submit" @disabled(! $profileComplete)
+                        <button type="submit" :disabled="!targetProfileComplete"
+                            :title="!targetProfileComplete ? 'Missing department/office for routing — see the note above.' : ''"
                             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
                             style="background-color:#1a6b3c;" onmouseover="this.style.backgroundColor='#145530'" onmouseout="this.style.backgroundColor='#1a6b3c'">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>

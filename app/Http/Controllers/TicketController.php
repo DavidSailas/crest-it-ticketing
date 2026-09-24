@@ -60,6 +60,7 @@ class TicketController extends Controller
 {
     $colleagues = User::where('role', 'staff')
         ->where('id', '!=', auth()->id())
+        ->with('department')
         ->orderBy('name')
         ->get()
         ->map(function ($user) {
@@ -67,6 +68,10 @@ class TicketController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email ?? $user->email_address ?? null, // ensures email is captured regardless of column name
+                // Whether this colleague's own department/office is set —
+                // used to auto-route a ticket raised on their behalf, and
+                // to warn the requester up front if it isn't.
+                'profile_complete' => filled($user->department?->name) && filled($user->branch_name),
             ];
         });
 
