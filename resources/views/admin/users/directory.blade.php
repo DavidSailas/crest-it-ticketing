@@ -4,7 +4,13 @@
     </x-slot>
 
     <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-        <p class="text-sm text-gray-500">Look up a staff member's account while you work a ticket. This is view-only — head to Manage Users to edit or remove an account.</p>
+        <p class="text-sm text-gray-500">
+            @if(auth()->user()->role === 'staff')
+                Browse coworker accounts and the assets assigned to them. This is view-only.
+            @else
+                Look up a staff member's account while you work a ticket. This is view-only — head to Manage Users to edit or remove an account.
+            @endif
+        </p>
 
         <form method="GET" action="{{ route('users.directory') }}" class="flex gap-2 max-w-sm">
             <input type="text" name="q" value="{{ $search }}" placeholder="Search name or email"

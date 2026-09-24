@@ -44,6 +44,10 @@
                         <x-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                             {{ __('Assets') }}
                         </x-nav-link>
+                    @elseif(auth()->user()->role === 'staff')
+                        <x-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory')">
+                            {{ __('Users') }}
+                        </x-nav-link>
                     @endif
                 </div>
             </div>
@@ -198,6 +202,10 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                     {{ __('Assets') }}
+                </x-responsive-nav-link>
+            @elseif(auth()->user()->role === 'staff')
+                <x-responsive-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory')">
+                    {{ __('Users') }}
                 </x-responsive-nav-link>
             @endif
         </div>

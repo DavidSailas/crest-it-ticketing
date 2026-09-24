@@ -47,7 +47,9 @@
             </div>
         </div>
 
-        {{-- Ticket stats --}}
+        {{-- Ticket stats and history — IT Support/Admin only. Staff looking
+             up a coworker only see the account info and assigned assets. --}}
+        @if(auth()->user()->role !== 'staff')
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             @foreach([
                 ['label' => 'Total Tickets', 'value' => $ticketCounts['total'], 'fg' => 'text-gray-800'],
@@ -61,6 +63,7 @@
                 </div>
             @endforeach
         </div>
+        @endif
 
         {{-- Assets --}}
         <div>
@@ -107,6 +110,7 @@
         </div>
 
         {{-- Recent tickets --}}
+        @if(auth()->user()->role !== 'staff')
         <div>
             <h3 class="text-base font-semibold text-gray-800 mb-3">Recent Tickets</h3>
             <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
@@ -149,5 +153,6 @@
                 @endif
             </div>
         </div>
+        @endif
     </div>
 </x-app-layout>

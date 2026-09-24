@@ -102,17 +102,20 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         // where the owner is already known from the URL.
         Route::post('/admin/users/{user}/assets', [AssetController::class, 'store'])->name('admin.users.assets.store');
 
-        // Read-only staff directory — IT Support can look someone up
-        // while working a ticket, but can't edit or delete accounts here.
-        Route::get('/users-directory', [UserController::class, 'directory'])->name('users.directory');
-        Route::get('/users-directory/{user}', [UserController::class, 'directoryShow'])->name('users.directory.show');
-
         // Chat Support inbox — every staff conversation, with unread counts.
         Route::get('/support-chat-inbox', [SupportChatController::class, 'inbox'])->name('support-chat.inbox');
         Route::get('/support-chat-inbox/poll', [SupportChatController::class, 'inboxPoll'])->name('support-chat.inbox.poll');
         Route::get('/support-chat/{user}', [SupportChatController::class, 'showFor'])->name('support-chat.show.user');
         Route::post('/support-chat/{user}', [SupportChatController::class, 'sendFor'])->name('support-chat.send.user');
         Route::get('/support-chat/{user}/poll', [SupportChatController::class, 'pollFor'])->name('support-chat.poll.user');
+    });
+
+    // Read-only staff directory — Staff can look up a coworker's account
+    // and see what's assigned to them; IT Support/Admin use it while
+    // working a ticket. Nobody can edit or delete an account from here.
+    Route::middleware('role:staff,it_support,admin')->group(function () {
+        Route::get('/users-directory', [UserController::class, 'directory'])->name('users.directory');
+        Route::get('/users-directory/{user}', [UserController::class, 'directoryShow'])->name('users.directory.show');
     });
 
     // Admin only
