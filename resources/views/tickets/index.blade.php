@@ -1,6 +1,7 @@
 @php
     $isStaff = auth()->user()->isStaff();
     $isItSupport = auth()->user()->isItSupport();
+    $isAdmin = auth()->user()->isAdmin();
     // Requested by is redundant on the staff view (it's always themselves);
     // Assigned to is redundant on the IT support view (it's always themselves).
     $showRequestedBy = ! $isStaff;
@@ -16,12 +17,37 @@
                 @elseif($isItSupport) My Tickets
                 @else All Tickets @endif
             </h2>
-            @if($isStaff)
-                <a href="{{ route('tickets.create') }}" class="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-semibold shadow-sm transition hover:opacity-90" style="background-color:#1a6b3c;">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                    New Ticket
-                </a>
-            @endif
+            <div class="flex items-center gap-2">
+                @if($isAdmin)
+                    {{-- Report export — reflects whatever search/status/priority/date filters are
+                         currently applied above, so the download always matches what's on screen. --}}
+                    <div class="relative" x-data="{ showExport: false }">
+                        <button @click="showExport = !showExport" @click.outside="showExport = false"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v13.5m0 0l-4.5-4.5M12 16.5l4.5-4.5M4.5 19.5h15" /></svg>
+                            Export
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div x-show="showExport" x-cloak x-transition
+                             class="absolute right-0 mt-1.5 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
+                            <a href="{{ route('admin.tickets.export.pdf', request()->query()) }}" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                Export as PDF
+                            </a>
+                            <a href="{{ route('admin.tickets.export.excel', request()->query()) }}" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                Export as Excel
+                            </a>
+                        </div>
+                    </div>
+                @endif
+                @if($isStaff)
+                    <a href="{{ route('tickets.create') }}" class="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-semibold shadow-sm transition hover:opacity-90" style="background-color:#1a6b3c;">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                        New Ticket
+                    </a>
+                @endif
+            </div>
         </div>
     </x-slot>
 
@@ -36,6 +62,65 @@
                 <p class="text-sm text-blue-900/80">Tickets you're currently working on or have already closed out. Unclaimed tickets waiting for pickup live on your <a href="{{ route('dashboard') }}" class="font-semibold underline underline-offset-2 decoration-blue-300 hover:decoration-blue-500">dashboard</a>.</p>
             </div>
         @endif
+
+        {{-- Filters --}}
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 px-4 sm:px-5 py-4 mb-5">
+            <form method="GET" action="{{ route('tickets.index') }}" class="flex flex-wrap items-end gap-3">
+                <div class="flex-1 min-w-[14rem]">
+                    <label for="filter-search" class="block text-xs font-medium text-gray-500 mb-1">Search</label>
+                    <div class="relative">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                        <input type="text" name="search" id="filter-search" value="{{ $filters['search'] }}"
+                               placeholder="Ticket #, category, department{{ $showRequestedBy ? ', requester' : '' }}…"
+                               class="w-full pl-9 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                    </div>
+                </div>
+
+                <div class="w-full sm:w-40">
+                    <label for="filter-status" class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                    <select name="status" id="filter-status" class="w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                        <option value="">All statuses</option>
+                        @foreach($statusOptions as $option)
+                            <option value="{{ $option }}" @selected($filters['status'] === $option)>{{ str_replace('_', ' ', ucfirst($option)) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="w-full sm:w-36">
+                    <label for="filter-priority" class="block text-xs font-medium text-gray-500 mb-1">Priority</label>
+                    <select name="priority" id="filter-priority" class="w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                        <option value="">All priorities</option>
+                        @foreach(['low' => 'Low', 'medium' => 'Medium', 'high' => 'High', 'critical' => 'Critical'] as $value => $label)
+                            <option value="{{ $value }}" @selected($filters['priority'] === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="w-1/2 sm:w-36">
+                    <label for="filter-date-from" class="block text-xs font-medium text-gray-500 mb-1">From</label>
+                    <input type="date" name="date_from" id="filter-date-from" value="{{ $filters['dateFrom'] }}"
+                           max="{{ $filters['dateTo'] ?: '' }}"
+                           class="w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                </div>
+
+                <div class="w-1/2 sm:w-36">
+                    <label for="filter-date-to" class="block text-xs font-medium text-gray-500 mb-1">To</label>
+                    <input type="date" name="date_to" id="filter-date-to" value="{{ $filters['dateTo'] }}"
+                           min="{{ $filters['dateFrom'] ?: '' }}"
+                           class="w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm transition hover:opacity-90" style="background-color:#1a6b3c;">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" /></svg>
+                        Filter
+                    </button>
+                    @if($hasActiveFilters)
+                        <a href="{{ route('tickets.index') }}" class="text-sm text-gray-500 hover:text-gray-700 underline underline-offset-2">Clear</a>
+                    @endif
+                </div>
+            </form>
+        </div>
 
         {{-- A lean column set, horizontal-only dividers, and a fixed layout —
              this reads as one clean sheet instead of a boxed grid, and never
@@ -134,8 +219,13 @@
                                     </div>
                                     <p class="text-gray-600 font-medium">No tickets found</p>
                                     <p class="text-gray-400 text-sm mt-1">
-                                        @if($isStaff) Submit a request and it'll show up here.
-                                        @else Nothing matches right now. @endif
+                                        @if($hasActiveFilters)
+                                            No tickets match your filters. <a href="{{ route('tickets.index') }}" class="text-green-700 font-medium underline underline-offset-2">Clear them</a> to see everything.
+                                        @elseif($isStaff)
+                                            Submit a request and it'll show up here.
+                                        @else
+                                            Nothing matches right now.
+                                        @endif
                                     </p>
                                 </div>
                             </td>

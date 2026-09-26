@@ -13,7 +13,39 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Asset Inventory</h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Asset Inventory</h2>
+            <div class="flex gap-2">
+                @if($isAdmin)
+                    {{-- Report export — reflects whatever search/department filter is currently
+                         applied below, so the download always matches what's on screen. --}}
+                    <div class="relative" x-data="{ showExport: false }">
+                        <button @click="showExport = !showExport" @click.outside="showExport = false"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">
+                            Export
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div x-show="showExport" x-cloak x-transition
+                             class="absolute right-0 mt-1.5 w-44 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
+                            <a href="{{ route('admin.assets.export.pdf', request()->query()) }}" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                Export as PDF
+                            </a>
+                            <a href="{{ route('admin.assets.export.excel', request()->query()) }}" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                Export as Excel
+                            </a>
+                        </div>
+                    </div>
+                @endif
+                @if($canAddAsset)
+                    <a href="{{ route('assets.create') }}" class="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                        New Asset
+                    </a>
+                @endif
+            </div>
+        </div>
     </x-slot>
 
     <style>[x-cloak] { display: none !important; }</style>
@@ -30,17 +62,7 @@
             <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">{{ session('error') }}</div>
         @endif
 
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-            <p class="text-sm text-gray-500">{{ $assets->total() }} asset{{ $assets->total() === 1 ? '' : 's' }} found</p>
-            @if($canAddAsset)
-                <a href="{{ route('assets.create') }}"
-                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold shadow-sm transition"
-                   style="background-color:#1a6b3c;" onmouseover="this.style.backgroundColor='#145530'" onmouseout="this.style.backgroundColor='#1a6b3c'">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                    New Asset
-                </a>
-            @endif
-        </div>
+        <p class="text-sm text-gray-500">{{ $assets->total() }} asset{{ $assets->total() === 1 ? '' : 's' }} found</p>
 
         {{-- Search + department filter --}}
         <form method="GET" action="{{ route('assets.index') }}" class="bg-white shadow-sm rounded-xl border border-gray-100 p-4 flex flex-col sm:flex-row gap-3">

@@ -100,50 +100,12 @@ class Ticket extends Model
     }
 
     /**
-     * Teammates who joined in to help without taking over ownership —
-     * the ticket keeps its one owner (assigned_to), but anyone here can
-     * comment and work it alongside them.
-     */
-    public function assistants()
-    {
-        return $this->belongsToMany(User::class, 'ticket_assistants')->withTimestamps();
-    }
-
-    public function isAssistedBy(?User $user): bool
-    {
-        if (! $user) {
-            return false;
-        }
-
-        return $this->relationLoaded('assistants')
-            ? $this->assistants->contains('id', $user->id)
-            : $this->assistants()->where('user_id', $user->id)->exists();
-    }
-
-    /**
-     * Whether $user could start assisting on this ticket right now: it has
-     * to belong to someone else already, still be open work, and $user
-     * can't already be helping.
-     */
-    public function canBeAssistedBy(User $user): bool
-    {
-        return $this->assigned_to
-            && $this->assigned_to !== $user->id
-            && ! $this->isClosed()
-            && ! $this->isAssistedBy($user);
-    }
-
-    /**
      * Fingerprint of everything the ticket panel shows (status, owner,
      * approval, solution...). The live poll compares this with the one the
      * browser already has, and only sends new HTML when it differs.
      */
     public function liveHash(): string
     {
-        $assistantIds = $this->relationLoaded('assistants')
-            ? $this->assistants->pluck('id')->sort()->implode(',')
-            : $this->assistants()->pluck('user_id')->sort()->implode(',');
-
         return md5(implode('|', [
             $this->status,
             $this->priority,
@@ -153,7 +115,6 @@ class Ticket extends Model
             $this->closed_at?->timestamp,
             $this->updated_at?->timestamp,
             $this->solution,
-            $assistantIds,
         ]));
     }
 

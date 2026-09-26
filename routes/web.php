@@ -86,8 +86,6 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::post('/tickets/{ticket}/accept', [TicketController::class, 'accept'])->name('tickets.accept');
         Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
         Route::patch('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
-        Route::post('/tickets/{ticket}/assist', [TicketController::class, 'assist'])->name('tickets.assist');
-        Route::delete('/tickets/{ticket}/assist', [TicketController::class, 'unassist'])->name('tickets.unassist');
         Route::get('/tickets/queue/poll', [TicketController::class, 'pollQueue'])->name('tickets.queue.poll');
 
         // Asset inventory — viewable by both roles; IT Support can add new
@@ -127,6 +125,10 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/users/export/pdf', [UserController::class, 'exportPdf'])->name('users.export.pdf');
         Route::get('/users/export/excel', [UserController::class, 'exportExcel'])->name('users.export.excel');
         Route::post('/users/import', [UserController::class, 'import'])->name('users.import');
+        // Read-only profile page — click a name (or "View") on Manage Users
+        // to see the full picture: account details, assigned assets, and
+        // ticket history, without leaving the admin section to edit it.
+        Route::get('/users/{user}/view', [UserController::class, 'show'])->name('users.show');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
@@ -138,6 +140,16 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/assets/{asset}/edit', [AssetController::class, 'edit'])->name('assets.edit');
         Route::put('/assets/{asset}', [AssetController::class, 'update'])->name('assets.update');
         Route::delete('/assets/{asset}', [AssetController::class, 'destroy'])->name('assets.destroy');
+
+        // Reporting — admin-only PDF/Excel exports for tickets and assets.
+        // Each respects whatever search/filter the admin currently has
+        // applied on that index page (see filteredTicketsForExport /
+        // filteredAssetsForExport), so "Export" always reflects the report
+        // being looked at rather than dumping the entire table.
+        Route::get('/tickets/export/pdf', [TicketController::class, 'exportPdf'])->name('tickets.export.pdf');
+        Route::get('/tickets/export/excel', [TicketController::class, 'exportExcel'])->name('tickets.export.excel');
+        Route::get('/assets/export/pdf', [AssetController::class, 'exportPdf'])->name('assets.export.pdf');
+        Route::get('/assets/export/excel', [AssetController::class, 'exportExcel'])->name('assets.export.excel');
 
         Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
         Route::post('/branches', [BranchController::class, 'store'])->name('branches.store');

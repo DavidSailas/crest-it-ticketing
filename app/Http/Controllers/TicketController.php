@@ -10,9 +10,15 @@ use App\Models\User;
 use App\Notifications\TicketAcceptedNotification;
 use App\Notifications\TicketApprovedNotification;
 use App\Notifications\TicketAssignedNotification;
-use App\Notifications\TicketAssistJoinedNotification;
 use App\Notifications\TicketStatusUpdatedNotification;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TicketController extends Controller
 {
@@ -20,17 +26,26 @@ class TicketController extends Controller
     {
         $user = $request->user();
         $search = trim((string) $request->query('search', ''));
+        $status = trim((string) $request->query('status', ''));
+        $priority = trim((string) $request->query('priority', ''));
+        $dateFrom = trim((string) $request->query('date_from', ''));
+        $dateTo = trim((string) $request->query('date_to', ''));
+
+        $allStatuses = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
 
         if ($user->isStaff()) {
             $query = Ticket::where('user_id', $user->id);
+            $statusOptions = $allStatuses;
         } elseif ($user->isItSupport()) {
             // The Open Queue of unclaimed tickets lives on the dashboard — this
             // page is the agent's own ticket history: what they're actively
             // working on, plus what they've already resolved or closed.
+            $statusOptions = ['in_progress', 'pending', 'resolved', 'closed'];
             $query = Ticket::where('assigned_to', $user->id)
-                ->whereIn('status', ['in_progress', 'pending', 'resolved', 'closed']);
+                ->whereIn('status', $statusOptions);
         } else { // admin
             $query = Ticket::query();
+            $statusOptions = $allStatuses;
         }
 
         if ($search !== '') {
@@ -51,9 +66,205 @@ class TicketController extends Controller
             });
         }
 
+        // Only ever filter by a status/priority value the app actually uses —
+        // an unexpected value in the query string is silently ignored rather
+        // than producing an empty (and confusing) result set.
+        if (in_array($status, $statusOptions, true)) {
+            $query->where('status', $status);
+        }
+
+        if (in_array($priority, ['low', 'medium', 'high', 'critical'], true)) {
+            $query->where('priority', $priority);
+        }
+
+        if ($dateFrom !== '' && $this->isValidDate($dateFrom)) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+
+        if ($dateTo !== '' && $this->isValidDate($dateTo)) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
         $tickets = $query->latest()->paginate(10)->withQueryString();
 
-        return view('tickets.index', compact('tickets', 'search'));
+        $filters = compact('search', 'status', 'priority', 'dateFrom', 'dateTo');
+        $hasActiveFilters = $search !== '' || $status !== '' || $priority !== '' || $dateFrom !== '' || $dateTo !== '';
+
+        return view('tickets.index', compact('tickets', 'filters', 'hasActiveFilters', 'statusOptions'));
+    }
+
+    /** Guards whereDate() against a malformed date_from/date_to query value. */
+    private function isValidDate(string $value): bool
+    {
+        return (bool) \DateTime::createFromFormat('Y-m-d', $value);
+    }
+
+    /**
+     * Same search/status/priority/date filters as index(), but scoped to
+     * every ticket in the system (admin-only reporting, not "my tickets")
+     * and returned as one plain collection instead of a paginator — a
+     * report should read as a single document, not a paged list.
+     */
+    private function filteredTicketsForExport(Request $request)
+    {
+        $search = trim((string) $request->query('search', ''));
+        $status = trim((string) $request->query('status', ''));
+        $priority = trim((string) $request->query('priority', ''));
+        $dateFrom = trim((string) $request->query('date_from', ''));
+        $dateTo = trim((string) $request->query('date_to', ''));
+
+        $query = Ticket::with(['creator', 'assignee']);
+
+        if ($search !== '') {
+            $ticketId = null;
+            if (preg_match('/^(inc)?0*(\d+)$/i', $search, $matches)) {
+                $ticketId = (int) $matches[2];
+            }
+
+            $query->where(function ($q) use ($search, $ticketId) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%")
+                    ->orWhere('department', 'like', "%{$search}%")
+                    ->orWhereHas('creator', fn ($c) => $c->where('name', 'like', "%{$search}%"));
+
+                if ($ticketId !== null) {
+                    $q->orWhere('id', $ticketId);
+                }
+            });
+        }
+
+        if (in_array($status, ['open', 'in_progress', 'pending', 'resolved', 'closed'], true)) {
+            $query->where('status', $status);
+        }
+
+        if (in_array($priority, ['low', 'medium', 'high', 'critical'], true)) {
+            $query->where('priority', $priority);
+        }
+
+        if ($dateFrom !== '' && $this->isValidDate($dateFrom)) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+
+        if ($dateTo !== '' && $this->isValidDate($dateTo)) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        return $query->latest()->get();
+    }
+
+    /**
+     * A short, human-readable line describing which filters shaped this
+     * report, shown under the title on both the PDF and the Excel export
+     * so nobody mistakes a filtered report for the full ticket list.
+     */
+    private function exportFilterSummary(Request $request): string
+    {
+        $parts = [];
+
+        if ($search = trim((string) $request->query('search', ''))) {
+            $parts[] = "Search: \"{$search}\"";
+        }
+        if ($status = trim((string) $request->query('status', ''))) {
+            $parts[] = 'Status: '.str_replace('_', ' ', ucfirst($status));
+        }
+        if ($priority = trim((string) $request->query('priority', ''))) {
+            $parts[] = 'Priority: '.ucfirst($priority);
+        }
+        if ($dateFrom = trim((string) $request->query('date_from', ''))) {
+            $parts[] = 'From: '.$dateFrom;
+        }
+        if ($dateTo = trim((string) $request->query('date_to', ''))) {
+            $parts[] = 'To: '.$dateTo;
+        }
+
+        return $parts ? implode(' · ', $parts) : 'All tickets';
+    }
+
+    /**
+     * Download the current ticket report as a professionally formatted
+     * PDF — letterhead, applied filters, and a clean table. Admin only.
+     */
+    public function exportPdf(Request $request)
+    {
+        $tickets = $this->filteredTicketsForExport($request);
+
+        $pdf = Pdf::loadView('tickets.export-pdf', [
+            'tickets' => $tickets,
+            'filterSummary' => $this->exportFilterSummary($request),
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('tickets-report-'.now()->format('Y-m-d').'.pdf');
+    }
+
+    /**
+     * Download the current ticket report as a polished .xlsx workbook —
+     * bold header row, brand color fill, borders, autosized columns, and
+     * a frozen header row. Admin only.
+     */
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $tickets = $this->filteredTicketsForExport($request);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Tickets');
+
+        $sheet->setCellValue('A1', 'Crest IT Service Desk — Ticket Report');
+        $sheet->mergeCells('A1:J1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getFont()->getColor()->setRGB('123F24');
+
+        $sheet->setCellValue('A2', 'Generated '.now()->format('F j, Y g:i A').' · '.$this->exportFilterSummary($request));
+        $sheet->mergeCells('A2:J2');
+        $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(9);
+        $sheet->getStyle('A2')->getFont()->getColor()->setRGB('6B7280');
+
+        $headers = ['Ticket #', 'Category', 'Subcategory', 'Requester', 'Assigned To', 'Priority', 'Status', 'Created', 'Resolved', 'Closed'];
+        $sheet->fromArray($headers, null, 'A4');
+        $sheet->getStyle('A4:J4')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A4:J4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1A6B3C');
+        $sheet->getStyle('A4:J4')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+
+        $row = 5;
+        foreach ($tickets as $ticket) {
+            $sheet->setCellValue("A{$row}", $ticket->ticket_number);
+            $sheet->setCellValue("B{$row}", $ticket->category);
+            $sheet->setCellValue("C{$row}", $ticket->subcategory ?? '—');
+            $sheet->setCellValue("D{$row}", $ticket->creator->name ?? '—');
+            $sheet->setCellValue("E{$row}", $ticket->assignee->name ?? 'Unassigned');
+            $sheet->setCellValue("F{$row}", ucfirst($ticket->priority));
+            $sheet->setCellValue("G{$row}", str_replace('_', ' ', ucfirst($ticket->status)));
+            $sheet->setCellValue("H{$row}", $ticket->created_at->format('M j, Y g:i A'));
+            $sheet->setCellValue("I{$row}", $ticket->resolved_at?->format('M j, Y g:i A') ?? '—');
+            $sheet->setCellValue("J{$row}", $ticket->closed_at?->format('M j, Y g:i A') ?? '—');
+            $row++;
+        }
+
+        $lastRow = $row - 1;
+
+        if ($lastRow >= 5) {
+            $sheet->getStyle("A4:J{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
+
+            for ($i = 5; $i <= $lastRow; $i++) {
+                if ($i % 2 === 0) {
+                    $sheet->getStyle("A{$i}:J{$i}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9FAFB');
+                }
+            }
+        }
+
+        foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'] as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $sheet->freezePane('A5');
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, 'tickets-report-'.now()->format('Y-m-d').'.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function create()
@@ -145,7 +356,7 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket)
     {
-        $ticket->load('comments.author', 'creator', 'assignee', 'assistants');
+        $ticket->load('comments.author', 'creator', 'assignee');
 
         $currentUserId = auth()->id();
         TicketRead::markRead($ticket->id, $currentUserId);
@@ -186,8 +397,7 @@ class TicketController extends Controller
      * too, but only to redistribute work that's genuinely theirs to move:
      * an unclaimed ticket, or one already assigned to them. Handing off a
      * ticket that belongs to a *different* agent still needs an admin, so
-     * ownership can't be taken from someone without them knowing — see
-     * assist() below for how to help on a teammate's ticket instead.
+     * ownership can't be taken from someone without them knowing.
      */
     public function assign(Request $request, Ticket $ticket)
     {
@@ -215,10 +425,6 @@ class TicketController extends Controller
             'status' => $ticket->status === 'open' ? 'in_progress' : $ticket->status,
         ]);
 
-        // The new owner doesn't need a separate "assisting" record on top of
-        // actually owning it.
-        $ticket->assistants()->detach($agent->id);
-
         ActivityLog::record(
             'ticket_assigned',
             "Assigned ticket {$ticket->ticket_number} to {$agent->name}",
@@ -239,57 +445,6 @@ class TicketController extends Controller
     }
 
     /**
-     * IT Support: join in on a teammate's ticket as a second pair of hands,
-     * without taking over ownership. Meant for exactly the situation where
-     * your own queue is empty but the team's isn't — jump in and help.
-     */
-    public function assist(Request $request, Ticket $ticket)
-    {
-        $user = $request->user();
-        abort_unless($user->isItSupport() || $user->isAdmin(), 403);
-
-        if (! $ticket->canBeAssistedBy($user)) {
-            return back()->with('error', 'This ticket is not available to assist on right now.');
-        }
-
-        $ticket->assistants()->syncWithoutDetaching([$user->id]);
-
-        ActivityLog::record(
-            'ticket_assist_joined',
-            "Started assisting on ticket {$ticket->ticket_number}: {$ticket->title}",
-            ['ticket_id' => $ticket->id]
-        );
-
-        try {
-            $ticket->assignee?->notify(new TicketAssistJoinedNotification($ticket, $user));
-        } catch (\Throwable $e) {
-            report($e);
-        }
-
-        return back()->with('status', "You're now assisting on {$ticket->ticket_number}.");
-    }
-
-    /**
-     * Step back from assisting — doesn't touch ownership, just removes you
-     * from the helper list.
-     */
-    public function unassist(Request $request, Ticket $ticket)
-    {
-        $user = $request->user();
-        abort_unless($user->isItSupport() || $user->isAdmin(), 403);
-
-        $ticket->assistants()->detach($user->id);
-
-        ActivityLog::record(
-            'ticket_assist_left',
-            "Stopped assisting on ticket {$ticket->ticket_number}: {$ticket->title}",
-            ['ticket_id' => $ticket->id]
-        );
-
-        return back()->with('status', 'You stopped assisting on this ticket.');
-    }
-
-    /**
      * Real-time refresh for the ticket page. The browser polls this every few
      * seconds with the fingerprint of each region it is showing; we only send
      * back HTML for the regions that actually changed (status, approval,
@@ -306,7 +461,7 @@ class TicketController extends Controller
             403
         );
 
-        $ticket->load(['creator', 'assignee', 'assistants']);
+        $ticket->load(['creator', 'assignee']);
 
         $known = (array) $request->query('h', []);
 
@@ -641,7 +796,6 @@ class TicketController extends Controller
             $user->isAdmin()
                 || $ticket->user_id === $user->id
                 || $ticket->assigned_to === $user->id
-                || $ticket->isAssistedBy($user)
                 || ($user->isItSupport() && $ticket->status === 'open'),
             403
         );

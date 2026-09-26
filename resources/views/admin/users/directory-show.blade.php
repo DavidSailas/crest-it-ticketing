@@ -13,9 +13,7 @@
         {{-- Account card --}}
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
             <div class="px-6 py-6 flex items-start gap-4">
-                <div class="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0" style="background-color:#1a6b3c;">
-                    {{ strtoupper(substr($user->name, 0, 1)) }}
-                </div>
+                <x-avatar-viewer :user="$user" size="lg" />
                 <div class="flex-1">
                     <div class="flex items-center gap-2 flex-wrap">
                         <p class="text-lg font-semibold text-gray-800">{{ $user->name }}</p>

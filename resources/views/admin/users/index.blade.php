@@ -96,14 +96,14 @@
                         <th class="hidden xl:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Branch</th>
                         <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">VIP</th>
                         <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
-                        <th class="w-20 sm:w-40 px-3 sm:px-5 py-3"></th>
+                        <th class="w-20 sm:w-52 px-3 sm:px-5 py-3"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse($users as $user)
                         <tr class="hover:bg-gray-50/60 transition-colors">
                             <td class="px-4 sm:px-5 py-3.5 max-w-0 w-full">
-                                <p class="font-medium text-gray-800 truncate">{{ $user->name }}</p>
+                                <a href="{{ route('admin.users.show', $user) }}" class="font-medium text-gray-800 hover:text-green-700 hover:underline truncate block">{{ $user->name }}</a>
                                 <p class="text-xs text-gray-400 truncate">{{ $user->username ?? '—' }} · {{ $user->email }}</p>
                                 {{-- Folds in whatever is hidden at this breakpoint --}}
                                 <div class="lg:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
@@ -139,6 +139,7 @@
                                 @endif
                             </td>
                             <td class="px-3 sm:px-5 py-3.5 text-right whitespace-nowrap">
+                                <a href="{{ route('admin.users.show', $user) }}" class="text-gray-500 hover:underline font-medium text-xs mr-3">View</a>
                                 <a href="{{ route('admin.users.edit', $user) }}" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</a>
                                 @if($user->id !== auth()->id())
                                     @if($user->isSuspended())

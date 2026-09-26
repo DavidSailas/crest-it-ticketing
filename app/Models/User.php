@@ -65,11 +65,6 @@ class User extends Authenticatable
         return $this->hasMany(Ticket::class, 'assigned_to'); // tickets this IT staff is handling
     }
 
-    public function assistingTickets()
-    {
-        return $this->belongsToMany(Ticket::class, 'ticket_assistants')->withTimestamps(); // tickets this IT staff is helping with, owned by someone else
-    }
-
     public function department()
     {
         return $this->belongsTo(Department::class);

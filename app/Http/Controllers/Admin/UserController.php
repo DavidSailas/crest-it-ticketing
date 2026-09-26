@@ -112,6 +112,47 @@ class UserController extends Controller
             ->with('status', "Created account for {$user->name}.");
     }
 
+    /**
+     * Read-only "profile" page for any user in the system — the polished
+     * view an admin opens by clicking a name (or "View") on Manage Users,
+     * without needing to go into the edit form just to look someone up.
+     * Shows account details, every asset issued to them, and their ticket
+     * history — tickets they've submitted, plus tickets they've handled if
+     * they're IT Support.
+     */
+    public function show(User $user)
+    {
+        $assets = Asset::with('department')
+            ->where('user_id', $user->id)
+            ->orderBy('type')
+            ->orderBy('sequence')
+            ->get();
+
+        $submittedTickets = Ticket::where('user_id', $user->id)->latest()->take(10)->get();
+        $submittedCounts = [
+            'total' => Ticket::where('user_id', $user->id)->count(),
+            'open' => Ticket::where('user_id', $user->id)->where('status', 'open')->count(),
+            'in_progress' => Ticket::where('user_id', $user->id)->where('status', 'in_progress')->count(),
+            'resolved' => Ticket::where('user_id', $user->id)->whereIn('status', ['resolved', 'closed'])->count(),
+        ];
+
+        $handledTickets = null;
+        $handledCounts = null;
+
+        if ($user->isItSupport()) {
+            $handledTickets = Ticket::where('assigned_to', $user->id)->latest()->take(10)->get();
+            $handledCounts = [
+                'total' => Ticket::where('assigned_to', $user->id)->count(),
+                'in_progress' => Ticket::where('assigned_to', $user->id)->where('status', 'in_progress')->count(),
+                'resolved' => Ticket::where('assigned_to', $user->id)->whereIn('status', ['resolved', 'closed'])->count(),
+            ];
+        }
+
+        return view('admin.users.show', compact(
+            'user', 'assets', 'submittedTickets', 'submittedCounts', 'handledTickets', 'handledCounts'
+        ));
+    }
+
     public function edit(User $user)
     {
         $assets = Asset::where('user_id', $user->id)->latest()->get();
