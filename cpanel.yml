@@ -1,0 +1,36 @@
+---
+deployment:
+  tasks:
+    # ---- EDIT THESE 3 LINES ------------------------------------------------
+    # APP      = folder on the server where the Laravel app will live.
+    #            The domain's Document Root must be APP/public
+    # PHP      = PHP binary (Laravel 12 needs PHP 8.2+; this project's
+    #            composer.json currently asks for ^8.4)
+    # COMPOSER = path to composer (run "which composer" over SSH)
+    - export APP=/home/CPANEL_USERNAME/it-ticketing
+    - export PHP=/opt/cpanel/ea-php84/root/usr/bin/php
+    - export COMPOSER=/opt/cpanel/composer/bin/composer
+    # ------------------------------------------------------------------------
+
+    # Create the app folder and Laravel's writable folders
+    - /bin/mkdir -p $APP
+    - /bin/mkdir -p $APP/storage/framework/cache/data $APP/storage/framework/sessions $APP/storage/framework/views $APP/storage/logs $APP/bootstrap/cache
+
+    # Copy the project. No wildcard; .git, .env and dev-only files are excluded.
+    # Files that exist only on the server (.env, uploads in storage/) are never deleted.
+    - /usr/bin/rsync -a --exclude='.git' --exclude='.env' --exclude='.cpanel.yml' --exclude='node_modules' --exclude='tests' --exclude='AGENTS.md' --exclude='CLAUDE.md' ./ $APP/
+
+    # Writable folders
+    - /bin/chmod -R u+rwX,g+rX $APP/storage $APP/bootstrap/cache
+
+    # Install PHP dependencies (vendor/ is not in git)
+    - cd $APP && $PHP $COMPOSER install --no-dev --optimize-autoloader --no-interaction
+
+    # Database and caches
+    - cd $APP && $PHP artisan migrate --force
+    - cd $APP && $PHP artisan config:cache
+    - cd $APP && $PHP artisan route:cache
+    - cd $APP && $PHP artisan view:cache
+
+    # Uploaded avatars and ticket attachments use the "public" disk
+    - cd $APP && $PHP artisan storage:link || true
