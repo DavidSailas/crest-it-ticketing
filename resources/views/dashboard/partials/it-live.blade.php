@@ -105,17 +105,10 @@
                                             @endif
                                         </p>
                                     </td>
-                                    <td class="hidden md:table-cell px-4 py-3.5 text-gray-600">{{ $ticket->department ?? '—' }}</td>
-                                    <td class="px-4 py-3.5"><x-priority-badge :priority="$ticket->priority" /></td>
-                                    <td class="hidden lg:table-cell px-4 py-3.5 text-gray-600">
-                                        <span class="inline-flex items-center gap-1.5">
-                                            {{ $ticket->creator->name }}
-                                            @if($ticket->creator->is_vip)
-                                                <x-vip-badge size="compact" />
-                                            @endif
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-3.5 text-right"><a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a></td>
+                                    <td class="hidden md:table-cell px-4 py-3.5 text-gray-600 whitespace-nowrap">{{ $ticket->department ?? '—' }}</td>
+                                    <td class="px-4 py-3.5 whitespace-nowrap"><x-priority-badge :priority="$ticket->priority" /></td>
+                                    <td class="hidden lg:table-cell px-4 py-3.5 whitespace-nowrap"><x-person :user="$ticket->creator" /></td>
+                                    <td class="px-4 py-3.5 text-right whitespace-nowrap"><x-view-link href="{{ route('tickets.show', $ticket) }}" /></td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -187,14 +180,9 @@
                                             <span class="sm:hidden"><x-priority-badge :priority="$ticket->priority" /></span>
                                         </p>
                                     </td>
-                                    <td class="hidden md:table-cell px-4 py-3.5 text-gray-700">
-                                        {{ $ticket->assignee->name ?? '—' }}
-                                        @if($mine)
-                                            <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700">You</span>
-                                        @endif
-                                    </td>
-                                    <td class="hidden sm:table-cell px-4 py-3.5"><x-priority-badge :priority="$ticket->priority" /></td>
-                                    <td class="px-4 py-3.5">
+                                    <td class="hidden md:table-cell px-4 py-3.5 whitespace-nowrap"><x-person :user="$ticket->assignee" :you="$mine" /></td>
+                                    <td class="hidden sm:table-cell px-4 py-3.5 whitespace-nowrap"><x-priority-badge :priority="$ticket->priority" /></td>
+                                    <td class="px-4 py-3.5 whitespace-nowrap">
                                         <div class="flex flex-col items-start gap-1">
                                             @if($ticket->status === 'resolved')
                                                 <span
@@ -209,9 +197,9 @@
                                             @endif
                                         </div>
                                     </td>
-                                    <td class="px-4 py-3.5 text-right">
+                                    <td class="px-4 py-3.5 text-right whitespace-nowrap">
                                         <div class="flex items-center justify-end gap-3">
-                                            <a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a>
+                                            <x-view-link href="{{ route('tickets.show', $ticket) }}" />
                                         </div>
                                     </td>
                                 </tr>

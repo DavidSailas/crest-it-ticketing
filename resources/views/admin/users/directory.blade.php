@@ -33,8 +33,13 @@
                     @forelse($users as $user)
                         <tr class="hover:bg-gray-50/60 transition-colors">
                             <td class="px-4 sm:px-5 py-3.5 max-w-0 w-full">
-                                <p class="font-medium text-gray-800 truncate">{{ $user->name }}</p>
-                                <p class="text-xs text-gray-400 truncate">{{ $user->email }}</p>
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <x-avatar :user="$user" size="sm" />
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-gray-800 truncate">{{ $user->name }}</p>
+                                        <p class="text-xs text-gray-400 truncate">{{ $user->email }}</p>
+                                    </div>
+                                </div>
                                 <div class="md:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
                                     <span>{{ $user->branch_name ?? '—' }}</span>
                                     <span class="lg:hidden text-gray-300">·</span>
@@ -45,16 +50,16 @@
                                 </div>
                             </td>
                             <td class="hidden md:table-cell px-5 py-3.5 text-gray-600 whitespace-nowrap">{{ $user->branch_name ?? '—' }}</td>
-                            <td class="hidden sm:table-cell px-5 py-3.5">
+                            <td class="hidden sm:table-cell px-5 py-3.5 whitespace-nowrap">
                                 @if($user->is_vip)
                                     <x-vip-badge size="compact" />
                                 @else
                                     <span class="text-xs text-gray-400">—</span>
                                 @endif
                             </td>
-                            <td class="hidden lg:table-cell px-5 py-3.5 text-gray-500">{{ $assetCounts[$user->id] ?? 0 }}</td>
+                            <td class="hidden lg:table-cell px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $assetCounts[$user->id] ?? 0 }}</td>
                             <td class="px-4 sm:px-5 py-3.5 text-right whitespace-nowrap">
-                                <a href="{{ route('users.directory.show', $user) }}" class="text-green-700 hover:underline font-medium text-xs">View</a>
+                                <x-view-link href="{{ route('users.directory.show', $user) }}" />
                             </td>
                         </tr>
                     @empty

@@ -125,12 +125,12 @@
                                             <span class="md:hidden whitespace-nowrap">{{ $ticket->created_at->format('M j, Y') }}</span>
                                         </div>
                                     </td>
-                                    <td class="hidden sm:table-cell px-5 py-3.5"><x-priority-badge :priority="$ticket->priority" /></td>
-                                    <td class="px-4 sm:px-5 py-3.5"><x-status-badge :status="$ticket->status" /></td>
+                                    <td class="hidden sm:table-cell px-5 py-3.5 whitespace-nowrap"><x-priority-badge :priority="$ticket->priority" /></td>
+                                    <td class="px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-status-badge :status="$ticket->status" /></td>
                                     <td class="hidden md:table-cell px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $ticket->created_at->format('M j, Y g:i A') }}</td>
                                     <td class="hidden lg:table-cell px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $ticket->resolved_at?->format('M j, Y g:i A') ?? '—' }}</td>
-                                    <td class="px-4 sm:px-5 py-3.5 text-right">
-                                        <a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a>
+                                    <td class="px-4 sm:px-5 py-3.5 text-right whitespace-nowrap">
+                                        <x-view-link href="{{ route('tickets.show', $ticket) }}" />
                                     </td>
                                 </tr>
                             @endforeach

@@ -96,9 +96,9 @@
                                             <span class="md:hidden">{{ $asset->serial_number ?? '—' }}</span>
                                         </div>
                                     </td>
-                                    <td class="hidden sm:table-cell px-5 py-3.5 text-gray-600">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</td>
-                                    <td class="hidden md:table-cell px-5 py-3.5 text-gray-500">{{ $asset->serial_number ?? '—' }}</td>
-                                    <td class="px-4 sm:px-5 py-3.5"><x-asset-status-badge :status="$asset->status" /></td>
+                                    <td class="hidden sm:table-cell px-5 py-3.5 text-gray-600 whitespace-nowrap">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</td>
+                                    <td class="hidden md:table-cell px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $asset->serial_number ?? '—' }}</td>
+                                    <td class="px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-asset-status-badge :status="$asset->status" /></td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -138,11 +138,11 @@
                                             <span class="md:hidden">{{ $ticket->created_at->diffForHumans() }}</span>
                                         </div>
                                     </td>
-                                    <td class="hidden sm:table-cell px-5 py-3.5"><x-priority-badge :priority="$ticket->priority" /></td>
-                                    <td class="px-4 sm:px-5 py-3.5"><x-status-badge :status="$ticket->status" /></td>
+                                    <td class="hidden sm:table-cell px-5 py-3.5 whitespace-nowrap"><x-priority-badge :priority="$ticket->priority" /></td>
+                                    <td class="px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-status-badge :status="$ticket->status" /></td>
                                     <td class="hidden md:table-cell px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $ticket->created_at->diffForHumans() }}</td>
-                                    <td class="px-4 sm:px-5 py-3.5 text-right">
-                                        <a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a>
+                                    <td class="px-4 sm:px-5 py-3.5 text-right whitespace-nowrap">
+                                        <x-view-link href="{{ route('tickets.show', $ticket) }}" />
                                     </td>
                                 </tr>
                             @endforeach

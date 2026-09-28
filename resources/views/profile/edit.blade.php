@@ -15,24 +15,25 @@
                 <circle cx="50" cy="35" r="14"/>
                 <path d="M20 85 a30 30 0 0 1 60 0"/>
             </svg>
-            <div class="relative px-6 py-6 sm:px-8 sm:py-7 flex items-center gap-5">
-                <div class="shrink-0 flex flex-col items-center gap-1.5">
+            <div class="relative px-6 py-7 sm:px-8 sm:py-8 flex flex-col sm:flex-row items-center text-center sm:text-left gap-5 sm:gap-7">
+                <div class="shrink-0 flex flex-col items-center gap-2">
                     <div class="relative">
                         {{-- The photo itself: click to view it full-size if one's set, otherwise
                              click opens the file picker so there's always something to do here. --}}
                         @if(auth()->user()->avatar)
-                            <x-avatar-viewer size="lg" class="ring-4 ring-white/10" />
+                            <x-avatar-viewer size="xl" class="!ring-4 !ring-white/20 !shadow-xl" />
                         @else
                             <label for="avatar-input" class="block cursor-pointer rounded-full" title="Add a photo">
-                                <x-avatar size="lg" class="ring-4 ring-white/10" />
+                                <x-avatar size="xl" class="!ring-4 !ring-white/20 !shadow-xl" />
                             </label>
                         @endif
 
-                        {{-- Small dedicated control for changing the photo, kept separate from
+                        {{-- Dedicated control for changing the photo, kept separate from
                              the image itself so "view" and "change" never fight over the same click. --}}
                         <label for="avatar-input" title="Change photo"
-                               class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white ring-2 ring-[#123f24] shadow flex items-center justify-center cursor-pointer hover:bg-gray-50 transition">
-                            <svg class="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                               class="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-white ring-4 ring-[#123f24] shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition"
+                               style="color:#1a6b3c;">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574v10.176c0 1.19.966 2.25 2.15 2.25h15.2c1.184 0 2.15-1.06 2.15-2.25V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
                             </svg>
@@ -49,14 +50,16 @@
                         <form method="POST" action="{{ route('profile.avatar.destroy') }}">
                             @csrf
                             @method('DELETE')
-                            <button class="text-[11px] text-green-100/70 hover:text-white underline">Remove photo</button>
+                            <button class="text-xs text-green-100/70 hover:text-white transition">Remove photo</button>
                         </form>
+                    @else
+                        <p class="text-[11px] text-green-100/60">JPG, PNG or WebP</p>
                     @endif
                 </div>
-                <div>
-                    <p class="text-white text-lg font-semibold">{{ auth()->user()->name }}</p>
-                    <p class="text-green-100/80 text-sm mt-0.5">{{ auth()->user()->email }}</p>
-                    <div class="flex items-center gap-2 mt-2">
+                <div class="min-w-0">
+                    <p class="text-white text-xl font-semibold truncate">{{ auth()->user()->name }}</p>
+                    <p class="text-green-100/80 text-sm mt-0.5 truncate">{{ auth()->user()->email }}</p>
+                    <div class="flex items-center justify-center sm:justify-start gap-2 mt-3">
                         <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/15 text-white capitalize">
                             {{ str_replace('_', ' ', auth()->user()->role) }}
                         </span>
@@ -86,7 +89,6 @@
         </div>
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 sm:p-8">
-            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Password</p>
             @include('profile.partials.update-password-form')
         </div>
 

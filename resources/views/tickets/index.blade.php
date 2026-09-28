@@ -64,21 +64,34 @@
         @endif
 
         {{-- Filters --}}
-        <div class="bg-white shadow-sm rounded-xl border border-gray-200 px-4 sm:px-5 py-4 mb-5">
-            <form method="GET" action="{{ route('tickets.index') }}" class="flex flex-wrap items-end gap-3">
-                <div class="flex-1 min-w-[14rem]">
-                    <label for="filter-search" class="block text-xs font-medium text-gray-500 mb-1">Search</label>
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 mb-5 overflow-hidden">
+            <div class="flex items-center justify-between px-4 sm:px-5 pt-4">
+                <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12m-9 7.5h6" /></svg>
+                    Filter tickets
+                </div>
+                @if($hasActiveFilters)
+                    <a href="{{ route('tickets.index') }}" class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        Reset all
+                    </a>
+                @endif
+            </div>
+
+            <form method="GET" action="{{ route('tickets.index') }}" class="px-4 sm:px-5 pt-3 pb-4 grid grid-cols-2 lg:grid-cols-12 gap-x-3 gap-y-3 items-end">
+                <div class="col-span-2 lg:col-span-4">
+                    <label for="filter-search" class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Search</label>
                     <div class="relative">
                         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
                         <input type="text" name="search" id="filter-search" value="{{ $filters['search'] }}"
                                placeholder="Ticket #, category, department{{ $showRequestedBy ? ', requester' : '' }}…"
-                               class="w-full pl-9 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                               class="w-full pl-9 rounded-lg border-gray-300 bg-gray-50/60 text-sm placeholder-gray-400 focus:bg-white focus:border-green-700 focus:ring-green-700">
                     </div>
                 </div>
 
-                <div class="w-full sm:w-40">
-                    <label for="filter-status" class="block text-xs font-medium text-gray-500 mb-1">Status</label>
-                    <select name="status" id="filter-status" class="w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                <div class="col-span-1 lg:col-span-2">
+                    <label for="filter-status" class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Status</label>
+                    <select name="status" id="filter-status" class="w-full rounded-lg border-gray-300 bg-gray-50/60 text-sm focus:bg-white focus:border-green-700 focus:ring-green-700">
                         <option value="">All statuses</option>
                         @foreach($statusOptions as $option)
                             <option value="{{ $option }}" @selected($filters['status'] === $option)>{{ str_replace('_', ' ', ucfirst($option)) }}</option>
@@ -86,9 +99,9 @@
                     </select>
                 </div>
 
-                <div class="w-full sm:w-36">
-                    <label for="filter-priority" class="block text-xs font-medium text-gray-500 mb-1">Priority</label>
-                    <select name="priority" id="filter-priority" class="w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                <div class="col-span-1 lg:col-span-2">
+                    <label for="filter-priority" class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Priority</label>
+                    <select name="priority" id="filter-priority" class="w-full rounded-lg border-gray-300 bg-gray-50/60 text-sm focus:bg-white focus:border-green-700 focus:ring-green-700">
                         <option value="">All priorities</option>
                         @foreach(['low' => 'Low', 'medium' => 'Medium', 'high' => 'High', 'critical' => 'Critical'] as $value => $label)
                             <option value="{{ $value }}" @selected($filters['priority'] === $value)>{{ $label }}</option>
@@ -96,30 +109,45 @@
                     </select>
                 </div>
 
-                <div class="w-1/2 sm:w-36">
-                    <label for="filter-date-from" class="block text-xs font-medium text-gray-500 mb-1">From</label>
-                    <input type="date" name="date_from" id="filter-date-from" value="{{ $filters['dateFrom'] }}"
-                           max="{{ $filters['dateTo'] ?: '' }}"
-                           class="w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                <div class="col-span-2 lg:col-span-3">
+                    <label class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Date created</label>
+                    <div class="flex items-center gap-2">
+                        <input type="date" name="date_from" id="filter-date-from" value="{{ $filters['dateFrom'] }}"
+                               max="{{ $filters['dateTo'] ?: '' }}" aria-label="From date"
+                               class="w-full min-w-0 rounded-lg border-gray-300 bg-gray-50/60 text-sm focus:bg-white focus:border-green-700 focus:ring-green-700">
+                        <span class="text-gray-400 text-sm shrink-0">–</span>
+                        <input type="date" name="date_to" id="filter-date-to" value="{{ $filters['dateTo'] }}"
+                               min="{{ $filters['dateFrom'] ?: '' }}" aria-label="To date"
+                               class="w-full min-w-0 rounded-lg border-gray-300 bg-gray-50/60 text-sm focus:bg-white focus:border-green-700 focus:ring-green-700">
+                    </div>
                 </div>
 
-                <div class="w-1/2 sm:w-36">
-                    <label for="filter-date-to" class="block text-xs font-medium text-gray-500 mb-1">To</label>
-                    <input type="date" name="date_to" id="filter-date-to" value="{{ $filters['dateTo'] }}"
-                           min="{{ $filters['dateFrom'] ?: '' }}"
-                           class="w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
-                </div>
-
-                <div class="flex items-center gap-3">
-                    <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm transition hover:opacity-90" style="background-color:#1a6b3c;">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" /></svg>
-                        Filter
+                <div class="col-span-2 lg:col-span-1">
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm transition hover:opacity-90" style="background-color:#1a6b3c;">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                        Apply
                     </button>
-                    @if($hasActiveFilters)
-                        <a href="{{ route('tickets.index') }}" class="text-sm text-gray-500 hover:text-gray-700 underline underline-offset-2">Clear</a>
-                    @endif
                 </div>
             </form>
+
+            {{-- Active filters at a glance --}}
+            @if($hasActiveFilters)
+                <div class="flex flex-wrap items-center gap-2 px-4 sm:px-5 py-2.5 bg-gray-50 border-t border-gray-100 text-xs">
+                    <span class="text-gray-400 font-medium">Active:</span>
+                    @if($filters['search'])
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-gray-200 text-gray-600">“{{ $filters['search'] }}”</span>
+                    @endif
+                    @if($filters['status'])
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-gray-200 text-gray-600">Status: {{ str_replace('_', ' ', ucfirst($filters['status'])) }}</span>
+                    @endif
+                    @if($filters['priority'])
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-gray-200 text-gray-600">Priority: {{ ucfirst($filters['priority']) }}</span>
+                    @endif
+                    @if($filters['dateFrom'] || $filters['dateTo'])
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-gray-200 text-gray-600">{{ $filters['dateFrom'] ?: 'Any' }} → {{ $filters['dateTo'] ?: 'Any' }}</span>
+                    @endif
+                </div>
+            @endif
         </div>
 
         {{-- A lean column set, horizontal-only dividers, and a fixed layout —
@@ -177,12 +205,12 @@
                                     <span class="md:hidden text-gray-400">{{ $ticket->created_at->format('M j, Y') }}</span>
                                 </div>
                             </td>
-                            <td class="hidden sm:table-cell px-5 py-4"><x-priority-badge :priority="$ticket->priority" /></td>
-                            <td class="px-4 sm:px-5 py-4">
+                            <td class="hidden sm:table-cell px-5 py-4 whitespace-nowrap"><x-priority-badge :priority="$ticket->priority" /></td>
+                            <td class="px-4 sm:px-5 py-4 whitespace-nowrap">
                                 <x-status-badge :status="$ticket->status" />
                             </td>
                             @if($showRequestedBy)
-                                <td class="hidden lg:table-cell px-5 py-4 text-gray-600">
+                                <td class="hidden lg:table-cell px-5 py-4 text-gray-600 whitespace-nowrap">
                                     <span class="inline-flex items-center gap-1.5">
                                         {{ $ticket->creator->name }}
                                         @if($ticket->creator->is_vip)
@@ -192,7 +220,7 @@
                                 </td>
                             @endif
                             @if($showAssignedTo)
-                                <td class="hidden lg:table-cell px-5 py-4 text-gray-600">
+                                <td class="hidden lg:table-cell px-5 py-4 text-gray-600 whitespace-nowrap">
                                     @if($ticket->assignee)
                                         {{ $ticket->assignee->name }}
                                     @else
@@ -201,7 +229,7 @@
                                 </td>
                             @endif
                             <td class="hidden md:table-cell px-5 py-4 text-gray-500 whitespace-nowrap">{{ $ticket->created_at->format('M j, Y') }}</td>
-                            <td class="px-3 sm:px-5 py-4 text-right">
+                            <td class="px-3 sm:px-5 py-4 text-right whitespace-nowrap">
                                 <a href="{{ route('tickets.show', $ticket) }}"
                                    class="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-400 hover:text-white transition-colors"
                                    onmouseover="this.style.backgroundColor='#1a6b3c'" onmouseout="this.style.backgroundColor='transparent'"

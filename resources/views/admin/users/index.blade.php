@@ -103,8 +103,13 @@
                     @forelse($users as $user)
                         <tr class="hover:bg-gray-50/60 transition-colors">
                             <td class="px-4 sm:px-5 py-3.5 max-w-0 w-full">
-                                <a href="{{ route('admin.users.show', $user) }}" class="font-medium text-gray-800 hover:text-green-700 hover:underline truncate block">{{ $user->name }}</a>
-                                <p class="text-xs text-gray-400 truncate">{{ $user->username ?? '—' }} · {{ $user->email }}</p>
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <x-avatar :user="$user" size="sm" />
+                                    <div class="min-w-0">
+                                        <a href="{{ route('admin.users.show', $user) }}" class="font-medium text-gray-800 hover:text-green-700 hover:underline truncate block">{{ $user->name }}</a>
+                                        <p class="text-xs text-gray-400 truncate">{{ $user->username ?? '—' }} · {{ $user->email }}</p>
+                                    </div>
+                                </div>
                                 {{-- Folds in whatever is hidden at this breakpoint --}}
                                 <div class="lg:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
                                     <span class="truncate max-w-[10rem]">{{ $user->department->name ?? '—' }}</span>
@@ -117,13 +122,13 @@
                                     <span class="sm:hidden inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-medium {{ $user->is_vip ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500' }}">{{ $user->is_vip ? 'VIP' : 'Standard' }}</span>
                                 </div>
                             </td>
-                            <td class="hidden lg:table-cell px-5 py-3.5 text-gray-600">
+                            <td class="hidden lg:table-cell px-5 py-3.5 text-gray-600 whitespace-nowrap">
                                 <p class="truncate max-w-[14rem]">{{ $user->department->name ?? '—' }}</p>
                                 <p class="text-xs text-gray-400 truncate max-w-[14rem]">{{ $user->position->name ?? '—' }}</p>
                             </td>
                             <td class="hidden md:table-cell px-5 py-3.5 capitalize text-gray-600 whitespace-nowrap">{{ str_replace('_',' ',$user->role) }}</td>
                             <td class="hidden xl:table-cell px-5 py-3.5 text-gray-600 whitespace-nowrap">{{ $user->branch_name ?? '—' }}</td>
-                            <td class="hidden sm:table-cell px-5 py-3.5">
+                            <td class="hidden sm:table-cell px-5 py-3.5 whitespace-nowrap">
                                 <form method="POST" action="{{ route('admin.users.vip', $user) }}">
                                     @csrf @method('PATCH')
                                     <button class="text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap {{ $user->is_vip ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500' }}">
@@ -131,7 +136,7 @@
                                     </button>
                                 </form>
                             </td>
-                            <td class="hidden sm:table-cell px-5 py-3.5">
+                            <td class="hidden sm:table-cell px-5 py-3.5 whitespace-nowrap">
                                 @if($user->isSuspended())
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 ring-1 ring-inset ring-gray-200">Suspended</span>
                                 @else

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Illuminate\Validation\Rules\Password;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\Department;
@@ -77,7 +78,7 @@ class UserController extends Controller
             'last_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:users,username'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', Password::defaults()],
             'department_id' => ['required', 'exists:departments,id'],
             'position_id' => ['required', 'exists:positions,id'],
             'role' => ['required', 'in:staff,it_support,admin'],
@@ -87,7 +88,10 @@ class UserController extends Controller
             'email.unique' => 'That email is already registered.',
             'username.unique' => 'That username is already taken.',
             'username.alpha_dash' => 'Username can only contain letters, numbers, dashes, and underscores.',
-            'password.min' => 'Password must be at least 8 characters.',
+            'password.min' => 'Password must be at least :min characters.',
+            'password.mixed' => 'Password needs both uppercase and lowercase letters.',
+            'password.numbers' => 'Password needs at least one number.',
+            'password.symbols' => 'Password needs at least one symbol (for example ! ? # $).',
             'department_id.required' => 'Choose which department this person belongs to.',
             'position_id.required' => 'Choose this person\'s position.',
             'location.required' => 'Choose which branch this person works out of.',
@@ -177,7 +181,7 @@ class UserController extends Controller
             'last_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:users,username,'.$user->id],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
-            'password' => ['nullable', 'string', 'min:8'],
+            'password' => ['nullable', 'string', Password::defaults()],
             'department_id' => ['required', 'exists:departments,id'],
             'position_id' => ['required', 'exists:positions,id'],
             'role' => ['required', 'in:staff,it_support,admin'],
@@ -187,7 +191,10 @@ class UserController extends Controller
             'email.unique' => 'That email is already registered.',
             'username.unique' => 'That username is already taken.',
             'username.alpha_dash' => 'Username can only contain letters, numbers, dashes, and underscores.',
-            'password.min' => 'Password must be at least 8 characters.',
+            'password.min' => 'Password must be at least :min characters.',
+            'password.mixed' => 'Password needs both uppercase and lowercase letters.',
+            'password.numbers' => 'Password needs at least one number.',
+            'password.symbols' => 'Password needs at least one symbol (for example ! ? # $).',
             'department_id.required' => 'Choose which department this person belongs to.',
             'position_id.required' => 'Choose this person\'s position.',
             'location.required' => 'Choose which branch this person works out of.',

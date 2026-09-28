@@ -25,25 +25,26 @@ class AssetController extends Controller
      */
     public function index(Request $request)
     {
-        $assets = Asset::with(['user', 'department'])
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $search = $request->string('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('asset_tag', 'like', "%{$search}%")
-                        ->orWhere('device_name', 'like', "%{$search}%")
-                        ->orWhere('serial_number', 'like', "%{$search}%");
-                });
-            })
-            ->when($request->filled('department_id'), function ($query) use ($request) {
-                $query->where('department_id', $request->integer('department_id'));
-            })
+        $assets = $this->assetQuery($request)
+            ->with(['user', 'department'])
             ->orderBy('asset_tag')
             ->paginate(20)
             ->withQueryString();
 
+        // The overview counts follow the search + department only (not the
+        // type / assignment / status facets), so the type tiles always show the
+        // full breakdown and stay clickable as filters.
+        $summary = $this->summarize($this->assetQuery($request, false));
+
+        $hasFilters = $request->filled('search')
+            || $request->filled('department_id')
+            || $request->filled('type')
+            || $request->filled('assignment')
+            || $request->filled('status');
+
         $departments = Department::orderBy('name')->get();
 
-        return view('admin.assets.index', compact('assets', 'departments'));
+        return view('admin.assets.index', compact('assets', 'departments', 'summary', 'hasFilters'));
     }
 
     /**
@@ -213,14 +214,19 @@ class AssetController extends Controller
     }
 
     /**
-     * Same search/department filter as index(), reused by both export
-     * formats so "Export" always matches whatever inventory view the
-     * admin currently has filtered — returned as one plain collection
-     * instead of a paginator, since a report is a single document.
+     * The one place inventory filters are applied — used by the list page,
+     * the overview counts, and both exports so they always agree.
+     *
+     * $withFacets = false leaves out the type / assignment / status filters
+     * (used for the overview tiles, which should show the whole breakdown).
      */
-    private function filteredAssetsForExport(Request $request)
+    private function assetQuery(Request $request, bool $withFacets = true)
     {
-        return Asset::with(['user', 'department'])
+        $type = (string) $request->query('type', '');
+        $assignment = (string) $request->query('assignment', '');
+        $status = (string) $request->query('status', '');
+
+        return Asset::query()
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
                 $query->where(function ($q) use ($search) {
@@ -232,6 +238,61 @@ class AssetController extends Controller
             ->when($request->filled('department_id'), function ($query) use ($request) {
                 $query->where('department_id', $request->integer('department_id'));
             })
+            ->when($withFacets && array_key_exists($type, Asset::TYPES), fn ($q) => $q->where('type', $type))
+            ->when($withFacets && $assignment === 'unassigned', fn ($q) => $q->whereNull('user_id'))
+            ->when($withFacets && $assignment === 'assigned', fn ($q) => $q->whereNotNull('user_id'))
+            ->when($withFacets && array_key_exists($status, Asset::STATUSES), fn ($q) => $q->where('status', $status));
+    }
+
+    /**
+     * Headline numbers for a set of assets: totals, assigned vs unassigned,
+     * repair/retired, and a per-device-type breakdown (every type is listed,
+     * even at zero, so the report always reads the same way).
+     */
+    private function summarize($query): array
+    {
+        $rows = $query->toBase()
+            ->selectRaw("type, COUNT(*) as total, SUM(CASE WHEN user_id IS NULL THEN 1 ELSE 0 END) as unassigned, SUM(CASE WHEN status = 'in_repair' THEN 1 ELSE 0 END) as in_repair, SUM(CASE WHEN status = 'retired' THEN 1 ELSE 0 END) as retired")
+            ->groupBy('type')
+            ->get()
+            ->keyBy('type');
+
+        $byType = [];
+        foreach (Asset::TYPES as $code => $label) {
+            $row = $rows->get($code);
+            $total = (int) ($row->total ?? 0);
+            $unassigned = (int) ($row->unassigned ?? 0);
+
+            $byType[$code] = [
+                'label' => $label,
+                'total' => $total,
+                'assigned' => $total - $unassigned,
+                'unassigned' => $unassigned,
+                'in_repair' => (int) ($row->in_repair ?? 0),
+            ];
+        }
+
+        $total = (int) $rows->sum('total');
+        $unassigned = (int) $rows->sum('unassigned');
+
+        return [
+            'total' => $total,
+            'assigned' => $total - $unassigned,
+            'unassigned' => $unassigned,
+            'in_repair' => (int) $rows->sum('in_repair'),
+            'retired' => (int) $rows->sum('retired'),
+            'byType' => $byType,
+        ];
+    }
+
+    /**
+     * Same filters as the list page, returned as one plain collection
+     * instead of a paginator, since a report is a single document.
+     */
+    private function filteredAssetsForExport(Request $request)
+    {
+        return $this->assetQuery($request)
+            ->with(['user', 'department'])
             ->orderBy('asset_tag')
             ->get();
     }
@@ -255,6 +316,18 @@ class AssetController extends Controller
             }
         }
 
+        if (array_key_exists((string) $request->query('type'), Asset::TYPES)) {
+            $parts[] = 'Type: '.Asset::TYPES[$request->query('type')];
+        }
+
+        if (in_array($request->query('assignment'), ['assigned', 'unassigned'], true)) {
+            $parts[] = 'Assignment: '.ucfirst($request->query('assignment'));
+        }
+
+        if (array_key_exists((string) $request->query('status'), Asset::STATUSES)) {
+            $parts[] = 'Status: '.Asset::STATUSES[$request->query('status')];
+        }
+
         return $parts ? implode(' · ', $parts) : 'All assets';
     }
 
@@ -268,6 +341,7 @@ class AssetController extends Controller
 
         $pdf = Pdf::loadView('admin.assets.export-pdf', [
             'assets' => $assets,
+            'summary' => $this->summarize($this->assetQuery($request)),
             'filterSummary' => $this->exportFilterSummary($request),
             'generatedAt' => now(),
         ])->setPaper('a4', 'landscape');
@@ -283,9 +357,85 @@ class AssetController extends Controller
     public function exportExcel(Request $request): StreamedResponse
     {
         $assets = $this->filteredAssetsForExport($request);
+        $summary = $this->summarize($this->assetQuery($request));
+        $filterSummary = $this->exportFilterSummary($request);
 
         $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+
+        // ---------- Sheet 1: Summary ----------
+        $overview = $spreadsheet->getActiveSheet();
+        $overview->setTitle('Summary');
+
+        $overview->setCellValue('A1', 'Crest IT Service Desk — Asset Inventory Summary');
+        $overview->mergeCells('A1:E1');
+        $overview->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('123F24');
+
+        $overview->setCellValue('A2', 'Generated '.now()->format('F j, Y g:i A').' · '.$filterSummary);
+        $overview->mergeCells('A2:E2');
+        $overview->getStyle('A2')->getFont()->setItalic(true)->setSize(9)->getColor()->setRGB('6B7280');
+
+        $overview->setCellValue('A4', 'Overview');
+        $overview->setCellValue('B4', 'Count');
+        $this->styleHeader($overview, 'A4:B4');
+
+        $overviewRows = [
+            ['Total assets', $summary['total']],
+            ['Assigned', $summary['assigned']],
+            ['Unassigned', $summary['unassigned']],
+            ['In repair', $summary['in_repair']],
+            ['Retired', $summary['retired']],
+        ];
+        $r = 5;
+        foreach ($overviewRows as [$label, $value]) {
+            $overview->setCellValue("A{$r}", $label);
+            $overview->setCellValue("B{$r}", $value);
+            $r++;
+        }
+        $overview->getStyle('A5:B5')->getFont()->setBold(true);
+        $overview->getStyle('A7:B7')->getFont()->getColor()->setRGB('B45309'); // unassigned stands out
+        $overview->getStyle('A7:B7')->getFont()->setBold(true);
+        $overview->getStyle('B5:B9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $overview->getStyle('A4:B9')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
+
+        $typeHeaderRow = 12;
+        $overview->setCellValue("A{$typeHeaderRow}", 'Device type');
+        $overview->setCellValue("B{$typeHeaderRow}", 'Total');
+        $overview->setCellValue("C{$typeHeaderRow}", 'Assigned');
+        $overview->setCellValue("D{$typeHeaderRow}", 'Unassigned');
+        $overview->setCellValue("E{$typeHeaderRow}", 'In repair');
+        $this->styleHeader($overview, "A{$typeHeaderRow}:E{$typeHeaderRow}");
+
+        $r = $typeHeaderRow + 1;
+        foreach ($summary['byType'] as $row) {
+            $overview->setCellValue("A{$r}", $row['label']);
+            $overview->setCellValue("B{$r}", $row['total']);
+            $overview->setCellValue("C{$r}", $row['assigned']);
+            $overview->setCellValue("D{$r}", $row['unassigned']);
+            $overview->setCellValue("E{$r}", $row['in_repair']);
+            if ($row['total'] === 0) {
+                $overview->getStyle("A{$r}:E{$r}")->getFont()->getColor()->setRGB('9CA3AF');
+            }
+            $r++;
+        }
+
+        $overview->setCellValue("A{$r}", 'Total');
+        $overview->setCellValue("B{$r}", $summary['total']);
+        $overview->setCellValue("C{$r}", $summary['assigned']);
+        $overview->setCellValue("D{$r}", $summary['unassigned']);
+        $overview->setCellValue("E{$r}", $summary['in_repair']);
+        $overview->getStyle("A{$r}:E{$r}")->getFont()->setBold(true);
+        $overview->getStyle("A{$r}:E{$r}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('E8F3EC');
+
+        $overview->getStyle("B{$typeHeaderRow}:E{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $overview->getStyle("A{$typeHeaderRow}:E{$r}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
+
+        $overview->getColumnDimension('A')->setWidth(24);
+        foreach (['B', 'C', 'D', 'E'] as $col) {
+            $overview->getColumnDimension($col)->setWidth(14);
+        }
+
+        // ---------- Sheet 2: full asset list ----------
+        $sheet = $spreadsheet->createSheet();
         $sheet->setTitle('Assets');
 
         $sheet->setCellValue('A1', 'Crest IT Service Desk — Asset Inventory Report');
@@ -293,16 +443,14 @@ class AssetController extends Controller
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getFont()->getColor()->setRGB('123F24');
 
-        $sheet->setCellValue('A2', 'Generated '.now()->format('F j, Y g:i A').' · '.$this->exportFilterSummary($request));
+        $sheet->setCellValue('A2', 'Generated '.now()->format('F j, Y g:i A').' · '.$filterSummary.' · '.$summary['total'].' asset'.($summary['total'] === 1 ? '' : 's'));
         $sheet->mergeCells('A2:J2');
         $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(9);
         $sheet->getStyle('A2')->getFont()->getColor()->setRGB('6B7280');
 
         $headers = ['Asset Tag', 'Device Name', 'Type', 'Company', 'Location', 'Department', 'Assigned To', 'Serial Number', 'Status', 'Assigned Since'];
         $sheet->fromArray($headers, null, 'A4');
-        $sheet->getStyle('A4:J4')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A4:J4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1A6B3C');
-        $sheet->getStyle('A4:J4')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        $this->styleHeader($sheet, 'A4:J4');
 
         $row = 5;
         foreach ($assets as $asset) {
@@ -316,6 +464,10 @@ class AssetController extends Controller
             $sheet->setCellValue("H{$row}", $asset->serial_number ?? '—');
             $sheet->setCellValue("I{$row}", Asset::STATUSES[$asset->status] ?? ucfirst($asset->status));
             $sheet->setCellValue("J{$row}", $asset->assigned_date?->format('M j, Y') ?? '—');
+
+            if (! $asset->user_id) {
+                $sheet->getStyle("G{$row}")->getFont()->setItalic(true)->getColor()->setRGB('B45309');
+            }
             $row++;
         }
 
@@ -329,6 +481,8 @@ class AssetController extends Controller
                     $sheet->getStyle("A{$i}:J{$i}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9FAFB');
                 }
             }
+
+            $sheet->setAutoFilter("A4:J{$lastRow}");
         }
 
         foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'] as $col) {
@@ -337,11 +491,23 @@ class AssetController extends Controller
 
         $sheet->freezePane('A5');
 
+        $spreadsheet->setActiveSheetIndex(0);
+
         return response()->streamDownload(function () use ($spreadsheet) {
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         }, 'assets-report-'.now()->format('Y-m-d').'.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    /**
+     * Brand-green header row used across the workbook's tables.
+     */
+    private function styleHeader($sheet, string $range): void
+    {
+        $sheet->getStyle($range)->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle($range)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1A6B3C');
+        $sheet->getStyle($range)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
     }
 }

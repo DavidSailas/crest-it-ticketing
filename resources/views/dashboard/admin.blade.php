@@ -104,40 +104,35 @@
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="bg-gray-50/80 border-b border-gray-200">
-                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Title</th>
-                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
-                                <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Requested by</th>
-                                <th class="hidden lg:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned to</th>
-                                <th class="w-16 px-4 sm:px-5 py-3"></th>
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Ticket</th>
+                                <th class="hidden sm:table-cell px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Priority</th>
+                                <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Status</th>
+                                <th class="hidden md:table-cell px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Requested by</th>
+                                <th class="hidden lg:table-cell px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Assigned to</th>
+                                <th class="hidden xl:table-cell px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Created</th>
+                                <th class="w-24 px-4 sm:px-5 py-3"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @foreach($recentTickets as $ticket)
-                                <tr class="hover:bg-gray-50/60 transition-colors">
+                                <tr class="group hover:bg-gray-50/60 transition-colors">
                                     <td class="px-4 sm:px-5 py-3.5 max-w-0 w-full">
                                         <p class="font-medium text-gray-800 truncate">{{ $ticket->title }}</p>
-                                        <div class="md:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
-                                            <span class="inline-flex items-center gap-1">
-                                                {{ $ticket->creator->name }}
-                                                @if($ticket->creator->is_vip)
-                                                    <x-vip-badge size="compact" />
-                                                @endif
-                                            </span>
+                                        <p class="mt-0.5 font-mono text-xs text-gray-400">{{ $ticket->ticket_number }}</p>
+                                        {{-- Columns hidden on smaller screens fold into this line --}}
+                                        <div class="md:hidden mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                                            <span class="sm:hidden"><x-priority-badge :priority="$ticket->priority" /></span>
+                                            <span>{{ $ticket->creator->name }}</span>
                                             <span class="lg:hidden text-gray-300">→</span>
                                             <span class="lg:hidden">{{ $ticket->assignee->name ?? 'Unassigned' }}</span>
                                         </div>
                                     </td>
-                                    <td class="px-4 sm:px-5 py-3.5"><x-status-badge :status="$ticket->status" /></td>
-                                    <td class="hidden md:table-cell px-5 py-3.5 text-gray-600">
-                                        <span class="inline-flex items-center gap-1.5">
-                                            {{ $ticket->creator->name }}
-                                            @if($ticket->creator->is_vip)
-                                                <x-vip-badge size="compact" />
-                                            @endif
-                                        </span>
-                                    </td>
-                                    <td class="hidden lg:table-cell px-5 py-3.5 text-gray-600">{{ $ticket->assignee->name ?? '—' }}</td>
-                                    <td class="px-4 sm:px-5 py-3.5 text-right"><a href="{{ route('tickets.show', $ticket) }}" class="text-green-700 hover:underline font-medium text-xs">View</a></td>
+                                    <td class="hidden sm:table-cell px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-priority-badge :priority="$ticket->priority" /></td>
+                                    <td class="px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-status-badge :status="$ticket->status" /></td>
+                                    <td class="hidden md:table-cell px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-person :user="$ticket->creator" /></td>
+                                    <td class="hidden lg:table-cell px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-person :user="$ticket->assignee" /></td>
+                                    <td class="hidden xl:table-cell px-4 sm:px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $ticket->created_at->format('M j, Y') }}</td>
+                                    <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap"><x-view-link href="{{ route('tickets.show', $ticket) }}" /></td>
                                 </tr>
                             @endforeach
                         </tbody>
