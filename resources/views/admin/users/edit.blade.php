@@ -253,25 +253,18 @@
                                                 <input type="hidden" name="assigned_date" value="{{ $asset->assigned_date?->toDateString() }}">
                                                 <input type="hidden" name="notes" value="{{ $asset->notes }}">
                                             </form>
-                                            <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'unassign-asset-{{ $asset->id }}')" class="text-xs text-amber-600 hover:text-amber-700">Unassign</button>
-
-                                            <x-modal name="unassign-asset-{{ $asset->id }}" maxWidth="sm" focusable>
-                                                <div class="p-6">
-                                                    <div class="flex items-start gap-4">
-                                                        <span class="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-amber-50 text-amber-600">
-                                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                                                        </span>
-                                                        <div class="flex-1 min-w-0 pt-0.5">
-                                                            <h2 class="text-base font-semibold text-gray-800">Unassign this asset?</h2>
-                                                            <p class="mt-1.5 text-sm text-gray-500">{{ $asset->asset_tag }} will be removed from {{ $user->name }} and stay in inventory as unassigned.</p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="mt-6 flex justify-end gap-3">
-                                                        <button type="button" x-on:click="$dispatch('close')" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</button>
-                                                        <button type="submit" form="unassign-form-{{ $asset->id }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 transition">Unassign</button>
-                                                    </div>
-                                                </div>
-                                            </x-modal>
+                                            <x-confirm-action-modal
+                                                id="unassign-asset-{{ $asset->id }}"
+                                                form="unassign-form-{{ $asset->id }}"
+                                                tone="warning"
+                                                title="Unassign this asset?"
+                                                message="{{ $asset->asset_tag }} will be removed from {{ $user->name }} and stay in inventory as unassigned."
+                                                confirm-label="Unassign"
+                                                busy-label="Unassigning…"
+                                                confirm-class="bg-amber-500 hover:bg-amber-600"
+                                                trigger-label="Unassign"
+                                                trigger-class="text-xs text-amber-600 hover:text-amber-700"
+                                            />
                                         </td>
                                     </tr>
                                 @endforeach
