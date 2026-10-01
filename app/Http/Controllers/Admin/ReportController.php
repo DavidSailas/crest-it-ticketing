@@ -71,6 +71,8 @@ class ReportController extends Controller
             'comparison' => $this->previousPeriodComparison($from, $to, $report),
             'summary' => $this->narrativeSummary($rangeLabel, $report),
             'logoData' => $this->logoDataUri(),
+            'engineerReport' => $this->teamTable('engineers', $from, $to),
+            'staffReport' => $this->teamTable('staff', $from, $to),
         ]);
 
         $pdf = Pdf::loadView('admin.reports.export-pdf', $data)->setPaper('a4', 'portrait');
@@ -135,24 +137,18 @@ class ReportController extends Controller
     {
         $engineers = User::where('role', 'it_support')->with('department')->orderBy('name')->get();
 
-        $assigned = Ticket::whereNotNull('assigned_to')
+        // Every ticket assigned to an engineer that was created in the period,
+        // split by where it stands now — so "Tickets" is exactly the sum of the
+        // five status columns next to it.
+        $tickets = Ticket::whereNotNull('assigned_to')
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
-            ->toBase()->selectRaw('assigned_to, COUNT(*) as total')->groupBy('assigned_to')
-            ->pluck('total', 'assigned_to');
-
-        $resolved = Ticket::whereNotNull('assigned_to')->whereNotNull('resolved_at')
-            ->when($from, fn ($q) => $q->where('resolved_at', '>=', $from))
-            ->when($to, fn ($q) => $q->where('resolved_at', '<=', $to))
-            ->get(['assigned_to', 'created_at', 'resolved_at'])
+            ->get(['assigned_to', 'status', 'created_at', 'resolved_at'])
             ->groupBy('assigned_to');
 
-        $working = Ticket::whereNotNull('assigned_to')->whereIn('status', ['in_progress', 'pending'])
-            ->toBase()->selectRaw('assigned_to, COUNT(*) as total')->groupBy('assigned_to')
-            ->pluck('total', 'assigned_to');
-
-        $rows = $engineers->map(function ($e) use ($assigned, $resolved, $working) {
-            $done = $resolved[$e->id] ?? collect();
+        $rows = $engineers->map(function ($e) use ($tickets) {
+            $mine = $tickets[$e->id] ?? collect();
+            $done = $mine->filter(fn ($t) => $t->resolved_at);
             $avg = $done->isNotEmpty()
                 ? $done->avg(fn ($t) => $t->created_at->diffInMinutes($t->resolved_at) / 60)
                 : null;
@@ -160,21 +156,24 @@ class ReportController extends Controller
             return [
                 'name' => $e->name,
                 'department' => $e->department->name ?? '—',
-                'assigned' => (int) ($assigned[$e->id] ?? 0),
-                'resolved' => $done->count(),
-                'working' => (int) ($working[$e->id] ?? 0),
+                'total' => $mine->count(),
+                'open' => $mine->where('status', 'open')->count(),
+                'in_progress' => $mine->where('status', 'in_progress')->count(),
+                'pending' => $mine->where('status', 'pending')->count(),
+                'resolved' => $mine->where('status', 'resolved')->count(),
+                'closed' => $mine->where('status', 'closed')->count(),
                 'avg' => $avg === null ? '—' : ($avg < 24 ? round($avg, 1).' h' : round($avg / 24, 1).' d'),
             ];
-        })->sortByDesc('resolved')->values();
+        })->sortBy([['total', 'desc'], ['name', 'asc']])->values();
 
         return [
             'key' => 'engineers',
             'title' => 'IT Engineer report',
-            'headers' => ['IT Engineer', 'Department', 'Assigned', 'Resolved', 'Working now', 'Avg. resolution'],
-            'numeric' => [2, 3, 4, 5],
-            'totalCols' => [2, 3, 4],
+            'headers' => ['IT Engineer', 'Department', 'Tickets', 'Open', 'In progress', 'Pending', 'Resolved', 'Closed', 'Avg. resolution'],
+            'numeric' => [2, 3, 4, 5, 6, 7, 8],
+            'totalCols' => [2, 3, 4, 5, 6, 7],
             'rows' => $rows->map(fn ($r) => array_values($r))->all(),
-            'note' => 'Assigned = tickets created in the period and assigned to the engineer · Resolved = tickets resolved in the period · Working now = In Progress or Pending today',
+            'note' => 'Tickets = everything assigned to the engineer that was created in the period, shown by its current status · Avg. resolution = created to resolved',
         ];
     }
 
@@ -669,6 +668,9 @@ class ReportController extends Controller
      * A rotating palette for facets with no fixed brand color (categories
      * are free text, so we can't hardcode one color per value).
      */
+    /** Fixed colour per calendar month (October = brand green), matching the on-screen chart. */
+    private const MONTH_PALETTE = ['#1a6b3c', '#2563eb', '#d97706', '#7c3aed', '#0891b2', '#e11d48', '#65a30d', '#c026d3', '#ea580c', '#0d9488', '#4f46e5', '#b45309'];
+
     private const PALETTE = ['#1a6b3c', '#3b82f6', '#f59e0b', '#ef4444', '#6366f1', '#14b8a6', '#ec4899', '#9ca3af'];
 
     /**
@@ -738,6 +740,7 @@ class ReportController extends Controller
                 'value' => (int) ($rows[$key] ?? 0),
                 'month' => $cursor->format('Y-m'),
                 'month_label' => $cursor->format('F Y'),
+                'color' => self::MONTH_PALETTE[($cursor->month - 10 + 12) % 12],
             ];
             $cursor = $daily ? $cursor->addDay() : $cursor->addMonthNoOverflow();
         }

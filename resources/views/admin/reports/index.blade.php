@@ -393,7 +393,7 @@
                             @foreach($shown as $row)
                                 <tr>
                                     @foreach($row as $i => $cell)
-                                        <td class="py-2.5 pr-3 truncate {{ in_array($i, $t['numeric']) ? 'text-right tabular-nums' : 'text-gray-500' }} {{ $i === 0 ? 'font-medium text-gray-800' : '' }} {{ $i === 3 ? 'font-semibold text-gray-800' : '' }} {{ $i >= 4 && ! in_array($i, [4]) ? 'hidden md:table-cell' : '' }} {{ $i === 1 || ($rep['team'] === 'staff' && $i === 2) ? 'hidden sm:table-cell' : '' }}" title="{{ $cell }}">{{ $cell }}</td>
+                                        <td class="py-2.5 pr-3 truncate {{ in_array($i, $t['numeric']) ? 'text-right tabular-nums' : 'text-gray-500' }} {{ $i === 0 ? 'font-medium text-gray-800' : '' }} {{ $i === ($rep['team'] === 'staff' ? 3 : 2) ? 'font-semibold text-gray-800' : '' }} {{ $i >= 4 && ! in_array($i, [4]) ? 'hidden md:table-cell' : '' }} {{ $i === 1 || ($rep['team'] === 'staff' && $i === 2) ? 'hidden sm:table-cell' : '' }}" title="{{ $cell }}">{{ $cell }}</td>
                                     @endforeach
                                 </tr>
                             @endforeach

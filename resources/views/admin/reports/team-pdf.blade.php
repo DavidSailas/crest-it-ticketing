@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <style>
-        @page { margin: 32px 36px; }
+        @page { margin: 32px 36px 50px; }
         body { font-family: 'Helvetica', Arial, sans-serif; color: #1f2937; font-size: 11px; }
         .header { border-bottom: 2px solid #123f24; padding-bottom: 12px; margin-bottom: 18px; }
         .header table { width: 100%; border-collapse: collapse; margin: 0; }
@@ -15,12 +15,15 @@
         table.grid { width: 100%; border-collapse: collapse; margin-top: 8px; }
         table.grid thead th { background-color: #1a6b3c; color: #fff; text-align: left; padding: 8px 10px; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.03em; }
         table.grid tbody td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; font-size: 10.5px; }
-        table.grid tbody tr:nth-child(even) { background-color: #f9fafb; }
+        table.grid tbody tr.alt td { background-color: #f9fafb; }
+        .pagenum:before { content: counter(page); }
+        .footer { position: fixed; left: 0; right: 0; bottom: -34px; border-top: 1px solid #e5e7eb; padding-top: 6px; font-size: 8px; color: #9ca3af; }
+        .footer table { width: 100%; margin: 0; }
+        .footer td { border: 0; padding: 0; background: none; }
         table.grid tfoot td { padding: 8px 10px; font-weight: bold; background-color: #e8f3ec; border-top: 2px solid #1a6b3c; }
         .num { text-align: right; }
         .note { margin-top: 12px; font-size: 9px; color: #6b7280; }
-        .footer { margin-top: 22px; padding-top: 10px; border-top: 1px dashed #d1d5db; font-size: 9px; color: #9ca3af; }
-    </style>
+            </style>
 </head>
 <body>
     <div class="header">
@@ -50,8 +53,8 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($table['rows'] as $row)
-                    <tr>
+                @foreach($table['rows'] as $ri => $row)
+                    <tr class="{{ $ri % 2 ? 'alt' : '' }}">
                         @foreach($row as $i => $cell)
                             <td class="{{ in_array($i, $table['numeric']) ? 'num' : '' }}">{{ $cell }}</td>
                         @endforeach
@@ -75,6 +78,11 @@
         <p class="note">{{ $table['note'] }}</p>
     @endif
 
-    <div class="footer">Crest Forwarder Inc. &mdash; IT Service Desk &middot; Internal use only</div>
+    <div class="footer">
+        <table><tr>
+            <td>Crest Forwarder Inc. &mdash; IT Service Desk &middot; Confidential, internal use only</td>
+            <td style="text-align:right;">{{ $rangeLabel }} &middot; Page <span class="pagenum"></span></td>
+        </tr></table>
+    </div>
 </body>
 </html>
