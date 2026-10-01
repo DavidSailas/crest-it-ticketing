@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AssetController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\PositionController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
@@ -40,7 +41,7 @@ Event::listen(function (Failed $event) {
     }
 });
 
-Route::middleware(['auth', 'account.active'])->group(function () {
+Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
     // Dashboard — different view per role, resolved inside the controller
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/live', [DashboardController::class, 'live'])->name('dashboard.live');
@@ -100,6 +101,12 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         // where the owner is already known from the URL.
         Route::post('/admin/users/{user}/assets', [AssetController::class, 'store'])->name('admin.users.assets.store');
 
+        // Editing is shared with Admin — IT Support handles day-to-day upkeep
+        // (reassigning, notes, status). Deleting an asset stays admin-only,
+        // in the admin-only group further down.
+        Route::get('/assets/{asset}/edit', [AssetController::class, 'edit'])->name('assets.edit');
+        Route::put('/assets/{asset}', [AssetController::class, 'update'])->name('assets.update');
+
         // Chat Support inbox — every staff conversation, with unread counts.
         Route::get('/support-chat-inbox', [SupportChatController::class, 'inbox'])->name('support-chat.inbox');
         Route::get('/support-chat-inbox/poll', [SupportChatController::class, 'inboxPoll'])->name('support-chat.inbox.poll');
@@ -116,8 +123,20 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::get('/users-directory/{user}', [UserController::class, 'directoryShow'])->name('users.directory.show');
     });
 
+    // Reports — the same management report for everyone who signs in
+    // (Staff, IT Support, Admin), with its PDF / Excel exports. Kept under the
+    // /admin/reports URL and admin.reports.* names so every link keeps working.
+    Route::middleware('role:staff,it_support,admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf'])->name('reports.export.pdf');
+        Route::get('/reports/{team}/export/{format}', [ReportController::class, 'exportTeam'])
+            ->where('team', 'engineers|staff')->where('format', 'excel|pdf')
+            ->name('reports.team.export');
+    });
+
     // Admin only
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
@@ -137,8 +156,9 @@ Route::middleware(['auth', 'account.active'])->group(function () {
         Route::patch('/users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
 
-        Route::get('/assets/{asset}/edit', [AssetController::class, 'edit'])->name('assets.edit');
-        Route::put('/assets/{asset}', [AssetController::class, 'update'])->name('assets.update');
+        // Deleting an asset stays admin-only. (Edit/update moved up to the
+        // IT Support + Admin group above — everything else about assets is
+        // shared between the two roles.)
         Route::delete('/assets/{asset}', [AssetController::class, 'destroy'])->name('assets.destroy');
 
         // Reporting — admin-only PDF/Excel exports for tickets and assets.

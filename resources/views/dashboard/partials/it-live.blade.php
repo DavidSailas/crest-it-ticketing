@@ -123,22 +123,42 @@
         <div class="flex flex-wrap justify-between items-baseline gap-x-3 gap-y-1 mb-3">
             <h3 class="text-base font-semibold text-gray-800">Assigned Tickets</h3>
             <span class="text-xs text-gray-400">
-                All IT Support · {{ $assignedTickets->total() }} ticket{{ $assignedTickets->total() === 1 ? '' : 's' }} · critical first
+                @if($selectedAgent)
+                    {{ $selectedAgent->name }} · {{ $assignedTickets->total() }} in progress / pending · critical first
+                @else
+                    All IT Support · {{ $assignedTickets->total() }} ticket{{ $assignedTickets->total() === 1 ? '' : 's' }} · critical first
+                @endif
             </span>
         </div>
 
-        {{-- Workload per agent --}}
+        {{-- Workload per agent. Each chip shows whether that person is online and, when
+             clicked, narrows the list below to their tickets that are still In Progress or
+             Pending. Click the selected chip again to go back to everyone. --}}
         <div class="flex flex-wrap gap-2 mb-3">
             @foreach($agentWorkload as $agent)
                 @php
                     $isMe = $agent->id === Auth::id();
+                    $online = $isMe || $agent->isOnline();
+                    $selected = $selectedAgent && $selectedAgent->id === $agent->id;
                     $initials = strtoupper(collect(explode(' ', $agent->name))->map(fn ($p) => mb_substr($p, 0, 1))->take(2)->implode(''));
+                    $href = $selected
+                        ? route('dashboard').'#assigned-tickets'
+                        : route('dashboard', ['agent' => $agent->id]).'#assigned-tickets';
                 @endphp
-                <div class="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border {{ $isMe ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white' }} shadow-sm">
-                    <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0" style="background-color:{{ $isMe ? '#1a6b3c' : '#6b7280' }};">{{ $initials }}</span>
+                <a href="{{ $href }}"
+                   title="{{ $selected ? 'Show everyone' : 'Show '.$agent->name.'\'s in-progress and pending tickets' }}"
+                   class="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border shadow-sm transition
+                          {{ $selected ? 'border-green-600 bg-green-100 ring-2 ring-green-200' : ($isMe ? 'border-green-300 bg-green-50 hover:bg-green-100' : 'border-gray-200 bg-white hover:bg-gray-50') }}">
+                    <span class="relative shrink-0">
+                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style="background-color:{{ $isMe ? '#1a6b3c' : '#6b7280' }};">{{ $initials }}</span>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white {{ $online ? 'bg-green-500' : 'bg-gray-300' }}"></span>
+                    </span>
                     <span class="text-sm text-gray-700">{{ $agent->name }}@if($isMe) <span class="text-xs text-green-700 font-medium">(you)</span>@endif</span>
+                    @if($online)
+                        <span class="text-[11px] font-medium text-green-600">Online</span>
+                    @endif
                     <span class="text-xs font-semibold px-1.5 py-0.5 rounded-full {{ $agent->assigned_count > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400' }}">{{ $agent->assigned_count }}</span>
-                </div>
+                </a>
             @endforeach
         </div>
 
@@ -148,8 +168,13 @@
                     <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
                         <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     </div>
-                    <p class="text-gray-700 font-medium">Nothing assigned yet</p>
-                    <p class="text-gray-400 text-sm mt-1">Accept a ticket from the queue above to get started.</p>
+                    @if($selectedAgent)
+                        <p class="text-gray-700 font-medium">No open tickets for {{ $selectedAgent->name }}</p>
+                        <p class="text-gray-400 text-sm mt-1">Nothing is in progress or pending for this person right now.</p>
+                    @else
+                        <p class="text-gray-700 font-medium">Nothing assigned yet</p>
+                        <p class="text-gray-400 text-sm mt-1">Accept a ticket from the queue above to get started.</p>
+                    @endif
                 </div>
             @else
                     <table class="w-full text-sm border-collapse">

@@ -39,7 +39,7 @@ class DashboardController extends Controller
         }
 
         if ($user->isItSupport()) {
-            return view('dashboard.it_support', $this->itSupportData($user));
+            return view('dashboard.it_support', $this->itSupportData($user, $request->integer('agent') ?: null));
         }
 
         // admin
@@ -67,7 +67,7 @@ class DashboardController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function itSupportData(User $user): array
+    private function itSupportData(User $user, ?int $agentId = null): array
     {
         $stats = [
             // Waiting for somebody to pick up — the number that should drive action.
@@ -101,24 +101,42 @@ class DashboardController extends Controller
         // carrying how much and jump in to help. Critical first, then newest.
         $assignedStatuses = ['in_progress', 'pending', 'resolved'];
 
-        $assignedTickets = Ticket::whereNotNull('assigned_to')
-            ->whereIn('status', $assignedStatuses)
-            ->with(['assignee', 'creator'])
+        // Clicking an agent chip narrows the list to that agent's tickets that
+        // are still being worked (In Progress / Pending) — nothing closed.
+        $activeStatuses = ['in_progress', 'pending'];
+
+        $selectedAgent = $agentId
+            ? User::where('role', 'it_support')->find($agentId)
+            : null;
+
+        $assignedQuery = Ticket::whereNotNull('assigned_to')
+            ->with(['assignee', 'creator']);
+
+        if ($selectedAgent) {
+            $assignedQuery->where('assigned_to', $selectedAgent->id)
+                ->whereIn('status', $activeStatuses);
+        } else {
+            $assignedQuery->whereIn('status', $assignedStatuses);
+        }
+
+        $assignedTickets = $assignedQuery
             ->orderByRaw("CASE priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 99 END")
             ->latest()
             ->paginate(10, ['*'], 'assigned_page')
             ->withPath(route('dashboard'))
+            ->appends($selectedAgent ? ['agent' => $selectedAgent->id] : [])
             ->fragment('assigned-tickets');
 
         // Workload per agent (including agents with nothing assigned) so it's
-        // obvious who is swamped and who has capacity.
+        // obvious who is swamped and who has capacity. The count matches what
+        // you get when you click the chip: tickets still in progress/pending.
         $agentWorkload = User::where('role', 'it_support')
-            ->withCount(['assignedTickets as assigned_count' => fn ($q) => $q->whereIn('status', $assignedStatuses)])
+            ->withCount(['assignedTickets as assigned_count' => fn ($q) => $q->whereIn('status', $activeStatuses)])
             ->orderByDesc('assigned_count')
             ->orderBy('name')
             ->get();
 
-        return compact('stats', 'openQueue', 'assignedTickets', 'agentWorkload');
+        return compact('stats', 'openQueue', 'assignedTickets', 'agentWorkload', 'selectedAgent');
     }
 
     /**
@@ -133,7 +151,7 @@ class DashboardController extends Controller
 
         abort_unless($user->isItSupport(), 403);
 
-        $html = view('dashboard.partials.it-live', $this->itSupportData($user))->render();
+        $html = view('dashboard.partials.it-live', $this->itSupportData($user, $request->integer('agent') ?: null))->render();
         $hash = md5($html);
 
         $payload = $hash === $request->query('hash')

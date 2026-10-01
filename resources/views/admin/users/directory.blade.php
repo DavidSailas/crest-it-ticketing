@@ -6,15 +6,20 @@
     <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         <p class="text-sm text-gray-500">
             @if(auth()->user()->role === 'staff')
-                Browse coworker accounts and the assets assigned to them. This is view-only.
+                Browse staff and IT Support accounts and the assets assigned to them. This is view-only.
             @else
-                Look up a staff member's account while you work a ticket. This is view-only — head to Manage Users to edit or remove an account.
+                Look up a coworker's account while you work a ticket. This is view-only — head to Manage Users to edit or remove an account.
             @endif
         </p>
 
-        <form method="GET" action="{{ route('users.directory') }}" class="flex gap-2 max-w-sm">
+        <form method="GET" action="{{ route('users.directory') }}" class="flex flex-wrap gap-2 max-w-xl">
             <input type="text" name="q" value="{{ $search }}" placeholder="Search name or email"
-                class="flex-1 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                class="flex-1 min-w-[12rem] rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+            <select name="role" onchange="this.form.submit()" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                <option value="">All roles</option>
+                <option value="staff" @selected(request('role') === 'staff')>Staff</option>
+                <option value="it_support" @selected(request('role') === 'it_support')>IT Support</option>
+            </select>
             <button class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">Search</button>
         </form>
 
@@ -23,6 +28,7 @@
                 <thead>
                     <tr class="bg-gray-50/80 border-b border-gray-200">
                         <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Name</th>
+                        <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Role</th>
                         <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Branch</th>
                         <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">VIP</th>
                         <th class="hidden lg:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assets</th>
@@ -41,6 +47,8 @@
                                     </div>
                                 </div>
                                 <div class="md:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">
+                                    <span class="sm:hidden capitalize">{{ str_replace('_', ' ', $user->role) }}</span>
+                                    <span class="sm:hidden text-gray-300">·</span>
                                     <span>{{ $user->branch_name ?? '—' }}</span>
                                     <span class="lg:hidden text-gray-300">·</span>
                                     <span class="lg:hidden">{{ $assetCounts[$user->id] ?? 0 }} asset{{ ($assetCounts[$user->id] ?? 0) === 1 ? '' : 's' }}</span>
@@ -48,6 +56,9 @@
                                         <span class="sm:hidden"><x-vip-badge size="compact" /></span>
                                     @endif
                                 </div>
+                            </td>
+                            <td class="hidden sm:table-cell px-5 py-3.5 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize {{ $user->role === 'it_support' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ str_replace('_', ' ', $user->role) }}</span>
                             </td>
                             <td class="hidden md:table-cell px-5 py-3.5 text-gray-600 whitespace-nowrap">{{ $user->branch_name ?? '—' }}</td>
                             <td class="hidden sm:table-cell px-5 py-3.5 whitespace-nowrap">
@@ -63,7 +74,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-5 py-14 text-center text-gray-400">No matching staff members.</td></tr>
+                        <tr><td colspan="6" class="px-5 py-14 text-center text-gray-400">No matching accounts.</td></tr>
                     @endforelse
                 </tbody>
             </table>

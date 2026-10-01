@@ -297,10 +297,15 @@ class UserController extends Controller
     public function directory(Request $request)
     {
         $search = trim((string) $request->query('q', ''));
+        $role = $request->query('role', '');
 
-        // Only staff accounts show here — IT Support and Admin accounts
-        // are excluded from this directory.
-        $query = User::query()->where('role', 'staff');
+        // Staff and IT Support accounts show here — Admin accounts are kept
+        // out of this read-only directory.
+        $query = User::query()->whereIn('role', ['staff', 'it_support']);
+
+        if (in_array($role, ['staff', 'it_support'], true)) {
+            $query->where('role', $role);
+        }
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -328,7 +333,9 @@ class UserController extends Controller
      */
     public function directoryShow(User $user)
     {
-        abort_unless($user->role === 'staff', 404);
+        // Staff and IT Support profiles are viewable from the directory;
+        // Admin accounts are not exposed here.
+        abort_unless(in_array($user->role, ['staff', 'it_support'], true), 404);
 
         $assets = Asset::with('department')
             ->where('user_id', $user->id)
@@ -336,19 +343,31 @@ class UserController extends Controller
             ->orderBy('sequence')
             ->get();
 
-        $tickets = Ticket::where('user_id', $user->id)
-            ->latest()
-            ->take(10)
-            ->get();
-
-        $ticketCounts = [
+        $submittedTickets = Ticket::where('user_id', $user->id)->latest()->take(10)->get();
+        $submittedCounts = [
             'total' => Ticket::where('user_id', $user->id)->count(),
             'open' => Ticket::where('user_id', $user->id)->where('status', 'open')->count(),
             'in_progress' => Ticket::where('user_id', $user->id)->where('status', 'in_progress')->count(),
             'resolved' => Ticket::where('user_id', $user->id)->whereIn('status', ['resolved', 'closed'])->count(),
         ];
 
-        return view('admin.users.directory-show', compact('user', 'assets', 'tickets', 'ticketCounts'));
+        // Same split admin's own user-profile page uses: an IT Support
+        // account additionally shows what's been assigned to them to work.
+        $handledTickets = null;
+        $handledCounts = null;
+
+        if ($user->isItSupport()) {
+            $handledTickets = Ticket::where('assigned_to', $user->id)->latest()->take(10)->get();
+            $handledCounts = [
+                'total' => Ticket::where('assigned_to', $user->id)->count(),
+                'in_progress' => Ticket::where('assigned_to', $user->id)->where('status', 'in_progress')->count(),
+                'resolved' => Ticket::where('assigned_to', $user->id)->whereIn('status', ['resolved', 'closed'])->count(),
+            ];
+        }
+
+        return view('admin.users.directory-show', compact(
+            'user', 'assets', 'submittedTickets', 'submittedCounts', 'handledTickets', 'handledCounts'
+        ));
     }
 
     /**
@@ -543,10 +562,10 @@ class UserController extends Controller
             // Accept either separate "First Name"/"Last Name" columns
             // (matching our export format) or a single legacy "Name" column
             // split on the first space, so older files still import fine.
-            $firstName = trim((string) ($row['first name'] ?? ''));
-            $lastName = trim((string) ($row['last name'] ?? ''));
+            $firstName = $this->cleanImportedText((string) ($row['first name'] ?? ''));
+            $lastName = $this->cleanImportedText((string) ($row['last name'] ?? ''));
             if ($firstName === '' && $lastName === '') {
-                $legacyName = trim((string) ($row['name'] ?? ''));
+                $legacyName = $this->cleanImportedText((string) ($row['name'] ?? ''));
                 if ($legacyName !== '') {
                     $parts = explode(' ', $legacyName, 2);
                     $firstName = $parts[0];
@@ -554,7 +573,7 @@ class UserController extends Controller
                 }
             }
 
-            $username = trim((string) ($row['username'] ?? ''));
+            $username = $this->cleanImportedText((string) ($row['username'] ?? ''), false);
             $email = trim((string) ($row['email'] ?? ''));
             $role = strtolower(trim((string) ($row['role'] ?? 'staff')));
             $isVip = in_array(strtolower(trim((string) ($row['vip'] ?? 'no'))), ['yes', 'true', '1']);
@@ -625,6 +644,36 @@ class UserController extends Controller
      * Read a CSV file into a plain array of rows (first row is the header,
      * left untouched here — normalized by the caller).
      */
+    /**
+     * Normalizes one imported cell's text.
+     *
+     * Spreadsheet programs (Excel, Google Sheets) commonly prepend a cell's
+     * value with a guard character — a leading apostrophe to force "text"
+     * formatting, or a leading +, -, =, @ left over from CSV formula-injection
+     * protection applied when the sheet was last exported/saved. Left as-is,
+     * that guard character becomes part of the imported name ("+Juan Dela
+     * Cruz" instead of "Juan Dela Cruz"). $allowSpaces controls whether
+     * internal whitespace is collapsed — names keep single spaces between
+     * words, but a username should never contain one.
+     */
+    private function cleanImportedText(string $value, bool $allowSpaces = true): string
+    {
+        // Strip a UTF-8 byte-order mark some spreadsheet exports leave on
+        // the first cell of the first column.
+        $value = preg_replace('/^\x{FEFF}/u', '', $value) ?? $value;
+
+        $value = trim($value);
+
+        // Repeatedly strip leading guard characters — a cell can carry more
+        // than one, e.g. "'+Juan" — plus any whitespace that was between
+        // them and the real text.
+        $value = preg_replace('/^[\'"+\-=@]+\s*/u', '', $value) ?? $value;
+
+        $value = trim($value);
+
+        return $allowSpaces ? preg_replace('/\s+/u', ' ', $value) : preg_replace('/\s+/u', '', $value);
+    }
+
     private function readCsvRows(string $path): array
     {
         $rows = [];

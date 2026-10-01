@@ -229,7 +229,7 @@
                                             </select>
                                         </td>
                                         <td class="px-3 sm:px-4 py-2.5 text-right whitespace-nowrap align-top">
-                                            <form id="asset-form-{{ $asset->id }}" method="POST" action="{{ route('admin.assets.update', $asset) }}" class="hidden">
+                                            <form id="asset-form-{{ $asset->id }}" method="POST" action="{{ route('assets.update', $asset) }}" class="hidden">
                                                 @csrf @method('PUT')
                                                 {{-- Keep the current owner as-is on a normal Save — only the
                                                      dedicated Unassign action (below) should clear it. --}}
@@ -243,7 +243,7 @@
                                             {{-- "Remove" here only unassigns the asset from this user — it stays in
                                                  inventory. Deleting an asset outright is only available from the
                                                  main Assets page. --}}
-                                            <form id="unassign-form-{{ $asset->id }}" method="POST" action="{{ route('admin.assets.update', $asset) }}" class="hidden">
+                                            <form id="unassign-form-{{ $asset->id }}" method="POST" action="{{ route('assets.update', $asset) }}" class="hidden">
                                                 @csrf @method('PUT')
                                                 <input type="hidden" name="user_id" value="">
                                                 <input type="hidden" name="device_name" value="{{ $asset->device_name }}">

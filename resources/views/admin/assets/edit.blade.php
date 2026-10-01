@@ -63,7 +63,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.assets.update', $asset) }}" class="space-y-6" novalidate>
+                <form method="POST" action="{{ route('assets.update', $asset) }}" class="space-y-6" novalidate>
                     @csrf
                     @method('PUT')
                     <input type="hidden" name="user_id" :value="editUserId">

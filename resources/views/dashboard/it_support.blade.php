@@ -11,7 +11,7 @@
 
         {{-- Live region: the whole dashboard body (headline, stats, open queue, assigned tickets) refreshes
              automatically, so approvals, new tickets, and hand-offs show up without a reload. --}}
-        @php $liveHtml = view('dashboard.partials.it-live', compact('stats', 'openQueue', 'assignedTickets', 'agentWorkload'))->render(); @endphp
+        @php $liveHtml = view('dashboard.partials.it-live', compact('stats', 'openQueue', 'assignedTickets', 'agentWorkload', 'selectedAgent'))->render(); @endphp
         <div id="it-live" data-hash="{{ md5($liveHtml) }}">{!! $liveHtml !!}</div>
     </div>
 

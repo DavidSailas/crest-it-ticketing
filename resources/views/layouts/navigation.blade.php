@@ -22,6 +22,9 @@
                         {{ __('Tickets') }}
                     </x-nav-link>
                     @if(auth()->user()->isAdmin())
+                        <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                            {{ __('Reports') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
                             {{ __('Manage Users') }}
                         </x-nav-link>
@@ -38,15 +41,21 @@
                             {{ __('Assets') }}
                         </x-nav-link>
                     @elseif(auth()->user()->role === 'it_support')
-                        <x-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory')">
+                        <x-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory*')">
                             {{ __('Users') }}
                         </x-nav-link>
                         <x-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                             {{ __('Assets') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                            {{ __('Reports') }}
+                        </x-nav-link>
                     @elseif(auth()->user()->role === 'staff')
-                        <x-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory')">
+                        <x-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory*')">
                             {{ __('Users') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                            {{ __('Reports') }}
                         </x-nav-link>
                     @endif
                 </div>
@@ -181,6 +190,9 @@
                 {{ __('Tickets') }}
             </x-responsive-nav-link>
             @if(auth()->user()->isAdmin())
+                <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                    {{ __('Reports') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
                     {{ __('Manage Users') }}
                 </x-responsive-nav-link>
@@ -197,15 +209,21 @@
                     {{ __('Assets') }}
                 </x-responsive-nav-link>
             @elseif(auth()->user()->role === 'it_support')
-                <x-responsive-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory')">
+                <x-responsive-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory*')">
                     {{ __('Users') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                     {{ __('Assets') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                    {{ __('Reports') }}
+                </x-responsive-nav-link>
             @elseif(auth()->user()->role === 'staff')
-                <x-responsive-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory')">
+                <x-responsive-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory*')">
                     {{ __('Users') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                    {{ __('Reports') }}
                 </x-responsive-nav-link>
             @endif
         </div>

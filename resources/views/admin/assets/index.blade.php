@@ -1,8 +1,9 @@
 @php
     $isAdmin = auth()->user()->isAdmin();
-    // IT Support can add new assets too, but editing/deleting an existing
-    // asset stays admin-only (kept separate from $isAdmin on purpose).
-    $canAddAsset = $isAdmin || auth()->user()->isItSupport();
+    $isItSupport = auth()->user()->isItSupport();
+    // IT Support can add and edit assets. Deleting stays admin-only.
+    $canAddAsset = $isAdmin || $isItSupport;
+    $canEditAsset = $isAdmin || $isItSupport;
 
     $statusStyles = [
         'active' => 'bg-green-50 text-green-700 ring-green-200',
@@ -250,10 +251,12 @@
                                         {{ \App\Models\Asset::STATUSES[$asset->status] ?? ucfirst($asset->status) }}
                                     </span>
                                 </td>
-                                @if($isAdmin)
-                                    <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap align-top">
-                                        <button @click="viewingId = {{ $asset->id }}" class="text-gray-500 hover:underline font-medium text-xs mr-3">View</button>
-                                        <a href="{{ route('admin.assets.edit', $asset) }}" class="text-green-700 hover:underline font-medium text-xs mr-3">Edit</a>
+                                <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap align-top">
+                                    <button @click="viewingId = {{ $asset->id }}" class="text-gray-500 hover:underline font-medium text-xs mr-3">View</button>
+                                    @if($canEditAsset)
+                                        <a href="{{ route('assets.edit', $asset) }}" class="text-green-700 hover:underline font-medium text-xs {{ $isAdmin ? 'mr-3' : '' }}">Edit</a>
+                                    @endif
+                                    @if($isAdmin)
                                         <x-confirm-action-modal
                                             id="delete-asset-{{ $asset->id }}"
                                             action="{{ route('admin.assets.destroy', $asset) }}"
@@ -263,12 +266,8 @@
                                             trigger-label="Delete"
                                             trigger-class="text-red-600 hover:underline font-medium text-xs"
                                         />
-                                    </td>
-                                @else
-                                    <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap align-top">
-                                        <button @click="viewingId = {{ $asset->id }}" class="text-green-700 hover:underline font-medium text-xs">View</button>
-                                    </td>
-                                @endif
+                                    @endif
+                                </td>
                             </tr>
 
                             {{-- Read-only details modal — available to everyone --}}

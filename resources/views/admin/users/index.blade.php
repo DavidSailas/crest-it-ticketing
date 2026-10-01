@@ -25,17 +25,13 @@
                         </a>
                     </div>
                 </div>
-                <label class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 cursor-pointer">
-                    Import CSV/Excel
-                    <form id="import-form" method="POST" action="{{ route('admin.users.import') }}" enctype="multipart/form-data" class="hidden">
-                        @csrf
-                        <input type="file" name="file" accept=".csv,.xlsx,.xls" onchange="document.getElementById('import-form').submit()">
-                    </form>
-                    <input type="file" accept=".csv,.xlsx,.xls" class="hidden" onchange="
-                        const dt = new DataTransfer(); dt.items.add(this.files[0]);
-                        document.querySelector('#import-form input[type=file]').files = dt.files;
-                        document.getElementById('import-form').submit();">
-                </label>
+                <form id="import-form" method="POST" action="{{ route('admin.users.import') }}" enctype="multipart/form-data">
+                    @csrf
+                    <label class="inline-block px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 cursor-pointer">
+                        Import CSV/Excel
+                        <input type="file" name="file" accept=".csv,.xlsx,.xls" class="hidden" onchange="if (this.files.length) this.form.submit()">
+                    </label>
+                </form>
                 <a href="{{ route('admin.users.create') }}" class="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     Add User
@@ -50,6 +46,19 @@
         @endif
         @if(session('error'))
             <div class="mb-4 p-3 bg-red-50 text-red-800 text-sm rounded-lg border border-red-100">{{ session('error') }}</div>
+        @endif
+        @if(session('import_problems'))
+            <div class="mb-4 p-3 bg-amber-50 text-amber-900 text-sm rounded-lg border border-amber-200">
+                <p class="font-medium mb-1">{{ session('import_problem_total') }} row(s) were skipped:</p>
+                <ul class="list-disc pl-5 space-y-0.5 text-xs">
+                    @foreach(session('import_problems') as $problem)
+                        <li>{{ $problem }}</li>
+                    @endforeach
+                </ul>
+                @if(session('import_problem_total') > count(session('import_problems')))
+                    <p class="text-xs mt-1">…and {{ session('import_problem_total') - count(session('import_problems')) }} more.</p>
+                @endif
+            </div>
         @endif
 
         {{-- Tabs --}}
@@ -66,6 +75,41 @@
                 </a>
             @endforeach
         </div>
+
+        {{-- Report bar: shown on the Staff and IT Support tabs --}}
+        @if(in_array($tab, ['staff', 'it_support']))
+            @php $reportTeam = $tab === 'staff' ? 'staff' : 'engineers'; @endphp
+            <div class="mb-5 flex flex-wrap items-end justify-between gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm"
+                 x-data="{ range: 'this_month',
+                           excel: '{{ route('admin.reports.team.export', ['team' => $reportTeam, 'format' => 'excel']) }}',
+                           pdf: '{{ route('admin.reports.team.export', ['team' => $reportTeam, 'format' => 'pdf']) }}' }">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background-color:#e8f3ec; color:#1a6b3c;">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125L7.5 8.25l4 4 5.5-6 4 4.5" /></svg>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-700">{{ $tab === 'staff' ? 'Staff report' : 'IT Engineer report' }}</p>
+                        <p class="text-xs text-gray-400">{{ $tab === 'staff' ? 'Tickets submitted, still open and resolved per staff member' : 'Assigned, resolved and current workload per IT engineer' }}</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-end gap-2">
+                    <div>
+                        <label class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Period</label>
+                        <select x-model="range" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                            <option value="this_month">This month</option>
+                            <option value="last_month">Last month</option>
+                            <option value="last_30">Last 30 days</option>
+                            <option value="last_90">Last 90 days</option>
+                            <option value="this_year">This year</option>
+                            <option value="all_time">All time</option>
+                        </select>
+                    </div>
+                    <a :href="excel + '?range=' + range" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 transition">Excel</a>
+                    <a :href="pdf + '?range=' + range" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:opacity-90 transition" style="background-color:#1a6b3c;">PDF</a>
+                    <a href="{{ route('admin.reports.index') }}#{{ $reportTeam }}-report" class="px-2 py-2 text-sm text-green-700 hover:underline">View on Reports</a>
+                </div>
+            </div>
+        @endif
 
         {{-- Search --}}
         <form method="GET" action="{{ route('admin.users.index') }}" class="flex gap-2 max-w-sm mb-5">

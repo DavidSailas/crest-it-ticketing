@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'account.active' => \App\Http\Middleware\EnsureAccountIsActive::class,
+            'track.seen' => \App\Http\Middleware\TrackLastSeen::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
