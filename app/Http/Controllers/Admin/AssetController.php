@@ -38,6 +38,7 @@ class AssetController extends Controller
 
         $hasFilters = $request->filled('search')
             || $request->filled('department_id')
+            || $request->filled('location')
             || $request->filled('type')
             || $request->filled('assignment')
             || $request->filled('status');
@@ -238,6 +239,10 @@ class AssetController extends Controller
             ->when($request->filled('department_id'), function ($query) use ($request) {
                 $query->where('department_id', $request->integer('department_id'));
             })
+            // Branch office / location (stored as the branch code, e.g. CEB).
+            ->when(array_key_exists((string) $request->query('location'), Asset::locations()), function ($query) use ($request) {
+                $query->where('location', (string) $request->query('location'));
+            })
             ->when($withFacets && array_key_exists($type, Asset::TYPES), fn ($q) => $q->where('type', $type))
             ->when($withFacets && $assignment === 'unassigned', fn ($q) => $q->whereNull('user_id'))
             ->when($withFacets && $assignment === 'assigned', fn ($q) => $q->whereNotNull('user_id'))
@@ -314,6 +319,10 @@ class AssetController extends Controller
             if ($department) {
                 $parts[] = 'Department: '.$department->name;
             }
+        }
+
+        if (array_key_exists((string) $request->query('location'), Asset::locations())) {
+            $parts[] = 'Branch: '.Asset::locations()[$request->query('location')];
         }
 
         if (array_key_exists((string) $request->query('type'), Asset::TYPES)) {

@@ -80,7 +80,7 @@
                 }
                 return route('assets.index', array_filter($params, fn ($v) => $v !== null && $v !== ''));
             };
-            $resetFacets = route('assets.index', array_filter(request()->only('search', 'department_id')));
+            $resetFacets = route('assets.index', array_filter(request()->only('search', 'department_id', 'location')));
 
             $typeIcons = [
                 'DT' => 'M9 3.75h6a1.5 1.5 0 011.5 1.5v13.5a1.5 1.5 0 01-1.5 1.5H9a1.5 1.5 0 01-1.5-1.5V5.25A1.5 1.5 0 019 3.75zM10.5 7.5h3M12 17.25h.008',
@@ -122,7 +122,7 @@
                     </span>
                 </div>
                 <p class="mt-2 text-4xl font-bold text-indigo-900 tabular-nums">{{ number_format($summary['total']) }}</p>
-                <p class="mt-1 text-xs text-indigo-600/70">{{ request()->filled('search') || request()->filled('department_id') ? 'In current search' : 'Across all departments' }}</p>
+                <p class="mt-1 text-xs text-indigo-600/70">{{ request()->filled('search') || request()->filled('department_id') || request()->filled('location') ? 'In current search' : 'Across all branches & departments' }}</p>
             </a>
 
             {{-- Assigned --}}
@@ -219,7 +219,13 @@
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by tag, device name, or serial number..."
                        class="block w-full pl-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm">
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:flex gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-5 lg:flex gap-3">
+                <select name="location" onchange="this.form.submit()" aria-label="Filter by branch office" class="rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm lg:w-40">
+                    <option value="">All branches</option>
+                    @foreach(\App\Models\Asset::locations() as $code => $label)
+                        <option value="{{ $code }}" @selected(request('location') === (string) $code)>{{ $label }}</option>
+                    @endforeach
+                </select>
                 <select name="department_id" onchange="this.form.submit()" class="rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm lg:w-44">
                     <option value="">All departments</option>
                     @foreach($departments as $department)

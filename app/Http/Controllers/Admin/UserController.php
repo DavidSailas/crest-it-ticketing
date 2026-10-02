@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Validation\Rules\Password;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Position;
 use App\Models\Ticket;
@@ -51,6 +52,39 @@ class UserController extends Controller
             });
         }
 
+        // Filters beside the search bar: branch office, department, account status.
+        $branches = Branch::options();
+        $departments = Department::orderBy('name')->get(['id', 'name']);
+        $branch = (string) $request->query('branch', '');
+        $departmentId = $request->integer('department_id');
+        $status = (string) $request->query('status', '');
+
+        if (array_key_exists($branch, $branches)) {
+            $query->where('location', $branch);
+        } else {
+            $branch = '';
+        }
+
+        if ($departmentId && $departments->contains('id', $departmentId)) {
+            $query->where('department_id', $departmentId);
+        } else {
+            $departmentId = 0;
+        }
+
+        if ($status === 'active') {
+            $query->whereNull('suspended_at');
+        } elseif ($status === 'suspended') {
+            $query->whereNotNull('suspended_at');
+        } else {
+            $status = '';
+        }
+
+        $filters = array_filter([
+            'branch' => $branch,
+            'department_id' => $departmentId ?: null,
+            'status' => $status,
+        ]);
+
         $users = $query->with(['department', 'position'])->latest()->paginate(10)->withQueryString();
 
         $counts = [
@@ -59,7 +93,7 @@ class UserController extends Controller
             'vip' => User::where('is_vip', true)->count(),
         ];
 
-        return view('admin.users.index', compact('users', 'tab', 'counts', 'search'));
+        return view('admin.users.index', compact('users', 'tab', 'counts', 'search', 'branches', 'departments', 'filters'));
     }
 
     public function create()
