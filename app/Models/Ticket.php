@@ -28,12 +28,16 @@ class Ticket extends Model
         'approved_at',
         'solution',
         'closed_at',
+        'cancelled_at',
+        'cancelled_by',
+        'cancel_reason',
     ];
 
     protected $casts = [
         'resolved_at' => 'datetime',
         'approved_at' => 'datetime',
         'closed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     /**
@@ -71,6 +75,29 @@ class Ticket extends Model
     public function isClosed(): bool
     {
         return $this->status === 'closed';
+    }
+
+    /**
+     * Withdrawn before IT Support picked it up. Like Closed, this is final.
+     */
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
+    }
+
+    /** Closed or cancelled — nothing about the ticket can change any more. */
+    public function isFinished(): bool
+    {
+        return $this->isClosed() || $this->isCancelled();
+    }
+
+    /**
+     * A ticket can only be cancelled while nobody has accepted it: still
+     * Open and not assigned to an agent.
+     */
+    public function canBeCancelled(): bool
+    {
+        return $this->status === 'open' && $this->assigned_to === null;
     }
 
     /**
@@ -113,6 +140,7 @@ class Ticket extends Model
             $this->resolved_at?->timestamp,
             $this->approved_at?->timestamp,
             $this->closed_at?->timestamp,
+            $this->cancelled_at?->timestamp,
             $this->updated_at?->timestamp,
             $this->solution,
         ]));
@@ -123,12 +151,21 @@ class Ticket extends Model
      */
     public function threadHash(): string
     {
+        if ($this->isCancelled()) {
+            return 'cancelled';
+        }
+
         return $this->isClosed() ? 'closed' : ($this->assigned_to ? 'assigned' : 'unassigned');
     }
 
     public function creator()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function canceller()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function assignee()

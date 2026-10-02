@@ -5,8 +5,40 @@
             <x-status-badge :status="$ticket->status" />
             <x-priority-badge :priority="$ticket->priority" />
         </div>
-        <div class="text-sm text-gray-400">{{ $ticket->created_at->format('M j, Y g:i A') }}</div>
+        <div class="flex items-center gap-3">
+            @if((auth()->user()->isItSupport() || auth()->user()->isAdmin()) && ! $ticket->isFinished())
+                <a href="{{ route('tickets.edit', $ticket) }}"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+                    Edit
+                </a>
+            @endif
+            <div class="text-sm text-gray-400">{{ $ticket->created_at->format('M j, Y g:i A') }}</div>
+        </div>
     </div>
+
+    @if($ticket->isCancelled())
+        <div class="px-4 sm:px-6 py-4 bg-red-50/60 border-b border-red-100 flex items-start gap-3">
+            <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-red-100 text-red-600 shrink-0">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </span>
+            <div class="min-w-0 text-sm">
+                <p class="font-semibold text-red-800">This ticket was cancelled</p>
+                <p class="text-red-700/80 mt-0.5">
+                    @if($ticket->canceller)
+                        {{ $ticket->canceller->id === auth()->id() ? 'You' : $ticket->canceller->name }} cancelled it
+                    @else
+                        Cancelled
+                    @endif
+                    @if($ticket->cancelled_at) on {{ $ticket->cancelled_at->format('M j, Y g:i A') }} @endif
+                    before it was accepted by IT Support.
+                </p>
+                @if($ticket->cancel_reason)
+                    <p class="mt-1.5 text-red-900/80 break-words"><span class="font-medium">Reason:</span> {{ $ticket->cancel_reason }}</p>
+                @endif
+            </div>
+        </div>
+    @endif
 
     <div class="px-4 sm:px-6 py-6">
         <p class="text-gray-800 leading-relaxed break-words whitespace-pre-line">{{ $ticket->description }}</p>
@@ -68,6 +100,8 @@
                 <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
                 <p class="text-sm text-gray-500">This ticket is closed — status and assignment are locked. See the solution below.</p>
             </div>
+        @elseif($ticket->isCancelled())
+            {{-- Cancelled: the banner above says it all; nothing left to manage. --}}
         @else
             @php
                 $user = auth()->user();
@@ -198,6 +232,42 @@
                 </div>
             </div>
         @endif
+    @endif
+
+    @php
+        $viewer = auth()->user();
+        $isRequester = $ticket->user_id === $viewer->id;
+        $canCancel = $ticket->canBeCancelled() && ($isRequester || $viewer->isItSupport() || $viewer->isAdmin());
+    @endphp
+    @if($canCancel)
+        <div class="px-4 sm:px-6 py-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+                <p class="text-sm font-medium text-gray-800">{{ $isRequester ? 'Raised this by mistake or no longer need help?' : 'Duplicate or invalid request?' }}</p>
+                <p class="text-xs text-gray-500 mt-0.5">You can cancel this ticket until IT Support accepts it. After that, cancelling is no longer possible.</p>
+            </div>
+
+            <x-confirm-action-modal
+                id="cancel-ticket-{{ $ticket->id }}"
+                form="cancel-ticket-form"
+                method="POST"
+                tone="warning"
+                title="Cancel ticket {{ $ticket->ticket_number }}?"
+                message="{{ $isRequester ? 'IT Support will no longer see this request in their queue.' : 'The requester will be notified that this ticket was cancelled, and it will leave the IT queue.' }} This can’t be undone — you’d need to submit a new ticket."
+                confirmLabel="Yes, cancel ticket"
+                cancelLabel="Keep ticket"
+                busyLabel="Cancelling…"
+                confirmClass="bg-red-600 hover:bg-red-700"
+                triggerLabel="Cancel ticket"
+                triggerClass="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-red-200 bg-white text-sm font-semibold text-red-600 hover:bg-red-50 transition"
+            >
+                <label for="cancel-reason-{{ $ticket->id }}" class="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">Reason <span class="font-normal normal-case text-gray-400">(optional)</span></label>
+                <textarea id="cancel-reason-{{ $ticket->id }}" name="reason" form="cancel-ticket-form" rows="3" maxlength="500"
+                          placeholder="e.g. The issue fixed itself / submitted twice"
+                          class="block w-full rounded-lg border-gray-300 text-sm focus:border-red-500 focus:ring-red-500 resize-none"></textarea>
+            </x-confirm-action-modal>
+
+            <form id="cancel-ticket-form" method="POST" action="{{ route('tickets.cancel', $ticket) }}" class="hidden">@csrf</form>
+        </div>
     @endif
 </div>
 

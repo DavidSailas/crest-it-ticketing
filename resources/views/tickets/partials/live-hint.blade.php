@@ -1,4 +1,6 @@
-@if($ticket->isClosed())
+@if($ticket->isCancelled())
+    This ticket was cancelled — comments are now read-only.
+@elseif($ticket->isClosed())
     This ticket is closed — comments are now read-only.
 @elseif((auth()->user()->isItSupport() || auth()->user()->isAdmin()) && !$ticket->assigned_to)
     Accept this ticket first — you can't comment until it's assigned.

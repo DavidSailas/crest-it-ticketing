@@ -46,7 +46,7 @@ class DashboardController extends Controller
         $stats = [
             // Headline health metrics — what an admin actually needs at a glance.
             'unassigned' => Ticket::where('status', 'open')->whereNull('assigned_to')->count(),
-            'critical' => Ticket::whereNotIn('status', ['resolved', 'closed'])->where('priority', 'critical')->count(),
+            'critical' => Ticket::whereNotIn('status', ['resolved', 'closed', 'cancelled'])->where('priority', 'critical')->count(),
             'active' => Ticket::whereIn('status', ['open', 'in_progress', 'pending'])->count(),
             'resolved_this_week' => Ticket::whereIn('status', ['resolved', 'closed'])
                 ->where('updated_at', '>=', now()->startOfWeek())
@@ -72,7 +72,7 @@ class DashboardController extends Controller
         $stats = [
             // Waiting for somebody to pick up — the number that should drive action.
             'unassigned' => Ticket::where('status', 'open')->whereNull('assigned_to')->count(),
-            'critical' => Ticket::whereNotIn('status', ['resolved', 'closed'])->where('priority', 'critical')->count(),
+            'critical' => Ticket::whereNotIn('status', ['resolved', 'closed', 'cancelled'])->where('priority', 'critical')->count(),
             // This agent's own live workload.
             'my_active' => Ticket::where('assigned_to', $user->id)->whereIn('status', ['in_progress', 'pending'])->count(),
             'resolved_today' => Ticket::where('assigned_to', $user->id)

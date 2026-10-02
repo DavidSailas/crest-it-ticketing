@@ -629,10 +629,10 @@ class ReportController extends Controller
             'totalTickets' => $totalTickets,
             'byStatus' => $this->labelPieData($byStatus, [
                 'open' => 'Open', 'in_progress' => 'In Progress', 'pending' => 'Pending',
-                'resolved' => 'Resolved', 'closed' => 'Closed',
+                'resolved' => 'Resolved', 'closed' => 'Closed', 'cancelled' => 'Cancelled',
             ], [
                 'open' => '#3b82f6', 'in_progress' => '#6366f1', 'pending' => '#f59e0b',
-                'resolved' => '#10b981', 'closed' => '#9ca3af',
+                'resolved' => '#10b981', 'closed' => '#9ca3af', 'cancelled' => '#f87171',
             ]),
             'byPriority' => $this->labelPieData($byPriority, [
                 'low' => 'Low', 'medium' => 'Medium', 'high' => 'High', 'critical' => 'Critical',

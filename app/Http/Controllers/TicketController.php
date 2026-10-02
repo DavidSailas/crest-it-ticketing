@@ -10,7 +10,9 @@ use App\Models\User;
 use App\Notifications\TicketAcceptedNotification;
 use App\Notifications\TicketApprovedNotification;
 use App\Notifications\TicketAssignedNotification;
+use App\Notifications\TicketCancelledNotification;
 use App\Notifications\TicketStatusUpdatedNotification;
+use App\Notifications\TicketUpdatedNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -31,7 +33,7 @@ class TicketController extends Controller
         $dateFrom = trim((string) $request->query('date_from', ''));
         $dateTo = trim((string) $request->query('date_to', ''));
 
-        $allStatuses = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
+        $allStatuses = ['open', 'in_progress', 'pending', 'resolved', 'closed', 'cancelled'];
 
         if ($user->isStaff()) {
             $query = Ticket::where('user_id', $user->id);
@@ -133,7 +135,7 @@ class TicketController extends Controller
             });
         }
 
-        if (in_array($status, ['open', 'in_progress', 'pending', 'resolved', 'closed'], true)) {
+        if (in_array($status, ['open', 'in_progress', 'pending', 'resolved', 'closed', 'cancelled'], true)) {
             $query->where('status', $status);
         }
 
@@ -373,6 +375,13 @@ class TicketController extends Controller
     {
         abort_unless($request->user()->isItSupport() || $request->user()->isAdmin(), 403);
 
+        // The requester may have withdrawn it while this page was open.
+        if ($ticket->isFinished()) {
+            return back()->with('error', $ticket->isCancelled()
+                ? 'This ticket was cancelled by the requester, so it can no longer be accepted.'
+                : 'This ticket is closed and can no longer be accepted.');
+        }
+
         $ticket->update([
             'assigned_to' => $request->user()->id,
             'status' => 'in_progress',
@@ -404,8 +413,8 @@ class TicketController extends Controller
         $user = $request->user();
         abort_unless($user->isItSupport() || $user->isAdmin(), 403);
 
-        if ($ticket->isClosed()) {
-            return back()->with('error', 'This ticket is closed and can no longer be reassigned.');
+        if ($ticket->isFinished()) {
+            return back()->with('error', 'This ticket is '.($ticket->isCancelled() ? 'cancelled' : 'closed').' and can no longer be reassigned.');
         }
 
         if (! $user->isAdmin() && $ticket->assigned_to && $ticket->assigned_to !== $user->id) {
@@ -523,6 +532,244 @@ class TicketController extends Controller
         return back()->with('status', 'Thanks! IT Support can now close this ticket.');
     }
 
+    /** Human label for a ticket status. */
+    private function statusLabel(string $status): string
+    {
+        return [
+            'open' => 'Open',
+            'in_progress' => 'In Progress',
+            'pending' => 'Pending',
+            'resolved' => 'Resolved',
+            'closed' => 'Closed',
+        ][$status] ?? ucfirst(str_replace('_', ' ', $status));
+    }
+
+    /**
+     * Human label for a priority value — matches the P1–P4 wording used on
+     * the ticket form and badges.
+     */
+    private function priorityLabel(string $priority): string
+    {
+        return [
+            'critical' => 'P1 · Critical',
+            'high' => 'P2 · High',
+            'medium' => 'P3 · Medium',
+            'low' => 'P4 · Low',
+        ][$priority] ?? ucfirst($priority);
+    }
+
+    /**
+     * Correction form for IT Support / Admin — fixes a category, priority or
+     * status that was picked by mistake. Closing and assignment keep their own
+     * controls on the ticket page (they have workflow rules of their own).
+     */
+    public function edit(Request $request, Ticket $ticket)
+    {
+        abort_unless($request->user()->isItSupport() || $request->user()->isAdmin(), 403);
+
+        if ($ticket->isFinished()) {
+            return redirect()->route('tickets.show', $ticket)
+                ->with('error', 'This ticket is '.($ticket->isCancelled() ? 'cancelled' : 'closed').' and can no longer be edited.');
+        }
+
+        $ticket->load('creator', 'assignee');
+
+        return view('tickets.edit', [
+            'ticket' => $ticket,
+            'categories' => StoreTicketRequest::CATEGORIES,
+        ]);
+    }
+
+    public function update(Request $request, Ticket $ticket)
+    {
+        abort_unless($request->user()->isItSupport() || $request->user()->isAdmin(), 403);
+
+        // Enforced here as well as in the UI so a stale page can't edit a closed ticket.
+        if ($ticket->isFinished()) {
+            return redirect()->route('tickets.show', $ticket)
+                ->with('error', 'This ticket is '.($ticket->isCancelled() ? 'cancelled' : 'closed').' and can no longer be edited.');
+        }
+
+        $data = $request->validate([
+            'category' => 'required|in:'.implode(',', StoreTicketRequest::CATEGORIES),
+            'priority' => 'required|in:low,medium,high,critical',
+            // Closing needs a solution, so it stays on the ticket page's status form.
+            'status' => 'nullable|in:open,in_progress,pending,resolved',
+            // Optional note on why it was corrected — shown in the ticket thread.
+            'reason' => 'nullable|string|max:500',
+        ], [
+            'reason.max' => 'The reason is too long — please keep it under 500 characters.',
+        ]);
+
+        $reason = trim((string) ($data['reason'] ?? ''));
+
+        // Editing is a correction tool, so it works whether or not the ticket has been
+        // accepted yet. (The status form on the ticket page still needs an assigned agent.)
+        $newStatus = $data['status'] ?? $ticket->status;
+
+        // VIP requesters are always Critical (same rule as when the ticket is submitted).
+        if ($ticket->creator?->is_vip) {
+            $data['priority'] = 'critical';
+        }
+
+        $changes = [];
+        if ($data['category'] !== $ticket->category) {
+            $changes['Category'] = [$ticket->category, $data['category']];
+        }
+        if ($data['priority'] !== $ticket->priority) {
+            $changes['Priority'] = [$this->priorityLabel($ticket->priority), $this->priorityLabel($data['priority'])];
+        }
+
+        $statusChanged = $newStatus !== $ticket->status;
+        if ($statusChanged) {
+            $changes['Status'] = [$this->statusLabel($ticket->status), $this->statusLabel($newStatus)];
+        }
+
+        if (empty($changes)) {
+            return redirect()->route('tickets.show', $ticket)->with('status', 'No changes were made.');
+        }
+
+        $oldStatus = $ticket->status;
+
+        $updates = [
+            'category' => $data['category'],
+            'priority' => $data['priority'],
+            // The category doubles as the ticket title everywhere (see store()).
+            'title' => $data['category'],
+        ];
+
+        // A sub-category belonged to the old category, so it no longer applies.
+        if (isset($changes['Category']) && $ticket->subcategory) {
+            $updates['subcategory'] = null;
+        }
+
+        if ($statusChanged) {
+            $updates['status'] = $newStatus;
+
+            // Same bookkeeping as the status form on the ticket page.
+            if ($newStatus === 'resolved') {
+                $updates['resolved_at'] = now();
+            } elseif (in_array($newStatus, ['open', 'in_progress'])) {
+                $updates['resolved_at'] = null;
+            }
+            if ($newStatus !== 'resolved') {
+                $updates['approved_at'] = null;
+            }
+        }
+
+        $ticket->update($updates);
+
+        $editor = $request->user();
+
+        ActivityLog::record(
+            'ticket_updated',
+            "Edited ticket {$ticket->ticket_number}: ".collect($changes)
+                ->map(fn ($pair, $field) => "{$field} {$pair[0]} → {$pair[1]}")
+                ->implode(', ').($reason !== '' ? " (Reason: {$reason})" : ''),
+            ['ticket_id' => $ticket->id, 'changes' => $changes, 'reason' => $reason ?: null]
+        );
+
+        // Leave a visible note in the ticket thread so the requester can see what
+        // was corrected and why (only when the editor gave a reason).
+        if ($reason !== '') {
+            $summary = collect($changes)
+                ->map(fn ($pair, $field) => "{$field}: {$pair[0]} → {$pair[1]}")
+                ->implode("\n");
+
+            $ticket->comments()->create([
+                'user_id' => $editor->id,
+                'body' => "Ticket details updated\n{$summary}\nReason: {$reason}",
+            ]);
+        }
+
+        // Let the requester and the assigned agent know, without pinging the editor.
+        collect([$ticket->creator, $ticket->assignee])
+            ->filter()
+            ->unique('id')
+            ->reject(fn ($user) => $user->id === $editor->id)
+            ->each(function ($user) use ($ticket, $changes, $editor, $reason) {
+                try {
+                    $user->notify(new TicketUpdatedNotification($ticket, $changes, $editor->name, $reason ?: null));
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            });
+
+        return redirect()->route('tickets.show', $ticket)->with('status', 'Ticket details updated.');
+    }
+
+    /**
+     * Cancel a ticket nobody has accepted yet. Allowed for the requester, and
+     * for IT Support / Admin (e.g. duplicates or requests raised in error).
+     * Once an agent has accepted it the work is under way, so the requester
+     * has to talk to IT through the ticket instead.
+     */
+    public function cancel(Request $request, Ticket $ticket)
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $ticket->user_id === $user->id || $user->isItSupport() || $user->isAdmin(),
+            403
+        );
+
+        $data = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ], [
+            'reason.max' => 'The reason is too long — please keep it under 500 characters.',
+        ]);
+
+        $reason = trim((string) ($data['reason'] ?? ''));
+
+        // One conditional UPDATE, so if IT accepts the ticket at the same moment
+        // only one of the two wins — an accepted ticket can never be cancelled.
+        $cancelled = Ticket::whereKey($ticket->id)
+            ->where('status', 'open')
+            ->whereNull('assigned_to')
+            ->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'cancelled_by' => $user->id,
+                'cancel_reason' => $reason !== '' ? $reason : null,
+            ]);
+
+        if (! $cancelled) {
+            $ticket->refresh();
+
+            return redirect()->route('tickets.show', $ticket)->with('error', match (true) {
+                $ticket->isCancelled() => 'This ticket has already been cancelled.',
+                $ticket->isFinished() => 'This ticket is closed and can no longer be cancelled.',
+                default => 'IT Support has already accepted this ticket, so it can no longer be cancelled. Please use the chat on this ticket to talk to them.',
+            });
+        }
+
+        $ticket->refresh();
+
+        ActivityLog::record(
+            'ticket_cancelled',
+            "Cancelled ticket {$ticket->ticket_number}".($reason !== '' ? " (Reason: {$reason})" : ''),
+            ['ticket_id' => $ticket->id, 'reason' => $reason ?: null]
+        );
+
+        // Leave a note in the thread so the history explains what happened.
+        $ticket->comments()->create([
+            'user_id' => $user->id,
+            'body' => 'Ticket cancelled'.($reason !== '' ? "\nReason: {$reason}" : ''),
+        ]);
+
+        // Only tell the requester when somebody else cancelled it for them.
+        if ($ticket->user_id !== $user->id) {
+            try {
+                $ticket->creator?->notify(new TicketCancelledNotification($ticket, $user->name, $reason ?: null));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return redirect()->route('tickets.show', $ticket)
+            ->with('status', "Ticket {$ticket->ticket_number} has been cancelled.");
+    }
+
     public function updateStatus(Request $request, Ticket $ticket)
     {
         abort_unless($request->user()->isItSupport() || $request->user()->isAdmin(), 403);
@@ -534,8 +781,8 @@ class TicketController extends Controller
         // Closed is terminal — once here, nothing about status, assignment,
         // or the solution can change. Enforced here too (not just hidden in
         // the UI) so a stale page or a crafted request can't reopen it.
-        if ($ticket->isClosed()) {
-            return back()->with('error', 'This ticket is closed and can no longer be updated.');
+        if ($ticket->isFinished()) {
+            return back()->with('error', 'This ticket is '.($ticket->isCancelled() ? 'cancelled' : 'closed').' and can no longer be updated.');
         }
 
         // A ticket can only be closed once IT has marked it Resolved.
@@ -733,7 +980,7 @@ class TicketController extends Controller
 
     public function comment(Request $request, Ticket $ticket)
     {
-        abort_if($ticket->status === 'closed', 403, 'This ticket is closed — the conversation can no longer be replied to.');
+        abort_if($ticket->isFinished(), 403, 'This ticket is '.($ticket->isCancelled() ? 'cancelled' : 'closed').' — the conversation can no longer be replied to.');
 
         $user = $request->user();
         if (($user->isItSupport() || $user->isAdmin()) && is_null($ticket->assigned_to)) {

@@ -64,6 +64,8 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
     Route::get('/tickets/{ticket}/live', [TicketController::class, 'live'])->name('tickets.live');
     Route::post('/tickets/{ticket}/approve', [TicketController::class, 'approve'])->name('tickets.approve');
     Route::post('/tickets/{ticket}/comment', [TicketController::class, 'comment'])->name('tickets.comment');
+    // Cancel an unaccepted ticket — the requester, IT Support or Admin (checked in the controller).
+    Route::post('/tickets/{ticket}/cancel', [TicketController::class, 'cancel'])->name('tickets.cancel');
     Route::get('/tickets/{ticket}/chat/poll', [TicketController::class, 'pollChat'])->name('tickets.chat.poll');
 
     // Chat Support — staff's own thread with the whole IT Support team.
@@ -86,6 +88,9 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
     Route::middleware('role:it_support,admin')->group(function () {
         Route::post('/tickets/{ticket}/accept', [TicketController::class, 'accept'])->name('tickets.accept');
         Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
+        // Correct a ticket's category / priority / status (IT Support + Admin).
+        Route::get('/tickets/{ticket}/edit', [TicketController::class, 'edit'])->name('tickets.edit');
+        Route::put('/tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
         Route::patch('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
         Route::get('/tickets/queue/poll', [TicketController::class, 'pollQueue'])->name('tickets.queue.poll');
 

@@ -7,6 +7,7 @@
         'pending' => 'Pending',
         'resolved' => 'Resolved',
         'closed' => 'Closed',
+        'cancelled' => 'Cancelled',
     ];
     $styles = [
         'open' => 'bg-amber-100 text-amber-700',
@@ -14,6 +15,7 @@
         'pending' => 'bg-purple-100 text-purple-700',
         'resolved' => 'bg-green-100 text-green-700',
         'closed' => 'bg-gray-200 text-gray-600',
+        'cancelled' => 'bg-red-50 text-red-600',
     ][$status] ?? 'bg-gray-100 text-gray-600';
 
     $dot = [
@@ -22,6 +24,7 @@
         'pending' => 'bg-purple-500',
         'resolved' => 'bg-green-600',
         'closed' => 'bg-gray-400',
+        'cancelled' => 'bg-red-400',
     ][$status] ?? 'bg-gray-400';
 @endphp
 

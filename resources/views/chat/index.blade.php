@@ -77,6 +77,7 @@
                                   'bg-purple-100 text-purple-700': thread.status === 'pending',
                                   'bg-green-100 text-green-700': thread.status === 'resolved',
                                   'bg-gray-200 text-gray-600': thread.status === 'closed',
+                                  'bg-red-50 text-red-600': thread.status === 'cancelled',
                               }">
                             <span class="w-1.5 h-1.5 rounded-full"
                                   :class="{
@@ -85,6 +86,7 @@
                                       'bg-purple-500': thread.status === 'pending',
                                       'bg-green-600': thread.status === 'resolved',
                                       'bg-gray-400': thread.status === 'closed',
+                                      'bg-red-400': thread.status === 'cancelled',
                                   }"></span>
                             <span x-text="thread.status_label"></span>
                         </span>
@@ -100,7 +102,7 @@
 
     <script>
         function chatInbox() {
-            const statusLabels = { open: 'Open', in_progress: 'In Progress', pending: 'Pending', resolved: 'Resolved', closed: 'Closed' };
+            const statusLabels = { open: 'Open', in_progress: 'In Progress', pending: 'Pending', resolved: 'Resolved', closed: 'Closed', cancelled: 'Cancelled' };
             const decorate = (list) => (list || []).map(t => ({ ...t, status_label: statusLabels[t.status] || t.status }));
 
             let initialThreads = [];
