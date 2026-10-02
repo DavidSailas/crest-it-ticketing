@@ -200,7 +200,7 @@
                                         </span>
                                     @endif
                                     @if($showAssignedTo)
-                                        <span class="text-gray-400">{{ $ticket->assignee ? '→ '.$ticket->assignee->name : 'Unassigned' }}</span>
+                                        <span class="text-gray-400">{{ $ticket->assignee ? '→ '.$ticket->assignee->name : ($ticket->isCancelled() ? '' : 'Unassigned') }}</span>
                                     @endif
                                     <span class="md:hidden text-gray-400">{{ $ticket->created_at->format('M j, Y') }}</span>
                                 </div>

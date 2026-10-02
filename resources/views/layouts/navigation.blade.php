@@ -1,6 +1,6 @@
 <style>[x-cloak] { display: none !important; }</style>
 
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+<nav x-data="{ open: false }" class="bg-white border-b border-gray-100 print:hidden">
     <!-- Primary Navigation Menu -->
     <div class="max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -61,6 +61,9 @@
                             {{ __('Reports') }}
                         </x-nav-link>
                     @endif
+                    <x-nav-link :href="route('it-policy.show')" :active="request()->routeIs('it-policy.*')">
+                        {{ __('IT Policy') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -232,6 +235,9 @@
                     {{ __('Reports') }}
                 </x-responsive-nav-link>
             @endif
+            <x-responsive-nav-link :href="route('it-policy.show')" :active="request()->routeIs('it-policy.*')">
+                {{ __('IT Policy') }}
+            </x-responsive-nav-link>
         </div>
 
         <!-- Responsive Settings Options -->

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ItPolicyController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SupportChatController;
@@ -78,6 +79,13 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
     // already see via /tickets.
     Route::get('/chat', [TicketController::class, 'chatIndex'])->name('chat.index');
     Route::get('/chat/poll', [TicketController::class, 'chatPoll'])->name('chat.poll');
+
+    // Company IT Policy — Staff, IT Support and Admin can all read and
+    // download it.
+    Route::middleware('role:staff,it_support,admin')->group(function () {
+        Route::get('/it-policy', [ItPolicyController::class, 'show'])->name('it-policy.show');
+        Route::get('/it-policy/download', [ItPolicyController::class, 'download'])->name('it-policy.download');
+    });
 
     // Notifications bell — available to every role
     Route::get('/notifications/poll', [NotificationController::class, 'poll'])->name('notifications.poll');

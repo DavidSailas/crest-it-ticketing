@@ -13,28 +13,35 @@
         .pagenum:before { content: counter(page); }
 
         /* ---------- Cover band ---------- */
-        table.cover { width: 100%; background-color: #123f24; margin-bottom: 14px; }
-        table.cover td { padding: 18px 22px; vertical-align: middle; }
-        .cover-eyebrow { color: #bfe6cc; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: bold; margin: 0; }
-        .cover-title { color: #ffffff; font-size: 22px; font-weight: bold; margin: 5px 0 0; }
-        .cover-meta { color: #d7f0dd; font-size: 9.5px; margin-top: 6px; }
-        .cover-logo-cell { width: 64px; text-align: right; }
-        .cover-logo-badge { display: inline-block; width: 50px; height: 50px; background-color: #ffffff; padding: 3px; }
-        .cover-logo { width: 44px; height: 44px; }
+        table.cover { width: 100%; background-color: #0f3d22; }
+        table.cover td { padding: 24px 26px 22px; vertical-align: middle; }
+        .cover-eyebrow { color: #8fd3a8; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: bold; margin: 0; }
+        .cover-title { color: #ffffff; font-size: 27px; font-weight: bold; margin: 7px 0 0; letter-spacing: 0.01em; }
+        .cover-sub { color: #cfe8d7; font-size: 10px; margin: 5px 0 0; }
+
+        table.accent { width: 100%; margin-bottom: 0; }
+        table.accent td { height: 5px; font-size: 1px; line-height: 1px; padding: 0; }
+        table.meta { width: 100%; background-color: #eef6f1; margin-bottom: 16px; border-bottom: 1px solid #cfe5d6; }
+        table.meta td { padding: 9px 26px; vertical-align: top; }
+        .meta-label { font-size: 7px; text-transform: uppercase; letter-spacing: 0.1em; color: #5b7f69; font-weight: bold; }
+        .meta-value { font-size: 10px; color: #123f24; font-weight: bold; margin-top: 2px; }
 
         /* ---------- Executive summary ---------- */
         table.summary { width: 100%; margin-bottom: 14px; }
-        table.summary td { background-color: #f4f8f5; border-left: 4px solid #1a6b3c; padding: 10px 14px; }
+        table.summary td { background-color: #f7faf8; border: 1px solid #dcebe2; border-left: 5px solid #1a6b3c; padding: 12px 16px; }
         .summary-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.07em; color: #1a6b3c; font-weight: bold; margin: 0 0 4px; }
-        .summary-text { font-size: 10.5px; line-height: 1.5; color: #374151; margin: 0; }
+        .summary-text { font-size: 11px; line-height: 1.55; color: #374151; margin: 0; }
 
         /* ---------- KPI cards ---------- */
         table.cards { width: 100%; margin-bottom: 16px; }
-        table.cards td.card { width: 23.5%; border: 1px solid #e5e7eb; border-top: 3px solid #1a6b3c; padding: 9px 12px; background-color: #ffffff; vertical-align: top; }
-        table.cards td.gap { width: 2%; }
+        table.cards td.card { width: 18%; border: 1px solid #e5e7eb; border-top: 4px solid #1a6b3c; padding: 10px 12px 9px; background-color: #ffffff; vertical-align: top; }
+        table.cards td.gap { width: 2.5%; }
         table.cards td.warn { background-color: #fffbeb; border-color: #fde68a; border-top-color: #d97706; }
+        table.cards td.c-blue { border-top-color: #2563eb; } table.cards td.c-blue .card-value { color: #1d4ed8; }
+        table.cards td.c-violet { border-top-color: #7c3aed; } table.cards td.c-violet .card-value { color: #6d28d9; }
+        table.cards td.c-red { border-top-color: #dc2626; background-color: #fef7f7; } table.cards td.c-red .card-value { color: #dc2626; }
         .card-label { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; font-weight: bold; }
-        .card-value { font-size: 21px; font-weight: bold; color: #123f24; margin-top: 3px; }
+        .card-value { font-size: 25px; font-weight: bold; color: #123f24; margin-top: 4px; }
         .warn .card-label, .warn .card-value { color: #b45309; }
         .card-delta { font-size: 8px; font-weight: bold; margin-top: 3px; }
         .good { color: #15803d; }
@@ -42,19 +49,21 @@
         .flat { color: #9ca3af; font-weight: normal; }
 
         /* ---------- Section headers ---------- */
-        .section-title { font-size: 12.5px; font-weight: bold; color: #123f24; margin: 6px 0 4px; padding-left: 8px; border-left: 4px solid #1a6b3c; }
-        .section-desc { font-size: 8.5px; color: #6b7280; margin: 0 0 8px 12px; }
+        .section-title { font-size: 13px; font-weight: bold; color: #0f3d22; margin: 10px 0 3px; padding: 2px 0 4px 9px; border-left: 5px solid #1a6b3c; border-bottom: 1px solid #cfe5d6; }
+        .section-desc { font-size: 8.5px; color: #6b7280; margin: 0 0 9px 14px; }
 
         /* ---------- Panels (chart boxes) ---------- */
         table.panel { width: 100%; margin-bottom: 14px; }
-        table.panel td { border: 1px solid #e5e7eb; padding: 10px 12px; background-color: #ffffff; vertical-align: top; }
+        table.panel td { border: 1px solid #e5e7eb; border-top: 3px solid #1a6b3c; padding: 12px 14px; background-color: #ffffff; vertical-align: top; }
         table.panels { width: 100%; margin-bottom: 14px; }
-        table.panels td.p { width: 32%; border: 1px solid #e5e7eb; padding: 10px 12px; vertical-align: top; background-color: #ffffff; }
+        table.panels td.p { width: 32%; border: 1px solid #e5e7eb; border-top: 3px solid #1a6b3c; padding: 11px 13px; vertical-align: top; background-color: #fcfdfc; }
         table.panels td.gap { width: 2%; }
-        .chart-title { font-size: 8.5px; font-weight: bold; color: #374151; margin-bottom: 8px; text-align: center; text-transform: uppercase; letter-spacing: 0.04em; }
+        .chart-title { font-size: 8.5px; font-weight: bold; color: #123f24; margin-bottom: 9px; text-align: center; text-transform: uppercase; letter-spacing: 0.08em; }
+        .donut-total { text-align: center; font-size: 15px; font-weight: bold; color: #123f24; margin-top: 5px; }
+        .donut-cap { text-align: center; font-size: 7px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; }
 
         table.legend { width: 100%; margin-top: 8px; }
-        table.legend td { padding: 2px 0; font-size: 8.5px; border: 0; }
+        table.legend td { padding: 3px 0; font-size: 8.5px; border: 0; border-bottom: 1px solid #f1f5f2; }
         .swatch { display: inline-block; width: 7px; height: 7px; margin-right: 4px; }
         .legend-val { text-align: right; color: #6b7280; }
 
@@ -63,16 +72,18 @@
 
         /* ---------- Data tables ---------- */
         table.grid { width: 100%; margin-bottom: 6px; }
-        table.grid thead th { background-color: #1a6b3c; color: #ffffff; text-align: left; padding: 7px 8px; font-size: 8px; text-transform: uppercase; letter-spacing: 0.03em; }
+        table.grid thead th { background-color: #0f3d22; color: #ffffff; text-align: left; padding: 8px 8px; font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.07em; }
         table.grid thead th.num { text-align: right; }
         table.grid tbody td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-size: 9.5px; vertical-align: middle; }
-        table.grid tbody tr.alt td { background-color: #f9fafb; }
+        table.grid tbody tr.alt td { background-color: #f4f8f5; }
         table.grid tbody tr.zero td { color: #9ca3af; }
-        table.grid tfoot td { padding: 7px 8px; font-weight: bold; font-size: 9.5px; background-color: #e8f3ec; border-top: 2px solid #1a6b3c; }
+        table.grid tfoot td { padding: 8px 8px; font-weight: bold; font-size: 9.5px; background-color: #dcebe2; color: #0f3d22; border-top: 2px solid #1a6b3c; }
         .num { text-align: right; }
         .strong { font-weight: bold; color: #123f24; }
-        .bar-track { background-color: #eef2ef; height: 6px; width: 100%; }
-        .bar-fill { background-color: #1a6b3c; height: 6px; }
+        .bar-track { background-color: #e3ece6; height: 7px; width: 100%; }
+        .bar-fill { background-color: #2f9e5f; height: 7px; }
+        table.statusbar { width: 100%; table-layout: fixed; }
+        table.statusbar td { height: 11px; font-size: 1px; line-height: 1px; padding: 0; border: 0; }
         .table-note { font-size: 8px; color: #6b7280; margin: 0 0 16px 2px; }
 
         .page-break { page-break-before: always; }
@@ -114,7 +125,8 @@
     $pieBlock = function (string $title, array $data, string $emptyText = 'No data') use ($piePaths) {
         $html = '<div class="chart-title">'.e($title).'</div>';
         if (count($data) > 0) {
-            $html .= '<svg width="84" height="84" viewBox="0 0 80 80" style="display:block;margin:0 auto;">'.$piePaths($data, 40).'</svg>';
+            $html .= '<svg width="88" height="88" viewBox="0 0 80 80" style="display:block;margin:0 auto;">'.$piePaths($data, 40).'<circle cx="40" cy="40" r="23" fill="#ffffff" /></svg>';
+            $html .= '<div class="donut-total">'.number_format(array_sum(array_column($data, 'value'))).'</div><div class="donut-cap">total</div>';
             $html .= '<table class="legend">';
             foreach ($data as $slice) {
                 $html .= '<tr><td><span class="swatch" style="background-color:'.$slice['color'].';"></span>'.e($slice['label']).'</td><td class="legend-val">'.$slice['value'].' ('.$slice['percent'].'%)</td></tr>';
@@ -130,7 +142,7 @@
     <div class="footer">
         <table>
             <tr>
-                <td>Crest Forwarder Inc. &mdash; IT Service Desk &middot; Confidential, internal use only</td>
+                <td><b style="color:#1a6b3c;">Crest Forwarder Inc.</b> &mdash; IT Service Desk &middot; Confidential, internal use only</td>
                 <td style="text-align:right;">{{ $rangeLabel }} &middot; Page <span class="pagenum"></span></td>
             </tr>
         </table>
@@ -142,11 +154,16 @@
             <td>
                 <p class="cover-eyebrow">Crest Forwarder Inc. &middot; IT Service Desk</p>
                 <p class="cover-title">Management Report</p>
-                <p class="cover-meta">{{ $rangeLabel }} &middot; Generated {{ $generatedAt->format('F j, Y g:i A') }} &middot; Prepared by {{ $preparedBy }}</p>
+                <p class="cover-sub">Tickets, IT engineer workload, staff activity, assets and accounts</p>
             </td>
-            @if($logoData)
-                <td class="cover-logo-cell"><span class="cover-logo-badge"><img src="{{ $logoData }}" class="cover-logo" /></span></td>
-            @endif
+        </tr>
+    </table>
+    <table class="accent"><tr><td style="width:72%; background-color:#34a368;">&nbsp;</td><td style="width:28%; background-color:#f5b82e;">&nbsp;</td></tr></table>
+    <table class="meta">
+        <tr>
+            <td style="width:34%;"><div class="meta-label">Reporting period</div><div class="meta-value">{{ $rangeLabel }}</div></td>
+            <td style="width:36%;"><div class="meta-label">Generated</div><div class="meta-value">{{ $generatedAt->format('F j, Y g:i A') }}</div></td>
+            <td style="width:30%;"><div class="meta-label">Prepared by</div><div class="meta-value">{{ $preparedBy }}</div></td>
         </tr>
     </table>
 
@@ -161,7 +178,7 @@
     {{-- ============ KPI cards ============ --}}
     <table class="cards">
         <tr>
-            <td class="card">
+            <td class="card c-blue">
                 <div class="card-label">Tickets created</div>
                 <div class="card-value">{{ number_format($totalTickets) }}</div>
                 <div class="card-delta">{!! $comparison ? $deltaCell($comparison['ticketsDelta'], false) : '<span class="flat">'.e($rangeLabel).'</span>' !!}</div>
@@ -170,10 +187,10 @@
             <td class="card">
                 <div class="card-label">Resolution rate</div>
                 <div class="card-value">{{ $resolutionRate !== null ? $resolutionRate.'%' : '—' }}</div>
-                <div class="card-delta">{!! $comparison ? $deltaCell($comparison['rateDelta'], true) : '<span class="flat">Resolved or closed</span>' !!}</div>
+                <div class="card-delta">{!! $comparison ? $deltaCell($comparison['rateDelta'], true) : '<span class="flat">Resolved or closed, excl. cancelled</span>' !!}</div>
             </td>
             <td class="gap"></td>
-            <td class="card">
+            <td class="card c-violet">
                 <div class="card-label">Avg. resolution time</div>
                 <div class="card-value">
                     @if($avgResolutionHours === null) — @elseif($avgResolutionHours < 24) {{ round($avgResolutionHours, 1) }}h @else {{ round($avgResolutionHours / 24, 1) }}d @endif
@@ -186,8 +203,34 @@
                 <div class="card-value">{{ number_format($unassignedInRange) }}</div>
                 <div class="card-delta"><span class="{{ $unassignedInRange > 0 ? 'bad' : 'flat' }}">{{ $unassignedInRange > 0 ? 'Needs an IT engineer' : 'All tickets assigned' }}</span></div>
             </td>
+            <td class="gap"></td>
+            <td class="card {{ $cancelledCount > 0 ? 'c-red' : '' }}">
+                <div class="card-label">Cancelled</div>
+                <div class="card-value">{{ number_format($cancelledCount) }}</div>
+                <div class="card-delta"><span class="flat">Withdrawn before pickup</span></div>
+            </td>
         </tr>
     </table>
+
+    {{-- ============ Status at a glance ============ --}}
+    @php $statusTotal = max(1, array_sum(array_column($byStatus, 'value'))); @endphp
+    @if(count($byStatus) > 0)
+        <table class="panel" style="margin-bottom:14px;">
+            <tr><td style="padding:10px 14px;">
+                <div class="chart-title" style="text-align:left; margin-bottom:7px;">Ticket status at a glance</div>
+                <table class="statusbar"><tr>
+                    @foreach($byStatus as $slice)
+                        <td style="width:{{ round($slice['value'] / $statusTotal * 100, 2) }}%; background-color:{{ $slice['color'] }};">&nbsp;</td>
+                    @endforeach
+                </tr></table>
+                <div class="month-key" style="margin-top:7px;">
+                    @foreach($byStatus as $slice)
+                        <span class="item"><span class="swatch" style="background-color:{{ $slice['color'] }};"></span>{{ $slice['label'] }} &middot; <b>{{ number_format($slice['value']) }}</b> ({{ $slice['percent'] }}%)</span>
+                    @endforeach
+                </div>
+            </td></tr>
+        </table>
+    @endif
 
     {{-- ============ Ticket volume over time ============ --}}
     @if(count($trend) > 1)

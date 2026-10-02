@@ -124,13 +124,13 @@
                                             <span class="sm:hidden"><x-priority-badge :priority="$ticket->priority" /></span>
                                             <span>{{ $ticket->creator->name }}</span>
                                             <span class="lg:hidden text-gray-300">→</span>
-                                            <span class="lg:hidden">{{ $ticket->assignee->name ?? 'Unassigned' }}</span>
+                                            <span class="lg:hidden">{{ $ticket->assigneeLabel() }}</span>
                                         </div>
                                     </td>
                                     <td class="hidden sm:table-cell px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-priority-badge :priority="$ticket->priority" /></td>
                                     <td class="px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-status-badge :status="$ticket->status" /></td>
                                     <td class="hidden md:table-cell px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-person :user="$ticket->creator" /></td>
-                                    <td class="hidden lg:table-cell px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-person :user="$ticket->assignee" /></td>
+                                    <td class="hidden lg:table-cell px-4 sm:px-5 py-3.5 whitespace-nowrap"><x-person :user="$ticket->assignee" :empty="$ticket->isCancelled() ? 'N/A' : 'Unassigned'" /></td>
                                     <td class="hidden xl:table-cell px-4 sm:px-5 py-3.5 text-gray-500 whitespace-nowrap">{{ $ticket->created_at->format('M j, Y') }}</td>
                                     <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap"><x-view-link href="{{ route('tickets.show', $ticket) }}" /></td>
                                 </tr>

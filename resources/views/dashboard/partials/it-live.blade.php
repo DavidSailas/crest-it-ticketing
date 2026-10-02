@@ -205,7 +205,7 @@
                                             <span class="sm:hidden"><x-priority-badge :priority="$ticket->priority" /></span>
                                         </p>
                                     </td>
-                                    <td class="hidden md:table-cell px-4 py-3.5 whitespace-nowrap"><x-person :user="$ticket->assignee" :you="$mine" /></td>
+                                    <td class="hidden md:table-cell px-4 py-3.5 whitespace-nowrap"><x-person :user="$ticket->assignee" :you="$mine" :empty="$ticket->isCancelled() ? 'N/A' : 'Unassigned'" /></td>
                                     <td class="hidden sm:table-cell px-4 py-3.5 whitespace-nowrap"><x-priority-badge :priority="$ticket->priority" /></td>
                                     <td class="px-4 py-3.5 whitespace-nowrap">
                                         <div class="flex flex-col items-start gap-1">

@@ -85,6 +85,16 @@ class Ticket extends Model
         return $this->status === 'cancelled';
     }
 
+    /**
+     * What to show where a ticket's handler goes. A cancelled ticket was never
+     * picked up, but it isn't waiting for anyone either — so it reads "N/A",
+     * never "Unassigned".
+     */
+    public function assigneeLabel(): string
+    {
+        return $this->assignee->name ?? ($this->isCancelled() ? 'N/A' : 'Unassigned');
+    }
+
     /** Closed or cancelled — nothing about the ticket can change any more. */
     public function isFinished(): bool
     {

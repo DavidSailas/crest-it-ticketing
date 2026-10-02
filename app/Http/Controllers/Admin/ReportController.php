@@ -416,9 +416,13 @@ class ReportController extends Controller
         $prevFrom = $prevTo->copy()->subDays($lengthDays - 1)->startOfDay();
 
         $prevTickets = Ticket::where('created_at', '>=', $prevFrom)->where('created_at', '<=', $prevTo)->count();
+        $prevCancelled = Ticket::where('created_at', '>=', $prevFrom)->where('created_at', '<=', $prevTo)
+            ->where('status', 'cancelled')->count();
         $prevResolved = Ticket::where('created_at', '>=', $prevFrom)->where('created_at', '<=', $prevTo)
             ->whereIn('status', ['resolved', 'closed'])->count();
-        $prevRate = $prevTickets > 0 ? round(($prevResolved / $prevTickets) * 100) : null;
+        // Same rule as the main report: cancelled tickets are left out of the rate.
+        $prevWorkable = $prevTickets - $prevCancelled;
+        $prevRate = $prevWorkable > 0 ? round(($prevResolved / $prevWorkable) * 100) : null;
 
         return [
             'label' => 'vs. previous period',
@@ -467,6 +471,11 @@ class ReportController extends Controller
         }
 
         $sentence .= '.';
+
+        if (($report['cancelledCount'] ?? 0) > 0) {
+            $sentence .= " {$report['cancelledCount']} ".
+                ($report['cancelledCount'] === 1 ? 'ticket was' : 'tickets were').' cancelled and are not counted as unassigned or in the resolution rate.';
+        }
 
         if ($report['unassignedInRange'] > 0) {
             $sentence .= " {$report['unassignedInRange']} ".
@@ -599,6 +608,10 @@ class ReportController extends Controller
             : null;
 
         $closedCount = (clone $ticketsInRange)->where('status', 'closed')->count();
+        $cancelledCount = (clone $ticketsInRange)->where('status', 'cancelled')->count();
+        // Cancelled tickets never needed work, so they don't count against the
+        // resolution rate (it's measured on tickets that actually needed handling).
+        $workableTickets = $totalTickets - $cancelledCount;
         $resolvedOrClosed = (clone $ticketsInRange)->whereIn('status', ['resolved', 'closed'])->count();
 
         // Workload per IT Support agent — tickets assigned to them that were
@@ -608,7 +621,9 @@ class ReportController extends Controller
             ->selectRaw('users.name as agent, COUNT(*) as total')
             ->groupBy('users.name')->orderByDesc('total')->pluck('total', 'agent');
 
-        $unassignedInRange = (clone $ticketsInRange)->whereNull('assigned_to')->count();
+        // Waiting for an engineer: not picked up AND not cancelled. A cancelled
+        // ticket also has no assignee, but nobody needs to act on it.
+        $unassignedInRange = (clone $ticketsInRange)->whereNull('assigned_to')->where('status', '!=', 'cancelled')->count();
 
         // Volume trend — tickets created per day (short ranges) or per month
         // (year / all-time), so the line makes sense either way.
@@ -643,7 +658,8 @@ class ReportController extends Controller
             'categoryBreakdown' => $categoryBreakdown,
             'avgResolutionHours' => $avgResolutionHours,
             'closedCount' => $closedCount,
-            'resolutionRate' => $totalTickets > 0 ? round(($resolvedOrClosed / $totalTickets) * 100) : null,
+            'resolutionRate' => $workableTickets > 0 ? round(($resolvedOrClosed / $workableTickets) * 100) : null,
+            'cancelledCount' => $cancelledCount,
             'byAgent' => $byAgent,
             'unassignedInRange' => $unassignedInRange,
             'trend' => $trend,

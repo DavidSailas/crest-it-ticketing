@@ -81,7 +81,7 @@
             </div>
             <div>
                 <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Assigned to</p>
-                <p class="text-gray-800 font-medium">{{ $ticket->assignee->name ?? 'Unassigned' }}</p>
+                <p class="text-gray-800 font-medium">{{ $ticket->assigneeLabel() }}</p>
             </div>
             <div>
                 <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Created</p>

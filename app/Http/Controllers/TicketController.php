@@ -234,7 +234,7 @@ class TicketController extends Controller
             $sheet->setCellValue("B{$row}", $ticket->category);
             $sheet->setCellValue("C{$row}", $ticket->subcategory ?? '—');
             $sheet->setCellValue("D{$row}", $ticket->creator->name ?? '—');
-            $sheet->setCellValue("E{$row}", $ticket->assignee->name ?? 'Unassigned');
+            $sheet->setCellValue("E{$row}", $ticket->assigneeLabel());
             $sheet->setCellValue("F{$row}", ucfirst($ticket->priority));
             $sheet->setCellValue("G{$row}", str_replace('_', ' ', ucfirst($ticket->status)));
             $sheet->setCellValue("H{$row}", $ticket->created_at->format('M j, Y g:i A'));
