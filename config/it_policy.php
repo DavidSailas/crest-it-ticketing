@@ -25,10 +25,10 @@ return [
     'meta' => [
         'Document No.' => 'CFI-IT-POL-001',
         'Version' => '1.0',
-        'Effective Date' => null,
-        'Review Date' => null,
+        'Effective Date' => 'September 25, 2026',
+        'Review Date' => 'September 23, 2026',
         'Policy Owner' => 'IT Department / Management',
-        'Approved By' => null,
+        'Approved By' => 'HR & IT Department',
     ],
 
     // "Key rules at a glance" — each links to the section it comes from.
