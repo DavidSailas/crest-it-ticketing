@@ -94,9 +94,9 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
         Route::patch('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
         Route::get('/tickets/queue/poll', [TicketController::class, 'pollQueue'])->name('tickets.queue.poll');
 
-        // Asset inventory — viewable by both roles; IT Support can add new
-        // assets here too. Edit/delete stay admin-only below.
-        Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
+        // Asset inventory — IT Support can add new assets here too
+        // (the list itself is viewable by Staff as well, see below).
+        // Edit/delete stay admin-only below.
         Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
         // Standalone "New Asset" page — owner is optional here (an asset can
         // sit unassigned in inventory), so user_id travels in the request
@@ -118,6 +118,13 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
         Route::get('/support-chat/{user}', [SupportChatController::class, 'showFor'])->name('support-chat.show.user');
         Route::post('/support-chat/{user}', [SupportChatController::class, 'sendFor'])->name('support-chat.send.user');
         Route::get('/support-chat/{user}/poll', [SupportChatController::class, 'pollFor'])->name('support-chat.poll.user');
+    });
+
+    // Asset inventory list — read-only for Staff. Staff, IT Support and Admin
+    // can all view it; create/edit/delete/export stay with IT Support/Admin
+    // (the view hides those controls, and their routes reject Staff).
+    Route::middleware('role:staff,it_support,admin')->group(function () {
+        Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
     });
 
     // Read-only staff directory — Staff can look up a coworker's account

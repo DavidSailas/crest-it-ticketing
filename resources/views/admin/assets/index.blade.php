@@ -347,66 +347,115 @@
                             {{-- Read-only details modal — available to everyone --}}
                             <tr x-show="viewingId === {{ $asset->id }}" x-cloak>
                                 <td colspan="7" class="px-0 py-0">
-                                    <div class="fixed inset-0 bg-black/30 z-40 flex items-center justify-center p-4" @click.self="viewingId = null">
-                                        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-                                            <div class="flex justify-between items-center mb-4">
-                                                <h3 class="text-base font-semibold text-gray-800 font-mono">{{ $asset->asset_tag }}</h3>
-                                                <button @click="viewingId = null" class="text-gray-400 hover:text-gray-600">&times;</button>
-                                            </div>
+                                    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 flex items-center justify-center p-4"
+                                         x-show="viewingId === {{ $asset->id }}"
+                                         x-transition.opacity.duration.150ms
+                                         @click.self="viewingId = null"
+                                         @keydown.escape.window="viewingId = null">
+                                        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto text-left whitespace-normal">
 
-                                            <div class="grid grid-cols-2 gap-y-4 gap-x-4 text-sm">
-                                                <div>
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Device Name</p>
-                                                    <p class="text-gray-800 font-medium">{{ $asset->device_name }}</p>
+                                            {{-- Header --}}
+                                            <div class="relative px-6 pt-6 pb-5 text-white rounded-t-2xl" style="background:linear-gradient(135deg,#1a6b3c 0%,#2f8f5a 100%);">
+                                                <button @click="viewingId = null" aria-label="Close"
+                                                        class="absolute top-4 right-4 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 transition text-lg leading-none">&times;</button>
+                                                <div class="flex items-center gap-4 pr-10">
+                                                    <div class="shrink-0 w-12 h-12 rounded-xl bg-white/15 ring-1 ring-white/25 flex items-center justify-center">
+                                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" /></svg>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <p class="text-[11px] uppercase tracking-widest text-white/70">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</p>
+                                                        <h3 class="text-lg font-semibold leading-snug truncate">{{ $asset->device_name }}</h3>
+                                                        <p class="font-mono text-xs text-white/80 mt-0.5">{{ $asset->asset_tag }}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Type</p>
-                                                    <p class="text-gray-800 font-medium">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Company</p>
-                                                    <p class="text-gray-800 font-medium">{{ \App\Models\Asset::COMPANIES[$asset->company] ?? $asset->company }}</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Location</p>
-                                                    <p class="text-gray-800 font-medium">{{ \App\Models\Asset::locations()[$asset->location] ?? $asset->location }}</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Department</p>
-                                                    <p class="text-gray-800 font-medium">{{ $asset->department->name ?? '—' }}</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Assigned To</p>
-                                                    <p class="text-gray-800 font-medium">{{ $asset->user->name ?? '—' }}</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Assigned Since</p>
-                                                    @if($asset->assigned_date)
-                                                        <p class="text-gray-800 font-medium">{{ $asset->assigned_date->format('M j, Y') }}</p>
-                                                        <p class="text-xs text-gray-400 mt-0.5">{{ $asset->assigned_duration }} ago</p>
-                                                    @else
-                                                        <p class="text-gray-800 font-medium">—</p>
-                                                    @endif
-                                                </div>
-                                                <div>
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Serial Number</p>
-                                                    <p class="text-gray-800 font-medium">{{ $asset->serial_number ?? '—' }}</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Status</p>
-                                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ring-1 ring-inset {{ $statusStyles[$asset->status] ?? 'bg-gray-100 text-gray-500 ring-gray-200' }}">
+                                                <div class="mt-4">
+                                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ring-1 ring-inset {{ $statusStyles[$asset->status] ?? 'bg-gray-100 text-gray-500 ring-gray-200' }}">
+                                                        <span class="w-1.5 h-1.5 rounded-full {{ $statusDots[$asset->status] ?? 'bg-slate-400' }}"></span>
                                                         {{ \App\Models\Asset::STATUSES[$asset->status] ?? ucfirst($asset->status) }}
                                                     </span>
                                                 </div>
-                                                <div class="col-span-2">
-                                                    <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Notes</p>
-                                                    <p class="text-gray-800 whitespace-pre-line">{{ $asset->notes ?: '—' }}</p>
+                                            </div>
+
+                                            <div class="p-6 space-y-5">
+
+                                                {{-- Assignment --}}
+                                                <div>
+                                                    <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Assignment</p>
+                                                    <div class="rounded-xl border border-gray-100 bg-gray-50/70 p-4 flex items-center gap-3">
+                                                        @if($asset->user)
+                                                            <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold text-white" style="background-color:#1a6b3c;">
+                                                                {{ strtoupper(mb_substr($asset->user->name, 0, 1)) }}
+                                                            </div>
+                                                            <div class="min-w-0 flex-1">
+                                                                <p class="text-sm font-semibold text-gray-800 truncate">{{ $asset->user->name }}</p>
+                                                                <p class="text-xs text-gray-500 truncate">{{ $asset->department->name ?? 'No department' }}</p>
+                                                            </div>
+                                                            <div class="text-right shrink-0">
+                                                                @if($asset->assigned_date)
+                                                                    <p class="text-xs font-medium text-gray-700">{{ $asset->assigned_date->format('M j, Y') }}</p>
+                                                                    <p class="text-[11px] text-gray-400">{{ $asset->assigned_duration }} ago</p>
+                                                                @else
+                                                                    <p class="text-xs text-gray-400">No date</p>
+                                                                @endif
+                                                            </div>
+                                                        @else
+                                                            <div class="shrink-0 w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                                                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                                                            </div>
+                                                            <div>
+                                                                <p class="text-sm font-semibold text-gray-800">Unassigned</p>
+                                                                <p class="text-xs text-gray-500">In inventory{{ $asset->department ? ' · '.$asset->department->name : '' }}</p>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+
+                                                {{-- Device details --}}
+                                                <div>
+                                                    <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Device Details</p>
+                                                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                                        <div class="rounded-lg border border-gray-100 px-3.5 py-2.5">
+                                                            <dt class="text-xs text-gray-400">Serial Number</dt>
+                                                            <dd class="text-gray-800 font-medium font-mono text-[13px] break-all">{{ $asset->serial_number ?: '—' }}</dd>
+                                                        </div>
+                                                        <div class="rounded-lg border border-gray-100 px-3.5 py-2.5">
+                                                            <dt class="text-xs text-gray-400">Company</dt>
+                                                            <dd class="text-gray-800 font-medium">{{ \App\Models\Asset::COMPANIES[$asset->company] ?? $asset->company }}</dd>
+                                                        </div>
+                                                        <div class="rounded-lg border border-gray-100 px-3.5 py-2.5">
+                                                            <dt class="text-xs text-gray-400">Location</dt>
+                                                            <dd class="text-gray-800 font-medium">{{ \App\Models\Asset::locations()[$asset->location] ?? $asset->location }}</dd>
+                                                        </div>
+                                                        <div class="rounded-lg border border-gray-100 px-3.5 py-2.5">
+                                                            <dt class="text-xs text-gray-400">Department</dt>
+                                                            <dd class="text-gray-800 font-medium">{{ $asset->department->name ?? '—' }}</dd>
+                                                        </div>
+                                                    </dl>
+                                                </div>
+
+                                                {{-- Notes --}}
+                                                <div>
+                                                    <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Notes</p>
+                                                    @if($asset->notes)
+                                                        <p class="text-sm text-gray-700 whitespace-pre-line rounded-lg bg-amber-50/60 border border-amber-100 px-3.5 py-3">{{ $asset->notes }}</p>
+                                                    @else
+                                                        <p class="text-sm text-gray-400 italic">No notes for this asset.</p>
+                                                    @endif
                                                 </div>
                                             </div>
 
-                                            <div class="mt-6 pt-4 border-t border-dashed border-gray-200 flex justify-between text-xs text-gray-400">
-                                                <span>Added {{ $asset->created_at->format('M j, Y') }}</span>
-                                                <span>Last updated {{ $asset->updated_at->format('M j, Y') }}</span>
+                                            {{-- Footer --}}
+                                            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/60 rounded-b-2xl flex items-center justify-between gap-3">
+                                                <div class="text-[11px] text-gray-400 leading-relaxed">
+                                                    <p>Added {{ $asset->created_at->format('M j, Y') }}</p>
+                                                    <p>Updated {{ $asset->updated_at->format('M j, Y') }}</p>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    @if($canEditAsset)
+                                                        <a href="{{ route('assets.edit', $asset) }}" class="inline-flex items-center rounded-lg bg-emerald-50 px-3.5 py-2 text-emerald-700 hover:bg-emerald-100 font-medium text-sm">Edit</a>
+                                                    @endif
+                                                    <button @click="viewingId = null" class="inline-flex items-center rounded-lg px-4 py-2 text-white text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">Close</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
