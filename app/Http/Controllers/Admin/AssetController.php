@@ -161,11 +161,10 @@ class AssetController extends Controller
     }
 
     /**
-     * Edit an asset's details. The sequence number (the 001/002 at the end
-     * of the tag) can be corrected here too — useful if two assets were
-     * numbered out of order, or a mistake needs fixing. Changing it
-     * regenerates the tag and checks it doesn't collide with another asset
-     * in the same company/location/department/type group.
+     * Edit an asset's details. Every part of the tag can be corrected here —
+     * company, location, department, device type, and the sequence number
+     * (the 001/002 at the end). Changing any of them regenerates the tag and
+     * checks it doesn't collide with another asset.
      */
     public function update(Request $request, Asset $asset)
     {
@@ -174,18 +173,38 @@ class AssetController extends Controller
             'device_name' => ['required', 'string', 'max:255'],
             'serial_number' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'in:'.implode(',', array_keys(Asset::STATUSES))],
+            // Tag parts are optional so the quick-edit / unassign forms on the
+            // user page (which only send the number) keep working unchanged.
+            'company' => ['sometimes', 'required', 'in:'.implode(',', array_keys(Asset::COMPANIES))],
+            'location' => ['sometimes', 'required', 'in:'.implode(',', array_keys(Asset::locations()))],
+            'department_id' => ['sometimes', 'required', 'exists:departments,id'],
+            'type' => ['sometimes', 'required', 'in:'.implode(',', array_keys(Asset::TYPES))],
             'sequence' => ['required', 'integer', 'min:1', 'max:999'],
             'assigned_date' => ['nullable', 'date', 'before_or_equal:today'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
+            'company.required' => 'Choose which company this asset belongs to.',
+            'location.required' => 'Choose a location.',
+            'department_id.required' => 'Choose a department.',
+            'type.required' => 'Choose a device type.',
             'sequence.required' => 'Enter a sequence number.',
             'sequence.min' => 'Sequence number must be at least 1.',
             'sequence.max' => 'Sequence number can\'t exceed 999 (three digits).',
             'assigned_date.before_or_equal' => 'Assigned date can\'t be in the future.',
         ]);
 
-        $department = $asset->department;
-        $newTag = Asset::formatTag($asset->company, $asset->location, $department->code, $asset->type, (int) $validated['sequence']);
+        $company = $validated['company'] ?? $asset->company;
+        $location = $validated['location'] ?? $asset->location;
+        $type = $validated['type'] ?? $asset->type;
+        $department = isset($validated['department_id'])
+            ? Department::findOrFail($validated['department_id'])
+            : $asset->department;
+
+        if (blank($department?->code)) {
+            return back()->with('error', "\"{$department?->name}\" doesn't have an asset code yet. Set one on the Departments page first.")->withInput();
+        }
+
+        $newTag = Asset::formatTag($company, $location, $department->code, $type, (int) $validated['sequence']);
 
         $collision = Asset::where('asset_tag', $newTag)->where('id', '!=', $asset->id)->exists();
         if ($collision) {
@@ -199,6 +218,10 @@ class AssetController extends Controller
             'status' => $validated['status'],
             'assigned_date' => $validated['assigned_date'] ?? $asset->assigned_date,
             'notes' => $validated['notes'] ?? null,
+            'company' => $company,
+            'location' => $location,
+            'type' => $type,
+            'department_id' => $department->id,
             'sequence' => $validated['sequence'],
             'asset_tag' => $newTag,
         ]);
@@ -228,12 +251,16 @@ class AssetController extends Controller
         $status = (string) $request->query('status', '');
 
         return Asset::query()
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $search = $request->string('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('asset_tag', 'like', "%{$search}%")
-                        ->orWhere('device_name', 'like', "%{$search}%")
-                        ->orWhere('serial_number', 'like', "%{$search}%");
+            // Matches the tag, device name, serial number, or the name of the
+            // person the asset is assigned to. % and _ typed by the user are
+            // treated as plain characters, not wildcards.
+            ->when(trim((string) $request->query('search', '')) !== '', function ($query) use ($request) {
+                $like = '%'.addcslashes(trim((string) $request->query('search')), '%_\\').'%';
+                $query->where(function ($q) use ($like) {
+                    $q->where('asset_tag', 'like', $like)
+                        ->orWhere('device_name', 'like', $like)
+                        ->orWhere('serial_number', 'like', $like)
+                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like));
                 });
             })
             ->when($request->filled('department_id'), function ($query) use ($request) {

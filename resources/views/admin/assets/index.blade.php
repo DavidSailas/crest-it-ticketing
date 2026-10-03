@@ -54,12 +54,41 @@
         </div>
     </x-slot>
 
-    <style>[x-cloak] { display: none !important; }</style>
+    <style>
+        [x-cloak] { display: none !important; }
+
+        /* Lock page scroll behind the details modal so only one scrollbar is ever visible. */
+        html.asset-modal-open { overflow: hidden; }
+
+        /* Details modal: header and footer stay put, only the middle scrolls. */
+        .asset-modal-panel { display: flex; flex-direction: column; overflow: hidden;
+            max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem); }
+        .asset-modal-head { flex-shrink: 0; position: relative; z-index: 1; transition: box-shadow .15s ease; }
+        .asset-modal-head.asset-head-shadow { box-shadow: 0 8px 14px -8px rgba(15, 23, 42, .45); }
+        .asset-modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+        .asset-modal-foot { flex-shrink: 0; }
+
+        /* Slim, rounded scrollbar that matches the app instead of the chunky OS default. */
+        .asset-scroll { scrollbar-width: thin; scrollbar-color: #c7d2cc transparent; }
+        .asset-scroll::-webkit-scrollbar { width: 10px; }
+        .asset-scroll::-webkit-scrollbar-track { background: transparent; margin: 6px 0; }
+        .asset-scroll::-webkit-scrollbar-thumb { background-color: #c7d2cc; border-radius: 9999px; border: 3px solid #fff; }
+        .asset-scroll::-webkit-scrollbar-thumb:hover { background-color: #1a6b3c; }
+
+        /* Filter bar: highlight any control that is currently narrowing the list. */
+        .filter-active { border-color: #1a6b3c !important; background-color: #f0f9f3 !important; }
+        .filter-chip { display: inline-flex; align-items: center; gap: .375rem; padding: .25rem .5rem .25rem .75rem;
+            border-radius: 9999px; background: #ecf7f0; color: #14532d; font-size: .75rem; font-weight: 500;
+            box-shadow: inset 0 0 0 1px #bfe3cc; transition: background-color .15s ease; }
+        .filter-chip:hover { background: #d8f0e1; }
+        .filter-chip svg { width: .875rem; height: .875rem; opacity: .7; }
+    </style>
 
     <div class="py-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
          x-data='{
             viewingId: null,
-         }'>
+         }'
+         x-effect="document.documentElement.classList.toggle('asset-modal-open', viewingId !== null)">
 
         @if(session('status'))
             <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
@@ -213,56 +242,69 @@
         </div>
 
         {{-- Search + filters --}}
-        <form method="GET" action="{{ route('assets.index') }}" class="bg-white shadow-sm rounded-xl border border-gray-100 p-4 flex flex-col lg:flex-row gap-3">
-            <div class="flex-1 relative">
-                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by tag, device name, or serial number..."
-                       class="block w-full pl-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm">
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-5 lg:flex gap-3">
-                <select name="location" onchange="this.form.submit()" aria-label="Filter by branch office" class="rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm lg:w-40">
-                    <option value="">All branches</option>
-                    @foreach(\App\Models\Asset::locations() as $code => $label)
-                        <option value="{{ $code }}" @selected(request('location') === (string) $code)>{{ $label }}</option>
-                    @endforeach
-                </select>
-                <select name="department_id" onchange="this.form.submit()" class="rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm lg:w-44">
-                    <option value="">All departments</option>
-                    @foreach($departments as $department)
-                        <option value="{{ $department->id }}" @selected(request('department_id') == $department->id)>{{ $department->name }}</option>
-                    @endforeach
-                </select>
-                <select name="type" onchange="this.form.submit()" class="rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm lg:w-40">
-                    <option value="">All types</option>
-                    @foreach(\App\Models\Asset::TYPES as $code => $label)
-                        <option value="{{ $code }}" @selected(request('type') === $code)>{{ $label }}</option>
-                    @endforeach
-                </select>
-                <select name="assignment" onchange="this.form.submit()" class="rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm lg:w-40">
-                    <option value="">Assigned &amp; unassigned</option>
-                    <option value="assigned" @selected(request('assignment') === 'assigned')>Assigned</option>
-                    <option value="unassigned" @selected(request('assignment') === 'unassigned')>Unassigned</option>
-                </select>
-                <select name="status" onchange="this.form.submit()" class="rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm lg:w-36">
-                    <option value="">All statuses</option>
-                    @foreach(\App\Models\Asset::STATUSES as $code => $label)
-                        <option value="{{ $code }}" @selected(request('status') === $code)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="flex gap-2 shrink-0">
-                <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background-color:#1a6b3c;">Search</button>
-                @if($hasFilters)
-                    <a href="{{ route('assets.index') }}" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 text-center">Clear</a>
-                @endif
-            </div>
-        </form>
+        @php
+            $filterFields = [
+                ['name' => 'location',      'label' => 'Branch',      'all' => 'All branches',          'options' => \App\Models\Asset::locations()],
+                ['name' => 'department_id', 'label' => 'Department',  'all' => 'All departments',       'options' => $departments->pluck('name', 'id')->all()],
+                ['name' => 'type',          'label' => 'Device type', 'all' => 'All types',             'options' => \App\Models\Asset::TYPES],
+                ['name' => 'assignment',    'label' => 'Assignment',  'all' => 'Assigned & unassigned', 'options' => ['assigned' => 'Assigned', 'unassigned' => 'Unassigned']],
+                ['name' => 'status',        'label' => 'Status',      'all' => 'All statuses',          'options' => \App\Models\Asset::STATUSES],
+            ];
 
-        @if($hasFilters)
-            <p class="text-sm text-gray-500 -mt-2 px-1">
-                Showing <span class="font-semibold text-gray-700">{{ number_format($assets->total()) }}</span> matching asset{{ $assets->total() === 1 ? '' : 's' }}
-            </p>
-        @endif
+            // One removable chip per active filter (same validity rules as the controller).
+            $chips = [];
+            if (filled(request('search'))) {
+                $chips[] = ['key' => 'search', 'label' => 'Search: "'.request('search').'"'];
+            }
+            foreach ($filterFields as $f) {
+                $current = (string) request($f['name'], '');
+                if ($current !== '' && array_key_exists($current, $f['options'])) {
+                    $chips[] = ['key' => $f['name'], 'label' => $f['label'].': '.$f['options'][$current]];
+                }
+            }
+        @endphp
+
+        <form method="GET" action="{{ route('assets.index') }}" class="bg-white shadow-sm rounded-2xl border border-gray-100 p-4 space-y-4">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1 relative">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by tag, device, serial number, or assigned user..."
+                           class="block w-full pl-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ filled(request('search')) ? 'filter-active' : '' }}">
+                </div>
+                <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white shrink-0" style="background-color:#1a6b3c;">Search</button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                @foreach($filterFields as $f)
+                    @php $isOn = (string) request($f['name'], '') !== '' && array_key_exists((string) request($f['name']), $f['options']); @endphp
+                    <div class="min-w-0">
+                        <label for="filter-{{ $f['name'] }}" class="block text-[11px] font-semibold uppercase tracking-wider mb-1 {{ $isOn ? 'text-green-700' : 'text-gray-400' }}">{{ $f['label'] }}</label>
+                        <select id="filter-{{ $f['name'] }}" name="{{ $f['name'] }}" onchange="this.form.submit()"
+                                class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ $isOn ? 'filter-active font-medium' : '' }}">
+                            <option value="">{{ $f['all'] }}</option>
+                            @foreach($f['options'] as $value => $label)
+                                <option value="{{ $value }}" @selected((string) request($f['name'], '') === (string) $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endforeach
+            </div>
+
+            @if($hasFilters)
+                <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100">
+                    <span class="text-xs text-gray-500 mr-1">
+                        <span class="font-semibold text-gray-700">{{ number_format($assets->total()) }}</span> matching asset{{ $assets->total() === 1 ? '' : 's' }}
+                    </span>
+                    @foreach($chips as $chip)
+                        <a href="{{ $toggle($chip['key'], null) }}" class="filter-chip" title="Remove this filter">
+                            <span>{{ $chip['label'] }}</span>
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </a>
+                    @endforeach
+                    <a href="{{ route('assets.index') }}" class="ml-auto text-xs font-medium text-gray-500 hover:text-gray-800 underline">Clear all</a>
+                </div>
+            @endif
+        </form>
 
         {{-- Table: Asset Tag + Device always show; everything else folds progressively
              so the table never needs a horizontal scrollbar. --}}
@@ -272,6 +314,7 @@
                     @if($hasFilters)
                         <p class="text-gray-700 font-medium">No assets match your filters</p>
                         <p class="text-gray-400 text-sm mt-1">Try a different term or clear the filters.</p>
+                        <a href="{{ route('assets.index') }}" class="mt-4 inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-white" style="background-color:#1a6b3c;">Clear all filters</a>
                     @else
                         <p class="text-gray-700 font-medium">No assets yet</p>
                         <p class="text-gray-400 text-sm mt-1">{{ $canAddAsset ? 'Assign your first asset to get started.' : 'Nothing has been logged yet.' }}</p>
@@ -358,15 +401,21 @@
                                          x-transition.opacity.duration.150ms
                                          @click.self="viewingId = null"
                                          @keydown.escape.window="viewingId = null">
-                                        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto text-left whitespace-normal">
+                                        <div class="asset-modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-xl text-left whitespace-normal"
+                                             x-data="{ scrolled: false }"
+                                             x-show="viewingId === {{ $asset->id }}"
+                                             x-transition:enter="transition ease-out duration-150"
+                                             x-transition:enter-start="opacity-0 scale-95"
+                                             x-transition:enter-end="opacity-100 scale-100"
+                                             x-effect="if (viewingId === {{ $asset->id }}) { $nextTick(() => { if ($refs.body) { $refs.body.scrollTop = 0; } scrolled = false; }); }">
 
                                             {{-- Header --}}
-                                            <div class="relative px-6 pt-6 pb-5 text-white rounded-t-2xl" style="background:linear-gradient(135deg,#1a6b3c 0%,#2f8f5a 100%);">
+                                            <div class="asset-modal-head px-6 pt-6 pb-5 text-white" :class="scrolled ? 'asset-head-shadow' : ''" style="background:linear-gradient(135deg,#1a6b3c 0%,#2f8f5a 100%);">
                                                 <button @click="viewingId = null" aria-label="Close"
                                                         class="absolute top-4 right-4 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 transition text-lg leading-none">&times;</button>
                                                 <div class="flex items-center gap-4 pr-10">
                                                     <div class="shrink-0 w-12 h-12 rounded-xl bg-white/15 ring-1 ring-white/25 flex items-center justify-center">
-                                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" /></svg>
+                                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $typeIcons[$asset->type] ?? 'M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z' }}" /></svg>
                                                     </div>
                                                     <div class="min-w-0">
                                                         <p class="text-[11px] uppercase tracking-widest text-white/70">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</p>
@@ -382,7 +431,7 @@
                                                 </div>
                                             </div>
 
-                                            <div class="p-6 space-y-5">
+                                            <div x-ref="body" @scroll.passive="scrolled = $event.target.scrollTop > 2" class="asset-modal-body asset-scroll p-6 space-y-5">
 
                                                 {{-- Assignment --}}
                                                 <div>
@@ -442,16 +491,22 @@
                                                 {{-- Notes --}}
                                                 <div>
                                                     <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Notes</p>
-                                                    @if($asset->notes)
-                                                        <p class="text-sm text-gray-700 whitespace-pre-line rounded-lg bg-amber-50/60 border border-amber-100 px-3.5 py-3">{{ $asset->notes }}</p>
+                                                    @if(filled($asset->notes))
+                                                        <div class="rounded-xl border border-amber-200 bg-amber-50/70 overflow-hidden flex">
+                                                            <span class="w-1 shrink-0 bg-amber-400"></span>
+                                                            <div class="asset-scroll min-w-0 flex-1 px-4 py-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line break-words" style="max-height:9rem; overflow-y:auto;">{{ trim($asset->notes) }}</div>
+                                                        </div>
                                                     @else
-                                                        <p class="text-sm text-gray-400 italic">No notes for this asset.</p>
+                                                        <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-4 py-3 flex items-center gap-2.5 text-sm text-gray-400">
+                                                            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zM19.5 7.125L16.862 4.487" /></svg>
+                                                            No notes for this asset.
+                                                        </div>
                                                     @endif
                                                 </div>
                                             </div>
 
                                             {{-- Footer --}}
-                                            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/60 rounded-b-2xl flex items-center justify-between gap-3">
+                                            <div class="asset-modal-foot px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between gap-3">
                                                 <div class="text-[11px] text-gray-400 leading-relaxed">
                                                     <p>Added {{ $asset->created_at->format('M j, Y') }}</p>
                                                     <p>Updated {{ $asset->updated_at->format('M j, Y') }}</p>

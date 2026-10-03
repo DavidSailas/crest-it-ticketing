@@ -201,8 +201,7 @@
                                 <p class="text-xs text-gray-400 mt-1.5">Defaults to today — change it if the device was actually handed over earlier.</p>
                             </div>
                             <div class="sm:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
-                                <textarea name="notes" rows="2" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">{{ old('notes') }}</textarea>
+                                <x-asset-notes-field :value="old('notes')" />
                             </div>
                         </div>
                     </div>

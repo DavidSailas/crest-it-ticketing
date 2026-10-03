@@ -135,27 +135,43 @@
                         <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Tag</p>
                         <div class="grid sm:grid-cols-3 gap-5">
                             <div>
-                                <p class="block text-sm font-medium text-gray-700 mb-1.5">Company</p>
-                                <p class="text-sm text-gray-500 bg-gray-50 rounded-lg border border-gray-200 px-3 py-2">{{ \App\Models\Asset::COMPANIES[$asset->company] ?? $asset->company }}</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Company</label>
+                                <select name="company" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                    @foreach(\App\Models\Asset::COMPANIES as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('company', $asset->company) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div>
-                                <p class="block text-sm font-medium text-gray-700 mb-1.5">Location</p>
-                                <p class="text-sm text-gray-500 bg-gray-50 rounded-lg border border-gray-200 px-3 py-2">{{ \App\Models\Asset::locations()[$asset->location] ?? $asset->location }}</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Location</label>
+                                <select name="location" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                    @foreach(\App\Models\Asset::locations() as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('location', $asset->location) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div>
-                                <p class="block text-sm font-medium text-gray-700 mb-1.5">Device Type</p>
-                                <p class="text-sm text-gray-500 bg-gray-50 rounded-lg border border-gray-200 px-3 py-2">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Device Type</label>
+                                <select name="type" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                    @foreach(\App\Models\Asset::TYPES as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('type', $asset->type) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div>
-                                <p class="block text-sm font-medium text-gray-700 mb-1.5">Department</p>
-                                <p class="text-sm text-gray-500 bg-gray-50 rounded-lg border border-gray-200 px-3 py-2">{{ $asset->department->name ?? '—' }}</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
+                                <select name="department_id" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                    @foreach($departments as $department)
+                                        <option value="{{ $department->id }}" @selected((string) old('department_id', $asset->department_id) === (string) $department->id)>{{ $department->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Tag Number</label>
                                 <input type="number" name="sequence" min="1" max="999" value="{{ old('sequence', $asset->sequence) }}" required
                                        class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
                                 <p class="text-xs text-gray-400 mt-1.5">
-                                    Becomes the last part of the tag, e.g. {{ $asset->company }}-{{ $asset->location }}-{{ $asset->department->code ?? '' }}-{{ $asset->type }}-<strong>{{ str_pad((string) $asset->sequence, 3, '0', STR_PAD_LEFT) }}</strong>. Changing this regenerates the tag.
+                                    Becomes the last part of the tag, e.g. {{ $asset->company }}-{{ $asset->location }}-{{ $asset->department->code ?? '' }}-{{ $asset->type }}-<strong>{{ str_pad((string) $asset->sequence, 3, '0', STR_PAD_LEFT) }}</strong>. Changing any tag field (company, location, department, type, or number) regenerates the tag.
                                 </p>
                             </div>
                         </div>
@@ -189,8 +205,7 @@
                                 </select>
                             </div>
                             <div class="sm:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
-                                <textarea name="notes" rows="2" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">{{ old('notes', $asset->notes) }}</textarea>
+                                <x-asset-notes-field :value="old('notes', $asset->notes)" />
                             </div>
                         </div>
                     </div>
