@@ -49,11 +49,21 @@ class User extends Authenticatable
         // automatically whenever either part changes.
         static::saving(function (User $user) {
             if ($user->isDirty(['first_name', 'middle_name', 'last_name']) || blank($user->name)) {
-                $middle = trim((string) $user->middle_name);
-                $middlePart = $middle !== '' ? mb_substr($middle, 0, 1).'. ' : '';
+                $middlePart = $user->middle_initial ? $user->middle_initial.' ' : '';
                 $user->name = trim("{$user->first_name} {$middlePart}{$user->last_name}");
             }
         });
+    }
+
+    /**
+     * Middle name shortened to a single initial with a period, e.g. a stored
+     * middle name of "Villondo" is shown as "V.". Null when there is none.
+     */
+    public function getMiddleInitialAttribute(): ?string
+    {
+        $middle = trim((string) $this->middle_name);
+
+        return $middle !== '' ? mb_strtoupper(mb_substr($middle, 0, 1)).'.' : null;
     }
 
     public function tickets()

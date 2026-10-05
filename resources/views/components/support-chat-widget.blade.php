@@ -74,7 +74,7 @@
         <textarea
             x-ref="input"
             x-model="draft"
-            @keydown.enter.prevent="if (!$event.shiftKey) send()"
+            @keydown.enter="if (!$event.shiftKey && !$event.isComposing) { $event.preventDefault(); send() }"
             rows="2"
             class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 resize-none"
             placeholder="Type a message..."
