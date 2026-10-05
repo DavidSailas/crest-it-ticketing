@@ -9,6 +9,27 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        [x-cloak] { display: none !important; }
+
+        /* Hide the browser's built-in "reveal password" eye (Edge / IE) — the form has its own toggle,
+           so without this two eye icons show up side by side. */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear { display: none; }
+
+        /* One consistent brand-green focus state on every auth page (replaces the default indigo). */
+        .auth-card input:not([type="checkbox"]):focus {
+            border-color: #1a6b3c !important;
+            box-shadow: 0 0 0 3px rgba(26, 107, 60, 0.18) !important;
+            outline: none !important;
+        }
+        .auth-card input[type="checkbox"]:focus {
+            box-shadow: 0 0 0 3px rgba(26, 107, 60, 0.18) !important;
+            outline: none !important;
+        }
+        .auth-card input[type="checkbox"] { color: #1a6b3c; }
+    </style>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen flex">
@@ -81,7 +102,7 @@
                     <h1 class="text-2xl font-bold text-gray-800 mt-1">IT Service Ticketing</h1>
                 </div>
 
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 px-8 py-10">
+                <div class="auth-card bg-white rounded-2xl shadow-lg border border-gray-100 px-8 py-10">
                     <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background-color:#e7f3ec;">
                         <svg class="w-5 h-5" style="color:#1a6b3c;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
