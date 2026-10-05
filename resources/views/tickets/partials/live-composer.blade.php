@@ -16,9 +16,7 @@
 @else
     <form @submit.prevent="send" class="px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50/40">
         <div class="flex gap-3">
-            <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background-color:#1a6b3c;">
-                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-            </div>
+            <x-avatar :user="auth()->user()" size="md" />
             <div class="flex-1">
                 <textarea
                     x-ref="input"

@@ -30,6 +30,7 @@
                         'id' => $c->id,
                         'body' => $c->body,
                         'author_name' => $c->author->name,
+                        'author_avatar' => $c->author->avatar_url,
                         'author_id' => $c->user_id,
                         'is_mine' => $c->user_id === auth()->id(),
                         'is_it' => $c->author->role !== 'staff',
@@ -59,9 +60,15 @@
 
                     <template x-for="comment in comments" :key="comment.id">
                         <div class="flex gap-3 px-4 sm:px-6 py-4 border-b border-gray-50 last:border-0" :class="comment.is_mine ? 'bg-green-50/30' : ''">
-                            <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                                 :style="`background-color: ${comment.is_it ? '#1a6b3c' : '#6b7280'}`"
-                                 x-text="initials(comment.author_name)"></div>
+                            {{-- Profile photo when the person has one, otherwise their initials --}}
+                            <template x-if="comment.author_avatar">
+                                <img :src="comment.author_avatar" :alt="comment.author_name" class="w-9 h-9 rounded-full object-cover shrink-0">
+                            </template>
+                            <template x-if="!comment.author_avatar">
+                                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                                     :style="`background-color: ${comment.is_it ? '#1a6b3c' : '#6b7280'}`"
+                                     x-text="initials(comment.author_name)"></div>
+                            </template>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="text-sm font-semibold text-gray-800" x-text="comment.author_name"></span>
@@ -148,7 +155,10 @@
                     },
 
                     initials(name) {
-                        return name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
+                        // First + last name (skips the middle initial): "David V. Villondo" -> "DV"
+                        const parts = name.trim().split(/\s+/).filter(Boolean);
+                        const picked = parts.length > 1 ? [parts[0], parts[parts.length - 1]] : parts;
+                        return picked.map(p => p[0]).join('').toUpperCase();
                     },
 
                     formatDateTime(iso) {
@@ -172,6 +182,7 @@
                                             id: m.id,
                                             body: m.body,
                                             author_name: m.author_name,
+                                            author_avatar: m.author_avatar,
                                             author_id: m.author_id,
                                             is_mine: m.is_mine,
                                             is_it: m.is_it,
@@ -210,6 +221,7 @@
                                     id: data.comment.id,
                                     body: data.comment.body,
                                     author_name: data.comment.author_name,
+                                    author_avatar: data.comment.author_avatar,
                                     author_id: data.comment.author_id,
                                     is_mine: true,
                                     is_it: {{ auth()->user()->isStaff() ? 'false' : 'true' }},

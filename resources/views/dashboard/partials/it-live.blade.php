@@ -140,7 +140,6 @@
                     $isMe = $agent->id === Auth::id();
                     $online = $isMe || $agent->isOnline();
                     $selected = $selectedAgent && $selectedAgent->id === $agent->id;
-                    $initials = strtoupper(collect(explode(' ', $agent->name))->map(fn ($p) => mb_substr($p, 0, 1))->take(2)->implode(''));
                     $href = $selected
                         ? route('dashboard').'#assigned-tickets'
                         : route('dashboard', ['agent' => $agent->id]).'#assigned-tickets';
@@ -150,7 +149,8 @@
                    class="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border shadow-sm transition
                           {{ $selected ? 'border-green-600 bg-green-100 ring-2 ring-green-200' : ($isMe ? 'border-green-300 bg-green-50 hover:bg-green-100' : 'border-gray-200 bg-white hover:bg-gray-50') }}">
                     <span class="relative shrink-0">
-                        <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style="background-color:{{ $isMe ? '#1a6b3c' : '#6b7280' }};">{{ $initials }}</span>
+                        {{-- Shows the person's profile photo, or their initials when they haven't uploaded one --}}
+                        <x-avatar :user="$agent" size="xs" />
                         <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white {{ $online ? 'bg-green-500' : 'bg-gray-300' }}"></span>
                     </span>
                     <span class="text-sm text-gray-700">{{ $agent->name }}@if($isMe) <span class="text-xs text-green-700 font-medium">(you)</span>@endif</span>

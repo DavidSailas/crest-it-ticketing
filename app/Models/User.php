@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -64,6 +65,15 @@ class User extends Authenticatable
         $middle = trim((string) $this->middle_name);
 
         return $middle !== '' ? mb_strtoupper(mb_substr($middle, 0, 1)).'.' : null;
+    }
+
+    /**
+     * Public URL of the uploaded profile photo, or null when none was uploaded
+     * (callers then fall back to the initials circle).
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar ? Storage::url($this->avatar) : null;
     }
 
     public function tickets()
