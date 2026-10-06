@@ -34,11 +34,11 @@
                         <div x-show="showExport" x-cloak x-transition
                              class="absolute right-0 mt-1.5 w-44 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
                             <a href="{{ route('admin.assets.export.pdf', request()->query()) }}" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                 Export as PDF
                             </a>
                             <a href="{{ route('admin.assets.export.excel', request()->query()) }}" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                 Export as Excel
                             </a>
                         </div>
@@ -82,6 +82,59 @@
             box-shadow: inset 0 0 0 1px #bfe3cc; transition: background-color .15s ease; }
         .filter-chip:hover { background: #d8f0e1; }
         .filter-chip svg { width: .875rem; height: .875rem; opacity: .7; }
+
+        /* Overview cards & device tiles — brand green with a teal and warm-gold accent. */
+        .stat-card, .type-card { position: relative; display: block; background: #fff; border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 4px 12px -6px rgba(15, 23, 42, .08);
+            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+        .stat-card { border-radius: 1rem; padding: 1.25rem; overflow: hidden; }
+        .type-card { border-radius: .75rem; padding: .875rem; }
+        .stat-card:hover, .type-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -10px rgba(15, 23, 42, .25); }
+
+        /* coloured accent line on top of the three light cards */
+        .stat-card:not(.tone-hero)::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--accent); }
+        .tone-green { --accent: #1a6b3c; --accent2: #34a265; --tint1: #dff2e6; --tint2: #c4e6d0; background: linear-gradient(160deg, #f1faf4 0%, #fff 60%); }
+        .tone-teal  { --accent: #0f766e; --accent2: #2aa198; --tint1: #d9f0ee; --tint2: #b8e2de; background: linear-gradient(160deg, #eef9f8 0%, #fff 60%); }
+        .tone-gold  { --accent: #b7791f; --accent2: #e0a93a; --tint1: #fbefd2; --tint2: #f5dfa6; background: linear-gradient(160deg, #fdf6e5 0%, #fff 60%); }
+        .stat-card.is-on { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent), 0 12px 24px -10px rgba(15, 23, 42, .25); }
+
+        .stat-icon, .type-chip { display: flex; align-items: center; justify-content: center; color: #1a6b3c;
+            background: linear-gradient(135deg, #dff2e6, #c4e6d0); transition: transform .18s ease; }
+        .stat-icon { width: 2.5rem; height: 2.5rem; border-radius: .875rem; }
+        .stat-card:hover .stat-icon, .type-card:hover .type-chip { transform: scale(1.1) rotate(-4deg); }
+        .tone-green .stat-icon, .tone-teal .stat-icon, .tone-gold .stat-icon { color: var(--accent); background: linear-gradient(135deg, var(--tint1), var(--tint2)); }
+
+        .stat-bar { height: 6px; border-radius: 9999px; background: rgba(15, 23, 42, .07); overflow: hidden; }
+        .stat-bar > div { height: 100%; border-radius: 9999px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+
+        /* "Total assets" is the hero card: deep-green gradient like the dashboard banner. */
+        .stat-card.tone-hero { border-color: transparent; color: #fff;
+            background: linear-gradient(145deg, #0c3320 0%, #1a6b3c 62%, #237a45 100%);
+            box-shadow: 0 10px 24px -10px rgba(12, 51, 32, .6); }
+        .stat-card.tone-hero::before { content: ''; position: absolute; inset: 0; opacity: .1; pointer-events: none;
+            background-image: radial-gradient(circle, #fff 1px, transparent 1px); background-size: 20px 20px; }
+        .stat-card.tone-hero::after { content: ''; position: absolute; top: -48px; right: -48px; width: 150px; height: 150px; border-radius: 9999px;
+            background: radial-gradient(circle, rgba(255, 255, 255, .22), transparent 70%); pointer-events: none; }
+        .stat-card.tone-hero > * { position: relative; z-index: 1; }
+        .stat-card.tone-hero .lbl { color: #bfe3cc !important; }
+        .stat-card.tone-hero .val { color: #fff !important; }
+        .stat-card.tone-hero .sub { color: #a7d4b8 !important; }
+        .stat-card.tone-hero .stat-icon { background: rgba(255, 255, 255, .16); color: #fff; }
+        .stat-card.tone-hero.is-on { box-shadow: 0 0 0 3px rgba(26, 107, 60, .35), 0 10px 24px -10px rgba(12, 51, 32, .6); }
+
+        /* Device-type tiles */
+        .type-card:hover { border-color: #bfe3cc; background: #f6fbf8; }
+        .type-chip { width: 2.5rem; height: 2.5rem; border-radius: .75rem; flex-shrink: 0; }
+        .type-chip.is-empty { background: #f3f4f6; color: #9ca3af; }
+        .type-card.is-on { border-color: #1a6b3c; background: #f0f9f3; box-shadow: 0 0 0 3px rgba(26, 107, 60, .14); }
+        .type-card.is-on .type-chip { background: linear-gradient(135deg, #1a6b3c, #2f9e5f); color: #fff; box-shadow: 0 4px 10px -3px rgba(26, 107, 60, .55); }
+
+        /* Table */
+        .asset-thead { background: linear-gradient(90deg, #e6f3eb 0%, #f4faf6 100%); border-bottom: 2px solid #cfe8d8 !important; }
+        .asset-row { transition: background-color .12s ease, box-shadow .12s ease; }
+        .asset-row:hover { background: #f3faf5; box-shadow: inset 3px 0 0 #1a6b3c; }
+        .soft-green { background: #ecf7f0; color: #1a6b3c; }
+        .soft-green:hover { background: #d8f0e1; }
     </style>
 
     <div class="py-8 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
@@ -126,100 +179,59 @@
             $pctAssigned = round($summary['assigned'] / $totalForPct * 100);
             $pctUnassigned = round($summary['unassigned'] / $totalForPct * 100);
             $pctRepair = round($summary['in_repair'] / $totalForPct * 100);
-
-            // Each device type gets its own colour (full class names so Tailwind can see them).
-            $typeColors = [
-                'DT' => ['chip' => 'bg-blue-100 text-blue-600',     'solid' => 'bg-blue-600',    'active' => 'border-blue-400 bg-blue-50 ring-blue-500/20',       'hover' => 'hover:border-blue-300 hover:bg-blue-50/50',     'bar' => 'bg-blue-500'],
-                'LT' => ['chip' => 'bg-violet-100 text-violet-600', 'solid' => 'bg-violet-600',  'active' => 'border-violet-400 bg-violet-50 ring-violet-500/20', 'hover' => 'hover:border-violet-300 hover:bg-violet-50/50', 'bar' => 'bg-violet-500'],
-                'MN' => ['chip' => 'bg-teal-100 text-teal-600',     'solid' => 'bg-teal-600',    'active' => 'border-teal-400 bg-teal-50 ring-teal-500/20',       'hover' => 'hover:border-teal-300 hover:bg-teal-50/50',     'bar' => 'bg-teal-500'],
-                'PR' => ['chip' => 'bg-orange-100 text-orange-600', 'solid' => 'bg-orange-600',  'active' => 'border-orange-400 bg-orange-50 ring-orange-500/20', 'hover' => 'hover:border-orange-300 hover:bg-orange-50/50', 'bar' => 'bg-orange-500'],
-                'PH' => ['chip' => 'bg-pink-100 text-pink-600',     'solid' => 'bg-pink-600',    'active' => 'border-pink-400 bg-pink-50 ring-pink-500/20',       'hover' => 'hover:border-pink-300 hover:bg-pink-50/50',     'bar' => 'bg-pink-500'],
-                'NW' => ['chip' => 'bg-sky-100 text-sky-600',       'solid' => 'bg-sky-600',     'active' => 'border-sky-400 bg-sky-50 ring-sky-500/20',          'hover' => 'hover:border-sky-300 hover:bg-sky-50/50',       'bar' => 'bg-sky-500'],
-            ];
         @endphp
 
-        {{-- At-a-glance overview: one colour per meaning (blue = all, green = assigned, amber = stock, rose = repair) --}}
+        {{-- At-a-glance overview: one calm brand-green style for every card (the icon tells them apart) --}}
+        @php
+            $scoped = request()->filled('search') || request()->filled('department_id') || request()->filled('location');
+            $statCards = [
+                ['tone' => 'hero',  'label' => 'Total assets', 'value' => $summary['total'],      'href' => $resetFacets,                    'on' => ! request()->hasAny(['type', 'assignment', 'status']),
+                 'sub' => $scoped ? 'In current search' : 'Across all branches & departments', 'pct' => null,
+                 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />'],
+                ['tone' => 'green', 'label' => 'Assigned',     'value' => $summary['assigned'],   'href' => $toggle('assignment', 'assigned'),   'on' => request('assignment') === 'assigned',
+                 'sub' => 'With a user · '.$pctAssigned.'%', 'pct' => $pctAssigned,
+                 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />'],
+                ['tone' => 'teal',  'label' => 'Unassigned',   'value' => $summary['unassigned'], 'href' => $toggle('assignment', 'unassigned'), 'on' => request('assignment') === 'unassigned',
+                 'sub' => 'Available in stock · '.$pctUnassigned.'%', 'pct' => $pctUnassigned,
+                 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />'],
+                ['tone' => 'gold',  'label' => 'In repair',    'value' => $summary['in_repair'],  'href' => $toggle('status', 'in_repair'),      'on' => request('status') === 'in_repair',
+                 'sub' => $summary['retired'].' retired', 'pct' => $pctRepair,
+                 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" />'],
+            ];
+        @endphp
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {{-- Total --}}
-            @php $on = ! request()->hasAny(['type','assignment','status']); @endphp
-            <a href="{{ $resetFacets }}" class="group relative block overflow-hidden rounded-2xl border bg-gradient-to-br from-indigo-50 via-white to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md {{ $on ? 'border-indigo-400 ring-2 ring-indigo-500/20' : 'border-indigo-100' }}">
-                <span class="absolute inset-x-0 top-0 h-1 bg-indigo-500"></span>
-                <div class="flex items-start justify-between">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-indigo-600">Total assets</p>
-                    <span class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" /></svg>
-                    </span>
-                </div>
-                <p class="mt-2 text-4xl font-bold text-indigo-900 tabular-nums">{{ number_format($summary['total']) }}</p>
-                <p class="mt-1 text-xs text-indigo-600/70">{{ request()->filled('search') || request()->filled('department_id') || request()->filled('location') ? 'In current search' : 'Across all branches & departments' }}</p>
-            </a>
-
-            {{-- Assigned --}}
-            @php $on = request('assignment') === 'assigned'; @endphp
-            <a href="{{ $toggle('assignment', 'assigned') }}" class="group relative block overflow-hidden rounded-2xl border bg-gradient-to-br from-emerald-50 via-white to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md {{ $on ? 'border-emerald-400 ring-2 ring-emerald-500/20' : 'border-emerald-100' }}">
-                <span class="absolute inset-x-0 top-0 h-1 bg-emerald-500"></span>
-                <div class="flex items-start justify-between">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Assigned</p>
-                    <span class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-                    </span>
-                </div>
-                <p class="mt-2 text-4xl font-bold text-emerald-800 tabular-nums">{{ number_format($summary['assigned']) }}</p>
-                <p class="mt-1 text-xs text-emerald-700/70">With a user &middot; {{ $pctAssigned }}%</p>
-                <div class="mt-3 h-1.5 rounded-full bg-emerald-100"><div class="h-1.5 rounded-full bg-emerald-500" style="width: {{ $pctAssigned }}%"></div></div>
-            </a>
-
-            {{-- Unassigned --}}
-            @php $on = request('assignment') === 'unassigned'; @endphp
-            <a href="{{ $toggle('assignment', 'unassigned') }}" class="group relative block overflow-hidden rounded-2xl border bg-gradient-to-br from-amber-50 via-white to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md {{ $on ? 'border-amber-400 ring-2 ring-amber-500/25' : 'border-amber-200' }}">
-                <span class="absolute inset-x-0 top-0 h-1 bg-amber-500"></span>
-                <div class="flex items-start justify-between">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Unassigned</p>
-                    <span class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-                    </span>
-                </div>
-                <p class="mt-2 text-4xl font-bold text-amber-800 tabular-nums">{{ number_format($summary['unassigned']) }}</p>
-                <p class="mt-1 text-xs text-amber-700/70">Available in stock &middot; {{ $pctUnassigned }}%</p>
-                <div class="mt-3 h-1.5 rounded-full bg-amber-100"><div class="h-1.5 rounded-full bg-amber-500" style="width: {{ $pctUnassigned }}%"></div></div>
-            </a>
-
-            {{-- In repair --}}
-            @php $on = request('status') === 'in_repair'; @endphp
-            <a href="{{ $toggle('status', 'in_repair') }}" class="group relative block overflow-hidden rounded-2xl border bg-gradient-to-br from-rose-50 via-white to-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md {{ $on ? 'border-rose-400 ring-2 ring-rose-500/20' : 'border-rose-100' }}">
-                <span class="absolute inset-x-0 top-0 h-1 bg-rose-500"></span>
-                <div class="flex items-start justify-between">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-rose-600">In repair</p>
-                    <span class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" /></svg>
-                    </span>
-                </div>
-                <p class="mt-2 text-4xl font-bold text-rose-800 tabular-nums">{{ number_format($summary['in_repair']) }}</p>
-                <p class="mt-1 text-xs text-rose-600/70">{{ $summary['retired'] }} retired</p>
-                <div class="mt-3 h-1.5 rounded-full bg-rose-100"><div class="h-1.5 rounded-full bg-rose-500" style="width: {{ $pctRepair }}%"></div></div>
-            </a>
+            @foreach($statCards as $card)
+                <a href="{{ $card['href'] }}" class="stat-card tone-{{ $card['tone'] }} {{ $card['on'] ? 'is-on' : '' }}">
+                    <div class="flex items-start justify-between">
+                        <p class="lbl text-xs font-semibold uppercase tracking-wide text-gray-500">{{ $card['label'] }}</p>
+                        <span class="stat-icon">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">{!! $card['icon'] !!}</svg>
+                        </span>
+                    </div>
+                    <p class="val mt-2 text-4xl font-bold text-gray-900 tabular-nums">{{ number_format($card['value']) }}</p>
+                    <p class="sub mt-1 text-xs text-gray-500">{{ $card['sub'] }}</p>
+                    @if($card['pct'] !== null)
+                        <div class="stat-bar mt-3"><div style="width: {{ $card['pct'] }}%"></div></div>
+                    @endif
+                </a>
+            @endforeach
         </div>
 
         {{-- Breakdown by device type --}}
         <div class="bg-white shadow-sm rounded-2xl border border-gray-100 p-4 sm:p-5">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    <span class="w-1.5 h-4 rounded-full bg-gradient-to-b from-indigo-500 to-teal-500"></span>
+                    <span class="w-1.5 h-4 rounded-full" style="background-color:#1a6b3c;"></span>
                     Devices by type
                 </h3>
                 <p class="text-xs text-gray-400 hidden sm:block">Click a type to filter the list</p>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
                 @foreach($summary['byType'] as $code => $row)
-                    @php
-                        $active = request('type') === $code;
-                        $c = $typeColors[$code] ?? $typeColors['DT'];
-                    @endphp
-                    <a href="{{ $toggle('type', $code) }}"
-                       class="group relative overflow-hidden rounded-xl border p-3.5 transition hover:-translate-y-0.5 hover:shadow-sm {{ $active ? $c['active'].' ring-2' : 'border-gray-200 bg-white '.$c['hover'] }}">
-                        <span class="absolute inset-x-0 top-0 h-0.5 {{ $row['total'] > 0 || $active ? $c['bar'] : 'bg-gray-200' }}"></span>
+                    @php $active = request('type') === $code; @endphp
+                    <a href="{{ $toggle('type', $code) }}" class="type-card {{ $active ? 'is-on' : '' }}">
                         <div class="flex items-center gap-3">
-                            <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 {{ $active ? $c['solid'].' text-white' : ($row['total'] > 0 ? $c['chip'] : 'bg-gray-100 text-gray-400') }}">
+                            <span class="type-chip {{ $row['total'] > 0 || $active ? '' : 'is-empty' }}">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $typeIcons[$code] ?? '' }}" /></svg>
                             </span>
                             <div class="min-w-0">
@@ -227,13 +239,13 @@
                                 <p class="text-xs font-medium mt-1 truncate {{ $row['total'] > 0 ? 'text-gray-600' : 'text-gray-400' }}">{{ $row['label'] }}</p>
                             </div>
                         </div>
-                        <p class="mt-3 text-[11px] font-medium {{ $row['total'] === 0 ? 'text-gray-400' : ($row['unassigned'] > 0 ? 'text-amber-600' : 'text-emerald-600') }}">
+                        <p class="mt-3 text-[11px] font-medium flex items-center {{ $row['total'] === 0 ? 'text-gray-400' : ($row['unassigned'] > 0 ? 'text-gray-500' : '') }}" @if($row['total'] > 0 && $row['unassigned'] === 0) style="color:#1a6b3c;" @endif>
                             @if($row['total'] === 0)
                                 None yet
                             @elseif($row['unassigned'] > 0)
-                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1"></span>{{ $row['unassigned'] }} unassigned
+                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-gray-400 mr-1.5"></span>{{ $row['unassigned'] }} unassigned
                             @else
-                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>All assigned
+                                <span class="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style="background-color:#1a6b3c;"></span>All assigned
                             @endif
                         </p>
                     </a>
@@ -323,7 +335,7 @@
             @else
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="bg-gradient-to-r from-slate-50 to-indigo-50/40 border-b border-gray-200">
+                        <tr class="asset-thead border-b border-gray-200">
                             <th class="px-3 sm:px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Asset Tag</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Device</th>
                             <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Department</th>
@@ -335,8 +347,8 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @foreach($assets as $asset)
-                            <tr class="hover:bg-indigo-50/30 transition-colors">
-                                <td class="px-3 sm:px-4 py-3.5 whitespace-nowrap align-top"><span class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 font-mono text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-100">{{ $asset->asset_tag }}</span></td>
+                            <tr class="asset-row">
+                                <td class="px-3 sm:px-4 py-3.5 whitespace-nowrap align-top"><span class="inline-flex items-center rounded-md px-2 py-1 font-mono text-xs font-semibold" style="background:#ecf7f0;color:#14532d;box-shadow:inset 0 0 0 1px #bfe3cc;">{{ $asset->asset_tag }}</span></td>
                                 <td class="px-4 py-3.5 max-w-0 w-full align-top">
                                     <p class="font-medium text-gray-800 truncate">{{ $asset->device_name }}</p>
                                     @if($asset->serial_number)
@@ -377,7 +389,7 @@
                                 <td class="px-3 sm:px-4 py-3.5 text-right whitespace-nowrap align-top">
                                     <button @click="viewingId = {{ $asset->id }}" class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-slate-600 hover:bg-slate-200 font-medium text-xs mr-1.5">View</button>
                                     @if($canEditAsset)
-                                        <a href="{{ route('assets.edit', $asset) }}" class="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-emerald-700 hover:bg-emerald-100 font-medium text-xs {{ $isAdmin ? 'mr-1.5' : '' }}">Edit</a>
+                                        <a href="{{ route('assets.edit', $asset) }}" class="inline-flex items-center rounded-md soft-green px-2.5 py-1 font-medium text-xs {{ $isAdmin ? 'mr-1.5' : '' }}">Edit</a>
                                     @endif
                                     @if($isAdmin)
                                         <x-confirm-action-modal
@@ -454,7 +466,7 @@
                                                                 @endif
                                                             </div>
                                                         @else
-                                                            <div class="shrink-0 w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                                                            <div class="shrink-0 w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center">
                                                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
                                                             </div>
                                                             <div>
@@ -492,8 +504,8 @@
                                                 <div>
                                                     <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Notes</p>
                                                     @if(filled($asset->notes))
-                                                        <div class="rounded-xl border border-amber-200 bg-amber-50/70 overflow-hidden flex">
-                                                            <span class="w-1 shrink-0 bg-amber-400"></span>
+                                                        <div class="rounded-xl border border-gray-200 bg-gray-50 overflow-hidden flex">
+                                                            <span class="w-1 shrink-0" style="background-color:#1a6b3c;"></span>
                                                             <div class="asset-scroll min-w-0 flex-1 px-4 py-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line break-words" style="max-height:9rem; overflow-y:auto;">{{ trim($asset->notes) }}</div>
                                                         </div>
                                                     @else
@@ -513,7 +525,7 @@
                                                 </div>
                                                 <div class="flex items-center gap-2">
                                                     @if($canEditAsset)
-                                                        <a href="{{ route('assets.edit', $asset) }}" class="inline-flex items-center rounded-lg bg-emerald-50 px-3.5 py-2 text-emerald-700 hover:bg-emerald-100 font-medium text-sm">Edit</a>
+                                                        <a href="{{ route('assets.edit', $asset) }}" class="inline-flex items-center rounded-lg soft-green px-3.5 py-2 font-medium text-sm">Edit</a>
                                                     @endif
                                                     <button @click="viewingId = null" class="inline-flex items-center rounded-lg px-4 py-2 text-white text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">Close</button>
                                                 </div>

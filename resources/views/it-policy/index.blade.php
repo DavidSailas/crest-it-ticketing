@@ -13,16 +13,12 @@
         'check'    => 'M5 13l4 4L19 7',
     ];
 
-    // Soft, low-saturation accents (easy on the eyes). Sections cycle through
-    // them; each "Key rule" card reuses the colour of the section it links to.
+    // Two closely related tones (brand green and a deep teal-green) alternate between
+    // sections to give the page rhythm without turning it into a rainbow.
     // Inline styles are used so no Tailwind rebuild is needed.
     $palette = [
-        ['accent' => '#1a6b3c', 'tint' => '#e8f3ec'], // brand green
-        ['accent' => '#2b6cb0', 'tint' => '#e8f0fa'], // calm blue
-        ['accent' => '#0f766e', 'tint' => '#e3f3f1'], // teal
-        ['accent' => '#6b5bb5', 'tint' => '#eeebf8'], // soft violet
-        ['accent' => '#b7791f', 'tint' => '#fbf1de'], // warm amber
-        ['accent' => '#b4546a', 'tint' => '#fbebee'], // muted rose
+        ['accent' => '#1a6b3c', 'tint' => '#e8f3ec', 'dark' => '#0f4a29'], // brand green
+        ['accent' => '#0f766e', 'tint' => '#e0f2f0', 'dark' => '#0a5750'], // deep teal-green
     ];
     $tone = fn ($n) => $palette[(((int) $n) - 1) % count($palette)];
 
@@ -118,8 +114,25 @@
             {{-- Main content --}}
             <div class="flex-1 min-w-0 space-y-6">
 
+                {{-- Hero banner --}}
+                <div x-show="!query.trim()" class="policy-hero relative overflow-hidden rounded-2xl px-6 py-7 sm:px-8 text-white print:hidden"
+                     style="background: linear-gradient(145deg, #0c3320 0%, #1a6b3c 60%, #237a45 100%); box-shadow: 0 12px 28px -12px rgba(12,51,32,.65);">
+                    <div class="absolute inset-0 pointer-events-none" style="opacity:.1; background-image: radial-gradient(circle, #fff 1px, transparent 1px); background-size: 22px 22px;"></div>
+                    <div class="absolute pointer-events-none" style="top:-60px; right:-40px; width:220px; height:220px; border-radius:9999px; background: radial-gradient(circle, rgba(255,255,255,.2), transparent 70%);"></div>
+                    <div class="relative flex items-center gap-4">
+                        <span class="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,.16);">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-widest" style="color:#bfe3cc;">{{ $policy['company'] }}</p>
+                            <h3 class="text-xl sm:text-2xl font-bold leading-tight">{{ $policy['title'] }}</h3>
+                            <p class="text-sm mt-1" style="color:#d4ecdc;">{{ count($policy['sections']) }} sections &middot; read, search and download the full policy below.</p>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Document details --}}
-                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6" style="border-top:4px solid #1a6b3c;" x-show="!query.trim()">
+                <div class="rounded-xl border border-gray-100 shadow-sm p-6" style="border-top:4px solid #1a6b3c; background:linear-gradient(180deg,#f1faf4 0%,#fff 70%);" x-show="!query.trim()">
                     <dl class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
                         @foreach($policy['meta'] as $label => $value)
                             <div class="min-w-0">
@@ -145,9 +158,9 @@
                         @foreach($policy['highlights'] as $item)
                             @php $c = $tone($item['section']); @endphp
                             <a href="#section-{{ $item['section'] }}" @click.prevent="go('section-{{ $item['section'] }}')"
-                               style="border-left:4px solid {{ $c['accent'] }};"
-                               class="group flex items-start gap-3 bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
-                                <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center" style="color:{{ $c['accent'] }}; background-color:{{ $c['tint'] }};">
+                               style="border-left:4px solid {{ $c['accent'] }}; background:linear-gradient(120deg,{{ $c['tint'] }} 0%,#fff 45%);"
+                               class="group flex items-start gap-3 rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-lg hover:-translate-y-0.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
+                                <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center" style="color:#fff; background:linear-gradient(135deg,{{ $c['accent'] }},{{ $c['dark'] }}); box-shadow:0 4px 10px -3px {{ $c['accent'] }}88;">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons[$item['icon']] }}"/></svg>
                                 </span>
                                 <span class="min-w-0">
@@ -172,10 +185,10 @@
                     @php $c = $tone($section['number']); @endphp
                     <section id="section-{{ $section['number'] }}" data-policy-section
                              x-show="matches('section-{{ $section['number'] }}')"
-                             style="border-left:5px solid {{ $c['accent'] }};"
-                             class="scroll-mt-6 bg-white rounded-xl border border-gray-100 shadow-sm p-6 print:shadow-none print:break-inside-avoid">
+                             style="border-left:5px solid {{ $c['accent'] }}; background:linear-gradient(100deg,{{ $c['tint'] }} 0%,#fff 34%);"
+                             class="scroll-mt-6 rounded-xl border border-gray-100 shadow-sm p-6 print:shadow-none print:break-inside-avoid">
                         <div class="flex items-start gap-4">
-                            <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-sm font-semibold text-white tabular-nums" style="background-color:{{ $c['accent'] }};">{{ $section['number'] }}</span>
+                            <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-sm font-semibold text-white tabular-nums" style="background:linear-gradient(135deg,{{ $c['accent'] }},{{ $c['dark'] }}); box-shadow:0 4px 10px -3px {{ $c['accent'] }}88;">{{ $section['number'] }}</span>
 
                             <div class="min-w-0 flex-1">
                                 <h3 class="text-base font-semibold leading-9" style="color:{{ $c['accent'] }};">{{ $section['title'] }}</h3>
@@ -236,8 +249,8 @@
                     </div>
 
                     {{-- Acknowledgement --}}
-                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 print:break-inside-avoid" style="border-left:5px solid #b7791f;">
-                        <h3 class="text-base font-semibold" style="color:#b7791f;">Employee acknowledgement</h3>
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 print:break-inside-avoid" style="border-left:5px solid #1a6b3c;">
+                        <h3 class="text-base font-semibold" style="color:#1a6b3c;">Employee acknowledgement</h3>
                         <p class="mt-2 text-sm leading-relaxed text-gray-600 max-w-prose">{{ $policy['acknowledgement']['intro'] }}</p>
 
                         <ul class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
