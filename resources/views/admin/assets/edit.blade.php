@@ -173,6 +173,7 @@
                                 <p class="text-xs text-gray-400 mt-1.5">
                                     Becomes the last part of the tag, e.g. {{ $asset->company }}-{{ $asset->location }}-{{ $asset->department->code ?? '' }}-{{ $asset->type }}-<strong>{{ str_pad((string) $asset->sequence, 3, '0', STR_PAD_LEFT) }}</strong>. Changing any tag field (company, location, department, type, or number) regenerates the tag.
                                 </p>
+                                <x-asset-tag-checker :ignore="$asset->id" :current-tag="$asset->asset_tag" />
                             </div>
                         </div>
                     </div>
@@ -211,7 +212,7 @@
                     </div>
 
                     <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
-                        <a href="{{ route('assets.index') }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
+                        <a href="{{ session('list_url.assets', route('assets.index')) }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
                         <button type="submit" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition" style="background-color:#1a6b3c;">Save Changes</button>
                     </div>
                 </form>

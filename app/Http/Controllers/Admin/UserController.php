@@ -87,6 +87,8 @@ class UserController extends Controller
 
         $users = $query->with(['department', 'position'])->latest()->paginate(10)->withQueryString();
 
+        $this->rememberList($request, 'users');
+
         $counts = [
             'staff' => User::where('role', 'staff')->count(),
             'it_support' => User::where('role', 'it_support')->count(),
@@ -253,8 +255,31 @@ class UserController extends Controller
 
         $user->forceFill($fill)->save();
 
-        return redirect()->route('admin.users.index', ['tab' => $user->role === 'it_support' ? 'it_support' : 'staff'])
+        return redirect()->to($this->usersListUrl($user))
             ->with('status', "Updated {$user->name}.");
+    }
+
+    /**
+     * Where to send the admin after saving an account: the Manage Users view they
+     * came from (same tab, search, filters and page). If the account moved into a
+     * different group it falls back to that group's tab so they can still see it.
+     */
+    private function usersListUrl(User $user): string
+    {
+        $tab = $user->role === 'it_support' ? 'it_support' : 'staff';
+        $fallback = route('admin.users.index', ['tab' => $tab]);
+
+        $remembered = session('list_url.users');
+        if (! $remembered) {
+            return $fallback;
+        }
+
+        parse_str((string) parse_url($remembered, PHP_URL_QUERY), $query);
+        $rememberedTab = $query['tab'] ?? 'staff';
+
+        $stillInThatTab = $rememberedTab === 'vip' ? (bool) $user->is_vip : $rememberedTab === $tab;
+
+        return $stillInThatTab ? $remembered : $fallback;
     }
 
     public function destroy(Request $request, User $user)
@@ -349,6 +374,8 @@ class UserController extends Controller
         }
 
         $users = $query->orderBy('name')->paginate(15)->withQueryString();
+
+        $this->rememberList($request, 'directory');
 
         // Asset counts per user, fetched separately so this read-only view
         // doesn't depend on a relationship being defined on the User model.

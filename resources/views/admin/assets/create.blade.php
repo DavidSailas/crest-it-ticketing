@@ -176,6 +176,7 @@
                                 <p class="text-xs text-gray-400 mt-1.5">
                                     Becomes the last part of the tag, e.g. CFI-CEB-IT-LT-<strong>001</strong>. Leave blank to use the next available number for this company/location/department/type — or type your own (matches an existing physical label, for example).
                                 </p>
+                                <x-asset-tag-checker />
                             </div>
                         </div>
                     </div>
@@ -207,7 +208,7 @@
                     </div>
 
                     <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
-                        <a href="{{ route('assets.index') }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
+                        <a href="{{ session('list_url.assets', route('assets.index')) }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
                         <button type="submit" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition" style="background-color:#1a6b3c;">Assign Asset</button>
                     </div>
                 </form>

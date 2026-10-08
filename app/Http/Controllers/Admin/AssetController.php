@@ -7,6 +7,7 @@ use App\Models\Asset;
 use App\Models\Department;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -44,6 +45,8 @@ class AssetController extends Controller
             || $request->filled('status');
 
         $departments = Department::orderBy('name')->get();
+
+        $this->rememberList($request, 'assets');
 
         return view('admin.assets.index', compact('assets', 'departments', 'summary', 'hasFilters'));
     }
@@ -116,14 +119,20 @@ class AssetController extends Controller
             $sequence = (int) $validated['sequence'];
             $tag = Asset::formatTag($validated['company'], $validated['location'], $department->code, $validated['type'], $sequence);
 
-            if (Asset::where('asset_tag', $tag)->exists()) {
-                return back()->with('error', "{$tag} is already in use — choose a different number.")->withInput();
+            if ($existing = Asset::with('user')->where('asset_tag', $tag)->first()) {
+                $message = $this->tagTakenMessage($tag, $existing, $validated['company'], $validated['location'], $department, $validated['type']);
+
+                // The "Assign Asset" form on a user's page has no field-level error spot, so it gets the banner.
+                return $user
+                    ? back()->with('error', $message)->withInput()
+                    : back()->withErrors(['sequence' => $message])->withInput();
             }
         } else {
             [$sequence, $tag] = Asset::nextTag($validated['company'], $validated['location'], $department->id, $department->code, $validated['type']);
         }
 
-        Asset::create([
+        try {
+            Asset::create([
             'user_id' => $ownerId,
             'department_id' => $department->id,
             'company' => $validated['company'],
@@ -137,7 +146,19 @@ class AssetController extends Controller
             // the same day they're physically handed over.
             'assigned_date' => $validated['assigned_date'] ?? now()->toDateString(),
             'notes' => $validated['notes'] ?? null,
-        ]);
+            ]);
+        } catch (QueryException $e) {
+            // Two people saving the same tag at the same instant: the database's unique
+            // index is the last line of defence. Show a friendly message, not a 500.
+            if (str_contains(strtolower($e->getMessage()), 'asset_tag')) {
+                $message = "{$tag} was just taken by someone else. Please try again — leave the number blank to get the next free one.";
+
+                return $user
+                    ? back()->with('error', $message)->withInput()
+                    : back()->withErrors(['sequence' => $message])->withInput();
+            }
+            throw $e;
+        }
 
         $ownerName = $ownerId ? User::find($ownerId)?->name : null;
         $status = $ownerName
@@ -206,9 +227,15 @@ class AssetController extends Controller
 
         $newTag = Asset::formatTag($company, $location, $department->code, $type, (int) $validated['sequence']);
 
-        $collision = Asset::where('asset_tag', $newTag)->where('id', '!=', $asset->id)->exists();
-        if ($collision) {
-            return back()->with('error', "{$newTag} is already used by another asset — choose a different number.")->withInput();
+        $existing = Asset::with('user')->where('asset_tag', $newTag)->where('id', '!=', $asset->id)->first();
+        if ($existing) {
+            $message = $this->tagTakenMessage($newTag, $existing, $company, $location, $department, $type, $asset->id);
+
+            // The full edit page shows the message under the Tag Number field; the quick-edit
+            // forms on the user page (which only send the number) use the top banner instead.
+            return $request->has('company')
+                ? back()->withErrors(['sequence' => $message])->withInput()
+                : back()->with('error', $message)->withInput();
         }
 
         $asset->update([
@@ -226,7 +253,7 @@ class AssetController extends Controller
             'asset_tag' => $newTag,
         ]);
 
-        return redirect()->route('assets.index')->with('status', "Updated asset {$newTag}.");
+        return redirect()->to($this->listUrl('assets', route('assets.index')))->with('status', "Updated asset {$newTag}.");
     }
 
     public function destroy(Asset $asset)
@@ -235,6 +262,104 @@ class AssetController extends Controller
         $asset->delete();
 
         return back()->with('status', "Removed asset {$tag}.");
+    }
+
+    /**
+     * Live check used by the New / Edit Asset forms: is this tag free, who has it if not,
+     * and what is the next free number? Always answers with JSON and never changes data.
+     */
+    public function checkTag(Request $request)
+    {
+        $companies = array_keys(Asset::COMPANIES);
+        $locations = array_keys(Asset::locations());
+        $types = array_keys(Asset::TYPES);
+
+        $company = $request->query('company');
+        $location = $request->query('location');
+        $type = $request->query('type');
+        $departmentId = $request->query('department_id');
+
+        if (! in_array($company, $companies, true) || ! in_array($location, $locations, true)
+            || ! in_array($type, $types, true) || ! ctype_digit((string) $departmentId)) {
+            return response()->json(['ready' => false]);
+        }
+
+        $department = Department::find($departmentId);
+        if (! $department) {
+            return response()->json(['ready' => false]);
+        }
+        if (blank($department->code)) {
+            return response()->json([
+                'ready' => false,
+                'problem' => "\"{$department->name}\" doesn't have an asset code yet. Set one on the Departments page first.",
+            ]);
+        }
+
+        $ignoreId = ctype_digit((string) $request->query('ignore')) ? (int) $request->query('ignore') : null;
+        $nextSequence = $this->nextFreeSequence($company, $location, $department, $type, $ignoreId);
+
+        $payload = [
+            'ready' => true,
+            'next' => $nextSequence === null ? null : [
+                'sequence' => $nextSequence,
+                'tag' => Asset::formatTag($company, $location, $department->code, $type, $nextSequence),
+            ],
+        ];
+
+        $sequence = $request->query('sequence');
+        if ($sequence === null || $sequence === '') {
+            return response()->json($payload + ['tag' => null, 'taken' => false]);
+        }
+        if (! ctype_digit((string) $sequence) || (int) $sequence < 1 || (int) $sequence > 999) {
+            return response()->json($payload + ['tag' => null, 'taken' => false, 'invalid' => 'Use a whole number from 1 to 999.']);
+        }
+
+        $tag = Asset::formatTag($company, $location, $department->code, $type, (int) $sequence);
+        $existing = Asset::with('user')->where('asset_tag', $tag)
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->first();
+
+        return response()->json($payload + [
+            'tag' => $tag,
+            'taken' => (bool) $existing,
+            'existing' => $existing ? [
+                'device_name' => $existing->device_name,
+                'owner' => $existing->user?->name,
+                'status' => Asset::STATUSES[$existing->status] ?? ucfirst(str_replace('_', ' ', (string) $existing->status)),
+                'url' => route('assets.edit', $existing),
+            ] : null,
+        ]);
+    }
+
+    /** Lowest number above the current highest one whose tag isn't used yet (null if 999 is reached). */
+    private function nextFreeSequence(string $company, string $location, Department $department, string $type, ?int $ignoreId = null): ?int
+    {
+        $next = (int) Asset::where('company', $company)
+            ->where('location', $location)
+            ->where('department_id', $department->id)
+            ->where('type', $type)
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->max('sequence') + 1;
+
+        while ($next <= 999 && Asset::where('asset_tag', Asset::formatTag($company, $location, $department->code, $type, $next))
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))->exists()) {
+            $next++;
+        }
+
+        return $next <= 999 ? $next : null;
+    }
+
+    /** Plain-English "that tag is taken" message: who has it, plus the next number that is free. */
+    private function tagTakenMessage(string $tag, Asset $existing, string $company, string $location, Department $department, string $type, ?int $ignoreId = null): string
+    {
+        $who = $existing->user?->name ? "assigned to {$existing->user->name}" : 'in inventory (unassigned)';
+        $message = "{$tag} is already used by \"{$existing->device_name}\", {$who}.";
+
+        $next = $this->nextFreeSequence($company, $location, $department, $type, $ignoreId);
+
+        return $next
+            ? $message.' The next free number is '.str_pad((string) $next, 3, '0', STR_PAD_LEFT).'.'
+            : $message.' Please choose a different number.';
     }
 
     /**

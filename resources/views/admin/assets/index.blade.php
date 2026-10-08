@@ -33,11 +33,11 @@
                         </button>
                         <div x-show="showExport" x-cloak x-transition
                              class="absolute right-0 mt-1.5 w-44 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
-                            <a href="{{ route('admin.assets.export.pdf', request()->query()) }}" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <a href="{{ route('admin.assets.export.pdf', request()->query()) }}" data-follow-query class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                 Export as PDF
                             </a>
-                            <a href="{{ route('admin.assets.export.excel', request()->query()) }}" class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <a href="{{ route('admin.assets.export.excel', request()->query()) }}" data-follow-query class="flex items-center gap-2 px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                 Export as Excel
                             </a>
@@ -199,6 +199,7 @@
                  'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" />'],
             ];
         @endphp
+        <div id="asset-overview" data-live-list class="space-y-6">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             @foreach($statCards as $card)
                 <a href="{{ $card['href'] }}" class="stat-card tone-{{ $card['tone'] }} {{ $card['on'] ? 'is-on' : '' }}">
@@ -253,6 +254,8 @@
             </div>
         </div>
 
+        </div>
+
         {{-- Search + filters --}}
         @php
             $filterFields = [
@@ -276,22 +279,21 @@
             }
         @endphp
 
-        <form method="GET" action="{{ route('assets.index') }}" class="bg-white shadow-sm rounded-2xl border border-gray-100 p-4 space-y-4">
+        <form method="GET" action="{{ route('assets.index') }}" data-live-filter class="bg-white shadow-sm rounded-2xl border border-gray-100 p-4 space-y-4">
             <div class="flex flex-col sm:flex-row gap-3">
                 <div class="flex-1 relative">
                     <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by tag, device, serial number, or assigned user..."
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by tag, device, serial number, or assigned user..." autocomplete="off"
                            class="block w-full pl-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ filled(request('search')) ? 'filter-active' : '' }}">
                 </div>
-                <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white shrink-0" style="background-color:#1a6b3c;">Search</button>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 @foreach($filterFields as $f)
                     @php $isOn = (string) request($f['name'], '') !== '' && array_key_exists((string) request($f['name']), $f['options']); @endphp
-                    <div class="min-w-0">
-                        <label for="filter-{{ $f['name'] }}" class="block text-[11px] font-semibold uppercase tracking-wider mb-1 {{ $isOn ? 'text-green-700' : 'text-gray-400' }}">{{ $f['label'] }}</label>
-                        <select id="filter-{{ $f['name'] }}" name="{{ $f['name'] }}" onchange="this.form.submit()"
+                    <div class="min-w-0 filter-field">
+                        <label for="filter-{{ $f['name'] }}" class="block text-[11px] font-semibold uppercase tracking-wider mb-1 text-gray-400">{{ $f['label'] }}</label>
+                        <select id="filter-{{ $f['name'] }}" name="{{ $f['name'] }}"
                                 class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ $isOn ? 'filter-active font-medium' : '' }}">
                             <option value="">{{ $f['all'] }}</option>
                             @foreach($f['options'] as $value => $label)
@@ -302,8 +304,9 @@
                 @endforeach
             </div>
 
+            <div id="asset-chips" data-live-list style="margin-top:0">
             @if($hasFilters)
-                <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100">
+                <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100" style="margin-top:1rem">
                     <span class="text-xs text-gray-500 mr-1">
                         <span class="font-semibold text-gray-700">{{ number_format($assets->total()) }}</span> matching asset{{ $assets->total() === 1 ? '' : 's' }}
                     </span>
@@ -316,8 +319,10 @@
                     <a href="{{ route('assets.index') }}" class="ml-auto text-xs font-medium text-gray-500 hover:text-gray-800 underline">Clear all</a>
                 </div>
             @endif
+            </div>
         </form>
 
+        <div id="asset-results" data-live-list data-live-scroll class="space-y-6">
         {{-- Table: Asset Tag + Device always show; everything else folds progressively
              so the table never needs a horizontal scrollbar. --}}
         <div class="bg-white shadow-sm rounded-2xl border border-gray-100 overflow-hidden">
@@ -542,5 +547,6 @@
         </div>
 
         <div class="bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $assets->links() }}</div>
+        </div>
     </div>
 </x-app-layout>

@@ -68,7 +68,7 @@
                 ['key' => 'it_support', 'label' => 'IT Support', 'count' => $counts['it_support']],
                 ['key' => 'vip', 'label' => 'VIP', 'count' => $counts['vip']],
             ] as $t)
-                <a href="{{ route('admin.users.index', array_merge(['tab' => $t['key'], 'q' => $search ?: null], $filters)) }}"
+                <a href="{{ route('admin.users.index', array_merge(['tab' => $t['key'], 'q' => $search ?: null], $filters)) }}" data-follow-filters
                    class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition {{ $tab === $t['key'] ? 'border-green-700 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
                     {{ $t['label'] }}
                     <span class="ml-1 px-1.5 py-0.5 rounded-full text-xs {{ $tab === $t['key'] ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">{{ $t['count'] }}</span>
@@ -111,48 +111,49 @@
             </div>
         @endif
 
+        <p class="text-xs text-gray-400 mb-3">CSV or Excel (.xlsx) import expects columns: <span class="font-mono">First Name, Last Name, Username, Email, Department, Position, Role, Branch, VIP</span> (Role: staff / it_support / admin. Branch: Cebu / Manila / Cagayan de Oro / Davao, or CEB / MNL / CDO / DVO. Department and Position must each match an existing name exactly). New accounts get a random temporary password.</p>
+
         {{-- Search + filters --}}
-        <form method="GET" action="{{ route('admin.users.index') }}" class="bg-white rounded-xl border border-gray-200 shadow-sm p-3.5 mb-5 flex flex-col lg:flex-row gap-3">
+        <form method="GET" action="{{ route('admin.users.index') }}" data-live-filter class="bg-white rounded-xl border border-gray-200 shadow-sm p-3.5 mb-5 flex flex-col lg:flex-row gap-3">
             <input type="hidden" name="tab" value="{{ $tab }}">
             <div class="relative flex-1">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                <input type="text" name="q" value="{{ $search }}" placeholder="Search by name or email"
+                <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, username or email" autocomplete="off"
                        class="w-full rounded-lg border-gray-300 text-sm pl-9 focus:border-green-700 focus:ring-green-700">
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 lg:flex gap-3">
-                <select name="branch" onchange="this.form.submit()" aria-label="Filter by branch office" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-40">
+                <select name="branch" aria-label="Filter by branch office" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-40">
                     <option value="">All branches</option>
                     @foreach($branches as $code => $label)
                         <option value="{{ $code }}" @selected(($filters['branch'] ?? '') === (string) $code)>{{ $label }}</option>
                     @endforeach
                 </select>
-                <select name="department_id" onchange="this.form.submit()" aria-label="Filter by department" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-44">
+                <select name="department_id" aria-label="Filter by department" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-44">
                     <option value="">All departments</option>
                     @foreach($departments as $department)
                         <option value="{{ $department->id }}" @selected((int) ($filters['department_id'] ?? 0) === $department->id)>{{ $department->name }}</option>
                     @endforeach
                 </select>
-                <select name="status" onchange="this.form.submit()" aria-label="Filter by account status" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-36">
+                <select name="status" aria-label="Filter by account status" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-36">
                     <option value="">All statuses</option>
                     <option value="active" @selected(($filters['status'] ?? '') === 'active')>Active</option>
                     <option value="suspended" @selected(($filters['status'] ?? '') === 'suspended')>Suspended</option>
                 </select>
             </div>
             <div class="flex gap-2 shrink-0">
-                <button class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">Search</button>
-                @if($search !== '' || count($filters))
-                    <a href="{{ route('admin.users.index', ['tab' => $tab]) }}" class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Clear</a>
-                @endif
+                <a href="{{ route('admin.users.index', ['tab' => $tab]) }}" data-live-clear
+                   @if($search === '' && ! count($filters)) style="display:none" @endif
+                   class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Clear</a>
             </div>
         </form>
 
+        <div id="users-results" data-live-list data-live-scroll>
         @if($search !== '' || count($filters))
-            <p class="text-sm text-gray-500 -mt-3 mb-4 px-1">
+            <p class="text-sm text-gray-500 mb-3 px-1">
                 Showing <span class="font-semibold text-gray-700">{{ number_format($users->total()) }}</span> matching user{{ $users->total() === 1 ? '' : 's' }}
             </p>
         @endif
 
-        <p class="text-xs text-gray-400 mb-3">CSV or Excel (.xlsx) import expects columns: <span class="font-mono">First Name, Last Name, Username, Email, Department, Position, Role, Branch, VIP</span> (Role: staff / it_support / admin. Branch: Cebu / Manila / Cagayan de Oro / Davao, or CEB / MNL / CDO / DVO. Department and Position must each match an existing name exactly). New accounts get a random temporary password.</p>
 
         {{-- Name carries the folded columns on narrow screens; wider screens progressively
              reveal Username/Email/Department/Position/Role/Branch. Nothing ever needs to
@@ -263,5 +264,6 @@
         </div>
 
         <div class="mt-4 bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $users->links() }}</div>
+        </div>
     </div>
 </x-app-layout>

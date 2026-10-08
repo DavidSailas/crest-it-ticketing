@@ -12,16 +12,20 @@
             @endif
         </p>
 
-        <form method="GET" action="{{ route('users.directory') }}" class="flex flex-wrap gap-2 max-w-xl">
-            <input type="text" name="q" value="{{ $search }}" placeholder="Search name or email"
+        <form method="GET" action="{{ route('users.directory') }}" data-live-filter class="flex flex-wrap gap-2 max-w-xl">
+            <input type="text" name="q" value="{{ $search }}" placeholder="Search name or email" autocomplete="off"
                 class="flex-1 min-w-[12rem] rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
-            <select name="role" onchange="this.form.submit()" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+            <select name="role" aria-label="Filter by role" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
                 <option value="">All roles</option>
                 <option value="staff" @selected(request('role') === 'staff')>Staff</option>
                 <option value="it_support" @selected(request('role') === 'it_support')>IT Support</option>
             </select>
-            <button class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">Search</button>
+            <a href="{{ route('users.directory') }}" data-live-clear
+               @if($search === '' && ! request('role')) style="display:none" @endif
+               class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Clear</a>
         </form>
+
+        <div id="directory-results" data-live-list data-live-scroll class="space-y-4">
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
             <table class="w-full text-sm">
@@ -81,5 +85,6 @@
         </div>
 
         <div class="bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $users->links() }}</div>
+        </div>
     </div>
 </x-app-layout>

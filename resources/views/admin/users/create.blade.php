@@ -137,7 +137,7 @@
                     </label>
 
                     <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
-                        <a href="{{ route('admin.users.index') }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
+                        <a href="{{ session('list_url.users', route('admin.users.index')) }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
                         <button type="submit" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition" style="background-color:#1a6b3c;">Create User</button>
                     </div>
                 </form>

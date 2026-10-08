@@ -106,6 +106,8 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
         // (the list itself is viewable by Staff as well, see below).
         // Edit/delete stay admin-only below.
         Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
+        // Live "is this tag free?" check used by the New/Edit Asset forms (returns JSON).
+        Route::get('/assets/tag-check', [AssetController::class, 'checkTag'])->name('assets.tag-check');
         // Standalone "New Asset" page — owner is optional here (an asset can
         // sit unassigned in inventory), so user_id travels in the request
         // body instead of the URL.

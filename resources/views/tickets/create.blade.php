@@ -310,7 +310,7 @@
                     </div>
 
                     <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
-                        <a href="{{ route('tickets.index') }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
+                        <a href="{{ session('list_url.tickets', route('tickets.index')) }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
                         <button type="submit" :disabled="!targetProfileComplete"
                             :title="!targetProfileComplete ? 'Missing department/office for routing — see the note above.' : ''"
                             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"

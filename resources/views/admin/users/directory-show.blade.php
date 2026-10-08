@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center gap-3">
-            <a href="{{ route('users.directory') }}" class="text-gray-400 hover:text-gray-600">
+            <a href="{{ session('list_url.directory', route('users.directory')) }}" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </a>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $user->name }}</h2>

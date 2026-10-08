@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center gap-2 text-sm text-gray-400 mb-1">
-            <a href="{{ route('admin.users.index') }}" class="hover:text-gray-600">Manage Users</a>
+            <a href="{{ session('list_url.users', route('admin.users.index')) }}" class="hover:text-gray-600">Manage Users</a>
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
             <span class="text-gray-500">Edit</span>
         </div>
@@ -144,7 +144,7 @@
                     </label>
 
                     <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
-                        <a href="{{ route('admin.users.index') }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
+                        <a href="{{ session('list_url.users', route('admin.users.index')) }}" class="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Cancel</a>
                         <button type="submit" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm hover:opacity-90 transition" style="background-color:#1a6b3c;">Save Changes</button>
                     </div>
                 </form>

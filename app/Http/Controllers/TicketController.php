@@ -92,6 +92,8 @@ class TicketController extends Controller
         $filters = compact('search', 'status', 'priority', 'dateFrom', 'dateTo');
         $hasActiveFilters = $search !== '' || $status !== '' || $priority !== '' || $dateFrom !== '' || $dateTo !== '';
 
+        $this->rememberList($request, 'tickets');
+
         return view('tickets.index', compact('tickets', 'filters', 'hasActiveFilters', 'statusOptions'));
     }
 

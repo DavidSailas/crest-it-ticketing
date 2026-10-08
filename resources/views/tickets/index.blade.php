@@ -70,21 +70,21 @@
                     <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12m-9 7.5h6" /></svg>
                     Filter tickets
                 </div>
-                @if($hasActiveFilters)
-                    <a href="{{ route('tickets.index') }}" class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600 transition">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        Reset all
-                    </a>
-                @endif
+                <a href="{{ route('tickets.index') }}" data-live-clear
+                   @if(! $hasActiveFilters) style="display:none" @endif
+                   class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    Reset all
+                </a>
             </div>
 
-            <form method="GET" action="{{ route('tickets.index') }}" class="px-4 sm:px-5 pt-3 pb-4 grid grid-cols-2 lg:grid-cols-12 gap-x-3 gap-y-3 items-end">
+            <form method="GET" action="{{ route('tickets.index') }}" data-live-filter class="px-4 sm:px-5 pt-3 pb-4 grid grid-cols-2 lg:grid-cols-12 gap-x-3 gap-y-3 items-end">
                 <div class="col-span-2 lg:col-span-4">
                     <label for="filter-search" class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Search</label>
                     <div class="relative">
                         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
                         <input type="text" name="search" id="filter-search" value="{{ $filters['search'] }}"
-                               placeholder="Ticket #, category, department{{ $showRequestedBy ? ', requester' : '' }}…"
+                               placeholder="Ticket #, category, department{{ $showRequestedBy ? ', requester' : '' }}…" autocomplete="off"
                                class="w-full pl-9 rounded-lg border-gray-300 bg-gray-50/60 text-sm placeholder-gray-400 focus:bg-white focus:border-green-700 focus:ring-green-700">
                     </div>
                 </div>
@@ -109,7 +109,7 @@
                     </select>
                 </div>
 
-                <div class="col-span-2 lg:col-span-3">
+                <div class="col-span-2 lg:col-span-4">
                     <label class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Date created</label>
                     <div class="flex items-center gap-2">
                         <input type="date" name="date_from" id="filter-date-from" value="{{ $filters['dateFrom'] }}"
@@ -122,15 +122,10 @@
                     </div>
                 </div>
 
-                <div class="col-span-2 lg:col-span-1">
-                    <button type="submit" class="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-sm transition hover:opacity-90" style="background-color:#1a6b3c;">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                        Apply
-                    </button>
-                </div>
             </form>
 
             {{-- Active filters at a glance --}}
+            <div id="tickets-active" data-live-list>
             @if($hasActiveFilters)
                 <div class="flex flex-wrap items-center gap-2 px-4 sm:px-5 py-2.5 bg-gray-50 border-t border-gray-100 text-xs">
                     <span class="text-gray-400 font-medium">Active:</span>
@@ -148,8 +143,10 @@
                     @endif
                 </div>
             @endif
+            </div>
         </div>
 
+        <div id="tickets-results" data-live-list data-live-scroll>
         {{-- A lean column set, horizontal-only dividers, and a fixed layout —
              this reads as one clean sheet instead of a boxed grid, and never
              needs to scroll. Anything not shown here (department, location,
@@ -264,5 +261,6 @@
         </div>
 
         <div class="mt-4 bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $tickets->links() }}</div>
+        </div>
     </div>
 </x-app-layout>
