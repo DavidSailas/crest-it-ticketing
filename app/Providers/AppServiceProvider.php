@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Ticket;
+use App\Observers\TicketSupplyObserver;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\ServiceProvider;
@@ -21,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // IT Supplies: take requested stock out automatically when its ticket is Resolved.
+        Ticket::observe(TicketSupplyObserver::class);
+
         // One password policy for the whole app (profile, reset, register and
         // admin-created accounts all use Password::defaults()).
         Password::defaults(fn () => Password::min(8)

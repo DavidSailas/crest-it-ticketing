@@ -634,7 +634,8 @@ class ReportController extends Controller
         // whatever's on hand today).
         $totalAssets = Asset::count();
         $assetsByType = Asset::toBase()->selectRaw('type, COUNT(*) as total')->groupBy('type')->pluck('total', 'type');
-        $assignedAssets = Asset::whereNotNull('user_id')->count();
+        // "Assigned" = held by a person OR by a department (shared equipment like routers).
+        $assignedAssets = Asset::where(fn ($q) => $q->whereNotNull('user_id')->orWhere('department_assigned', true))->count();
         $unassignedAssets = $totalAssets - $assignedAssets;
         $assetsByStatus = Asset::toBase()->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status');
 

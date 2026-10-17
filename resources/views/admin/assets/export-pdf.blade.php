@@ -40,6 +40,7 @@
         .status-in_repair { background-color: #fef3c7; color: #92400e; }
         .status-retired { background-color: #e5e7eb; color: #4b5563; }
         .unassigned { background-color: #fef3c7; color: #92400e; }
+        .shared { background-color: #e0f2fe; color: #075985; }
 
         .footer { width: 100%; margin-top: 20px; padding-top: 10px; border-top: 1px dashed #d1d5db; font-size: 9px; color: #9ca3af; }
         .page-break { page-break-before: always; }
@@ -141,6 +142,8 @@
                     <td>
                         @if($asset->user)
                             {{ $asset->user->name }}
+                        @elseif($asset->assignment === 'department')
+                            {{ $asset->department?->name ?? 'Department' }} <span class="badge shared">Shared</span>
                         @else
                             <span class="badge unassigned">Unassigned</span>
                         @endif

@@ -24,7 +24,12 @@ class StoreTicketRequest extends FormRequest
         'Hardware / Office Equipment',
         'Access Request',
         'Other',
+        // Created by the IT Supplies "Request" button, never picked on the ticket form.
+        // Listed here so IT Support can still edit these tickets and reports include them.
+        'IT Supplies Request',
     ];
+
+    public const SUPPLY_CATEGORY = 'IT Supplies Request';
 
     /**
      * Any authenticated user can submit a ticket — role/ownership scoping

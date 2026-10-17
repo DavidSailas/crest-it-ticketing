@@ -9,6 +9,36 @@
             newUserQuery: "",
             userDropdownOpen: false,
             userDirectory: @json($users->map(fn ($u) => ["id" => $u->id, "name" => $u->name, "email" => $u->email]), JSON_HEX_APOS),
+            assignTo: "{{ old("assignment", "person") }}",
+            assignTouched: {{ old("assignment") ? "true" : "false" }},
+            suggested: false,
+            deptId: "{{ old("department_id", "") }}",
+            itDeptId: "{{ $itDepartmentId ?? "" }}",
+            typeCode: "{{ old("type", "") }}",
+            departmentTypes: @json(\App\Models\Asset::DEPARTMENT_TYPES),
+            setMode(mode) {
+                this.assignTouched = true;
+                this.suggested = false;
+                this.assignTo = mode;
+                if (mode === "department") this.syncTag();
+            },
+            // Network equipment normally belongs to the IT Department: suggest it until the admin chooses.
+            suggest() {
+                if (this.assignTouched || !this.itDeptId) return;
+                if (this.departmentTypes.includes(this.typeCode)) {
+                    this.assignTo = "department";
+                    this.deptId = this.itDeptId;
+                    this.suggested = true;
+                    this.syncTag();
+                }
+            },
+            // The tag checker listens for "change" on the Tag > Department select.
+            syncTag() {
+                this.$nextTick(() => {
+                    const el = this.$refs.tagDept;
+                    if (el) { el.dispatchEvent(new Event("change", { bubbles: true })); }
+                });
+            },
             get selectedUser() {
                 return this.userDirectory.find(u => u.id == this.newUserId) || null;
             },
@@ -65,13 +95,31 @@
 
                 <form method="POST" action="{{ route('assets.store') }}" class="space-y-6" novalidate>
                     @csrf
-                    <input type="hidden" name="user_id" :value="newUserId">
+                    <input type="hidden" name="user_id" :value="assignTo === 'person' ? newUserId : ''">
 
                     {{-- Owner --}}
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Owner</p>
-                        <div class="relative" @click.outside="userDropdownOpen = false">
-                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Assign To <span class="font-normal text-gray-400">(optional)</span></label>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Assign to</p>
+                        {{-- Who has it: a person, a whole department (shared equipment), or nobody yet --}}
+                        <input type="hidden" name="assignment" :value="assignTo">
+                        <div class="grid grid-cols-3 gap-2 mb-4" role="radiogroup" aria-label="Assign to">
+                            @foreach([
+                                'person' => ['A person', 'Someone uses it', 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z'],
+                                'department' => ['A department', 'Shared equipment', 'M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21'],
+                                'stock' => ['Not assigned', 'Keep in stock', 'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z'],
+                            ] as $mode => [$title, $hint, $icon])
+                                <button type="button" role="radio" :aria-checked="assignTo === '{{ $mode }}'" @click="setMode('{{ $mode }}')"
+                                        :class="assignTo === '{{ $mode }}' ? 'border-green-700 bg-green-50 text-green-800 ring-2 ring-green-700/20' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                                        class="flex flex-col items-center gap-1 rounded-lg border px-2 py-3 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}" /></svg>
+                                    <span class="text-sm font-medium leading-tight">{{ $title }}</span>
+                                    <span class="text-[11px] font-normal text-gray-400 leading-tight hidden sm:block">{{ $hint }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+
+                        <div class="relative" x-show="assignTo === 'person'" x-cloak @click.outside="userDropdownOpen = false">
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Person</label>
 
                             {{-- Selected owner: a proper card, not text crammed into an input --}}
                             <div x-show="newUserId && selectedUser" x-cloak
@@ -95,7 +143,7 @@
                                            x-model="newUserQuery"
                                            @focus="userDropdownOpen = true"
                                            @input="userDropdownOpen = true"
-                                           placeholder="Search by name or email, or leave blank to assign later..."
+                                           placeholder="Search by name or email..."
                                            autocomplete="off"
                                            class="block w-full pl-9 pr-9 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
                                     <button type="button" x-show="newUserQuery" @click="newUserQuery = ''" x-cloak
@@ -124,8 +172,35 @@
                                     </template>
                                     <div x-show="filteredUsers.length === 0" class="px-3.5 py-3 text-sm text-gray-400">No matching users</div>
                                 </div>
-                                <p class="text-xs text-gray-400 mt-1.5">Not assigning yet? Leave this blank — you can assign it to someone later.</p>
+                                <p class="text-xs text-gray-400 mt-1.5">Not ready to assign it? Choose “Not assigned” above.</p>
                             </div>
+                        </div>
+
+                        {{-- Department: shared equipment such as a router, switch or office telephone --}}
+                        <div x-show="assignTo === 'department'" x-cloak class="rounded-lg border border-sky-200 bg-sky-50/60 p-4 space-y-3">
+                            <div x-show="suggested" x-cloak class="flex items-start gap-2 rounded-md bg-white/80 px-3 py-2 text-xs text-sky-900 ring-1 ring-sky-200">
+                                <svg class="w-4 h-4 mt-0.5 shrink-0 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                                <span>Network equipment usually belongs to the <strong>IT Department</strong>, so we selected it for you. Prefer a person? Pick <button type="button" class="font-semibold underline" @click="setMode('person')">A person</button>.</span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
+                                <select x-model="deptId" @change="syncTag()" aria-label="Department this asset is assigned to"
+                                        class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white">
+                                    <option value="">Select department</option>
+                                    @foreach($departments as $department)
+                                        <option value="{{ $department->id }}">{{ $department->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <p class="text-xs text-gray-500">Shared equipment belongs to the whole department, not one person. This is also the department used in the asset tag below.</p>
+                            @unless($itDepartmentId)
+                                <p class="text-xs text-amber-700">There's no IT Department yet — add one on the Departments page to assign network equipment to it.</p>
+                            @endunless
+                        </div>
+
+                        {{-- Not assigned --}}
+                        <div x-show="assignTo === 'stock'" x-cloak class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                            This asset goes into stock as <strong>unassigned</strong>. You can assign it to a person or a department any time from Edit.
                         </div>
                     </div>
 
@@ -153,7 +228,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Device Type</label>
-                                <select name="type" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                <select name="type" x-model="typeCode" @change="suggest()" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
                                     <option value="" disabled @selected(old('type') === null)>Select type</option>
                                     @foreach(\App\Models\Asset::TYPES as $value => $label)
                                         <option value="{{ $value }}" @selected(old('type') === $value)>{{ $label }}</option>
@@ -162,7 +237,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
-                                <select name="department_id" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
+                                <select name="department_id" x-model="deptId" x-ref="tagDept" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
                                     <option value="" disabled @selected(old('department_id') === null)>Select department</option>
                                     @foreach($departments as $department)
                                         <option value="{{ $department->id }}" @selected((string) old('department_id') === (string) $department->id)>{{ $department->name }}</option>

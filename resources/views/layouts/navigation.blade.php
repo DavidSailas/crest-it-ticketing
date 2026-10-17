@@ -1,5 +1,13 @@
 <style>[x-cloak] { display: none !important; }</style>
 
+@php
+    // How many supply items are low or out — a nudge for the people who restock them.
+    $restock = auth()->user()->isStaff() ? ['total' => 0, 'severe' => 0] : \App\Models\Supply::restockAlert();
+    $restockCount = $restock['total'];
+    // Amber when items are merely low; red as soon as one is critical or out.
+    $restockBadge = $restock['severe'] > 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700';
+@endphp
+
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100 print:hidden">
     <!-- Primary Navigation Menu -->
     <div class="max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,12 +48,24 @@
                         <x-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                             {{ __('Assets') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('supplies.index')" :active="request()->routeIs('supplies.*', 'admin.supplies.*')">
+                            {{ __('Supplies') }}
+                            @if($restockCount > 0)
+                                <span class="ms-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full {{ $restockBadge }} px-1.5 text-[10px] font-semibold" title="{{ $restockCount }} supply item(s) need restocking">{{ $restockCount }}</span>
+                            @endif
+                        </x-nav-link>
                     @elseif(auth()->user()->role === 'it_support')
                         <x-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory*')">
                             {{ __('Users') }}
                         </x-nav-link>
                         <x-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                             {{ __('Assets') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('supplies.index')" :active="request()->routeIs('supplies.*', 'admin.supplies.*')">
+                            {{ __('Supplies') }}
+                            @if($restockCount > 0)
+                                <span class="ms-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full {{ $restockBadge }} px-1.5 text-[10px] font-semibold" title="{{ $restockCount }} supply item(s) need restocking">{{ $restockCount }}</span>
+                            @endif
                         </x-nav-link>
                         <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
                             {{ __('Reports') }}
@@ -56,6 +76,12 @@
                         </x-nav-link>
                         <x-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                             {{ __('Assets') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('supplies.index')" :active="request()->routeIs('supplies.*', 'admin.supplies.*')">
+                            {{ __('Supplies') }}
+                            @if($restockCount > 0)
+                                <span class="ms-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full {{ $restockBadge }} px-1.5 text-[10px] font-semibold" title="{{ $restockCount }} supply item(s) need restocking">{{ $restockCount }}</span>
+                            @endif
                         </x-nav-link>
                         <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
                             {{ __('Reports') }}
@@ -214,12 +240,24 @@
                 <x-responsive-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                     {{ __('Assets') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('supplies.index')" :active="request()->routeIs('supplies.*', 'admin.supplies.*')">
+                    {{ __('Supplies') }}
+                    @if($restockCount > 0)
+                        <span class="ms-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full {{ $restockBadge }} px-1.5 text-[10px] font-semibold">{{ $restockCount }}</span>
+                    @endif
+                </x-responsive-nav-link>
             @elseif(auth()->user()->role === 'it_support')
                 <x-responsive-nav-link :href="route('users.directory')" :active="request()->routeIs('users.directory*')">
                     {{ __('Users') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                     {{ __('Assets') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('supplies.index')" :active="request()->routeIs('supplies.*', 'admin.supplies.*')">
+                    {{ __('Supplies') }}
+                    @if($restockCount > 0)
+                        <span class="ms-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full {{ $restockBadge }} px-1.5 text-[10px] font-semibold">{{ $restockCount }}</span>
+                    @endif
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
                     {{ __('Reports') }}
@@ -230,6 +268,12 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.*')">
                     {{ __('Assets') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('supplies.index')" :active="request()->routeIs('supplies.*', 'admin.supplies.*')">
+                    {{ __('Supplies') }}
+                    @if($restockCount > 0)
+                        <span class="ms-1.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full {{ $restockBadge }} px-1.5 text-[10px] font-semibold">{{ $restockCount }}</span>
+                    @endif
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
                     {{ __('Reports') }}

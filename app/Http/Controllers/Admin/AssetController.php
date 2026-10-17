@@ -60,8 +60,9 @@ class AssetController extends Controller
     {
         $users = User::orderBy('name')->get(['id', 'name', 'email']);
         $departments = Department::orderBy('name')->get();
+        $itDepartmentId = Asset::itDepartmentId();
 
-        return view('admin.assets.create', compact('users', 'departments'));
+        return view('admin.assets.create', compact('users', 'departments', 'itDepartmentId'));
     }
 
     /**
@@ -83,6 +84,7 @@ class AssetController extends Controller
     {
         $validated = $request->validate([
             'user_id' => ['nullable', 'exists:users,id'],
+            'assignment' => ['nullable', 'in:'.implode(',', array_keys(Asset::ASSIGNMENTS))],
             'company' => ['required', 'in:'.implode(',', array_keys(Asset::COMPANIES))],
             'location' => ['required', 'in:'.implode(',', array_keys(Asset::locations()))],
             'department_id' => ['required', 'exists:departments,id'],
@@ -103,9 +105,14 @@ class AssetController extends Controller
             'assigned_date.before_or_equal' => 'Assigned date can\'t be in the future.',
         ]);
 
-        // Route-bound user (from a user's own page) wins; otherwise fall
-        // back to whatever was picked (or left blank) on the New Asset form.
-        $ownerId = $user?->id ?? $validated['user_id'] ?? null;
+        // Route-bound user (from a user's own page) wins; otherwise the New Asset form says who
+        // it belongs to: a person, a whole department (shared equipment), or nobody yet.
+        $mode = $user ? 'person' : ($validated['assignment'] ?? (filled($validated['user_id'] ?? null) ? 'person' : 'stock'));
+        $ownerId = $user?->id ?? ($mode === 'person' ? ($validated['user_id'] ?? null) : null);
+
+        if ($mode === 'person' && ! $ownerId) {
+            return back()->withErrors(['user_id' => 'Choose who this asset is assigned to — or switch to "A department" or "Not assigned".'])->withInput();
+        }
 
         $department = Department::findOrFail($validated['department_id']);
 
@@ -135,6 +142,7 @@ class AssetController extends Controller
             Asset::create([
             'user_id' => $ownerId,
             'department_id' => $department->id,
+            'department_assigned' => $mode === 'department',
             'company' => $validated['company'],
             'location' => $validated['location'],
             'type' => $validated['type'],
@@ -161,9 +169,11 @@ class AssetController extends Controller
         }
 
         $ownerName = $ownerId ? User::find($ownerId)?->name : null;
-        $status = $ownerName
-            ? "Asset {$tag} assigned to {$ownerName}."
-            : "Asset {$tag} added to inventory as unassigned.";
+        $status = match (true) {
+            (bool) $ownerName => "Asset {$tag} assigned to {$ownerName}.",
+            $mode === 'department' => "Asset {$tag} assigned to {$department->name}.",
+            default => "Asset {$tag} added to inventory as unassigned.",
+        };
 
         return redirect()->route('assets.index')->with('status', $status);
     }
@@ -177,8 +187,9 @@ class AssetController extends Controller
     {
         $users = User::orderBy('name')->get(['id', 'name', 'email']);
         $departments = Department::orderBy('name')->get();
+        $itDepartmentId = Asset::itDepartmentId();
 
-        return view('admin.assets.edit', compact('asset', 'users', 'departments'));
+        return view('admin.assets.edit', compact('asset', 'users', 'departments', 'itDepartmentId'));
     }
 
     /**
@@ -191,6 +202,7 @@ class AssetController extends Controller
     {
         $validated = $request->validate([
             'user_id' => ['nullable', 'exists:users,id'],
+            'assignment' => ['nullable', 'in:'.implode(',', array_keys(Asset::ASSIGNMENTS))],
             'device_name' => ['required', 'string', 'max:255'],
             'serial_number' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'in:'.implode(',', array_keys(Asset::STATUSES))],
@@ -225,6 +237,15 @@ class AssetController extends Controller
             return back()->with('error', "\"{$department?->name}\" doesn't have an asset code yet. Set one on the Departments page first.")->withInput();
         }
 
+        // Who has it now. The quick-edit / unassign forms on a user's page send no "assignment",
+        // so a missing one is read from user_id (blank = take it back into stock).
+        $mode = $validated['assignment'] ?? (filled($validated['user_id'] ?? null) ? 'person' : 'stock');
+        $ownerId = $mode === 'person' ? ($validated['user_id'] ?? null) : null;
+
+        if ($mode === 'person' && ! $ownerId) {
+            return back()->withErrors(['user_id' => 'Choose who this asset is assigned to — or switch to "A department" or "Not assigned".'])->withInput();
+        }
+
         $newTag = Asset::formatTag($company, $location, $department->code, $type, (int) $validated['sequence']);
 
         $existing = Asset::with('user')->where('asset_tag', $newTag)->where('id', '!=', $asset->id)->first();
@@ -239,7 +260,8 @@ class AssetController extends Controller
         }
 
         $asset->update([
-            'user_id' => $validated['user_id'] ?? null,
+            'user_id' => $ownerId,
+            'department_assigned' => $mode === 'department',
             'device_name' => $validated['device_name'],
             'serial_number' => $validated['serial_number'] ?? null,
             'status' => $validated['status'],
@@ -315,7 +337,7 @@ class AssetController extends Controller
         }
 
         $tag = Asset::formatTag($company, $location, $department->code, $type, (int) $sequence);
-        $existing = Asset::with('user')->where('asset_tag', $tag)
+        $existing = Asset::with(['user', 'department'])->where('asset_tag', $tag)
             ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
             ->first();
 
@@ -324,7 +346,7 @@ class AssetController extends Controller
             'taken' => (bool) $existing,
             'existing' => $existing ? [
                 'device_name' => $existing->device_name,
-                'owner' => $existing->user?->name,
+                'owner' => $existing->assignment === 'stock' ? null : $existing->assignee_label,
                 'status' => Asset::STATUSES[$existing->status] ?? ucfirst(str_replace('_', ' ', (string) $existing->status)),
                 'url' => route('assets.edit', $existing),
             ] : null,
@@ -352,7 +374,11 @@ class AssetController extends Controller
     /** Plain-English "that tag is taken" message: who has it, plus the next number that is free. */
     private function tagTakenMessage(string $tag, Asset $existing, string $company, string $location, Department $department, string $type, ?int $ignoreId = null): string
     {
-        $who = $existing->user?->name ? "assigned to {$existing->user->name}" : 'in inventory (unassigned)';
+        $who = match ($existing->assignment) {
+            'person' => "assigned to {$existing->user?->name}",
+            'department' => 'assigned to '.($existing->department?->name ?? 'a department'),
+            default => 'in inventory (unassigned)',
+        };
         $message = "{$tag} is already used by \"{$existing->device_name}\", {$who}.";
 
         $next = $this->nextFreeSequence($company, $location, $department, $type, $ignoreId);
@@ -396,8 +422,10 @@ class AssetController extends Controller
                 $query->where('location', (string) $request->query('location'));
             })
             ->when($withFacets && array_key_exists($type, Asset::TYPES), fn ($q) => $q->where('type', $type))
-            ->when($withFacets && $assignment === 'unassigned', fn ($q) => $q->whereNull('user_id'))
+            // Assigned to a person / to a department (shared equipment) / sitting in stock.
             ->when($withFacets && $assignment === 'assigned', fn ($q) => $q->whereNotNull('user_id'))
+            ->when($withFacets && $assignment === 'department', fn ($q) => $q->whereNull('user_id')->where('department_assigned', true))
+            ->when($withFacets && $assignment === 'unassigned', fn ($q) => $q->whereNull('user_id')->where('department_assigned', false))
             ->when($withFacets && array_key_exists($status, Asset::STATUSES), fn ($q) => $q->where('status', $status));
     }
 
@@ -408,8 +436,9 @@ class AssetController extends Controller
      */
     private function summarize($query): array
     {
+        // Three mutually exclusive states: a person has it / a department has it / it's in stock.
         $rows = $query->toBase()
-            ->selectRaw("type, COUNT(*) as total, SUM(CASE WHEN user_id IS NULL THEN 1 ELSE 0 END) as unassigned, SUM(CASE WHEN status = 'in_repair' THEN 1 ELSE 0 END) as in_repair, SUM(CASE WHEN status = 'retired' THEN 1 ELSE 0 END) as retired")
+            ->selectRaw("type, COUNT(*) as total, SUM(CASE WHEN user_id IS NOT NULL THEN 1 ELSE 0 END) as people, SUM(CASE WHEN user_id IS NULL AND department_assigned = 1 THEN 1 ELSE 0 END) as departments, SUM(CASE WHEN status = 'in_repair' THEN 1 ELSE 0 END) as in_repair, SUM(CASE WHEN status = 'retired' THEN 1 ELSE 0 END) as retired")
             ->groupBy('type')
             ->get()
             ->keyBy('type');
@@ -418,24 +447,30 @@ class AssetController extends Controller
         foreach (Asset::TYPES as $code => $label) {
             $row = $rows->get($code);
             $total = (int) ($row->total ?? 0);
-            $unassigned = (int) ($row->unassigned ?? 0);
+            $people = (int) ($row->people ?? 0);
+            $departments = (int) ($row->departments ?? 0);
 
             $byType[$code] = [
                 'label' => $label,
                 'total' => $total,
-                'assigned' => $total - $unassigned,
-                'unassigned' => $unassigned,
+                'people' => $people,
+                'department' => $departments,
+                'assigned' => $people + $departments,          // to a person OR a department
+                'unassigned' => $total - $people - $departments,
                 'in_repair' => (int) ($row->in_repair ?? 0),
             ];
         }
 
         $total = (int) $rows->sum('total');
-        $unassigned = (int) $rows->sum('unassigned');
+        $people = (int) $rows->sum('people');
+        $departments = (int) $rows->sum('departments');
 
         return [
             'total' => $total,
-            'assigned' => $total - $unassigned,
-            'unassigned' => $unassigned,
+            'people' => $people,
+            'department' => $departments,
+            'assigned' => $people + $departments,
+            'unassigned' => $total - $people - $departments,
             'in_repair' => (int) $rows->sum('in_repair'),
             'retired' => (int) $rows->sum('retired'),
             'byType' => $byType,
@@ -481,8 +516,8 @@ class AssetController extends Controller
             $parts[] = 'Type: '.Asset::TYPES[$request->query('type')];
         }
 
-        if (in_array($request->query('assignment'), ['assigned', 'unassigned'], true)) {
-            $parts[] = 'Assignment: '.ucfirst($request->query('assignment'));
+        if (in_array($request->query('assignment'), ['assigned', 'department', 'unassigned'], true)) {
+            $parts[] = 'Assignment: '.['assigned' => 'Assigned to a person', 'department' => 'Assigned to a department', 'unassigned' => 'Unassigned'][$request->query('assignment')];
         }
 
         if (array_key_exists((string) $request->query('status'), Asset::STATUSES)) {
@@ -545,6 +580,7 @@ class AssetController extends Controller
             ['Unassigned', $summary['unassigned']],
             ['In repair', $summary['in_repair']],
             ['Retired', $summary['retired']],
+            ['Assigned to departments', $summary['department']],
         ];
         $r = 5;
         foreach ($overviewRows as [$label, $value]) {
@@ -555,10 +591,10 @@ class AssetController extends Controller
         $overview->getStyle('A5:B5')->getFont()->setBold(true);
         $overview->getStyle('A7:B7')->getFont()->getColor()->setRGB('B45309'); // unassigned stands out
         $overview->getStyle('A7:B7')->getFont()->setBold(true);
-        $overview->getStyle('B5:B9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-        $overview->getStyle('A4:B9')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
+        $overview->getStyle('B5:B10')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $overview->getStyle('A4:B10')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
 
-        $typeHeaderRow = 12;
+        $typeHeaderRow = 13;
         $overview->setCellValue("A{$typeHeaderRow}", 'Device type');
         $overview->setCellValue("B{$typeHeaderRow}", 'Total');
         $overview->setCellValue("C{$typeHeaderRow}", 'Assigned');
@@ -621,12 +657,12 @@ class AssetController extends Controller
             $sheet->setCellValue("D{$row}", Asset::COMPANIES[$asset->company] ?? $asset->company);
             $sheet->setCellValue("E{$row}", Asset::locations()[$asset->location] ?? $asset->location);
             $sheet->setCellValue("F{$row}", $asset->department->name ?? '—');
-            $sheet->setCellValue("G{$row}", $asset->user->name ?? 'Unassigned');
+            $sheet->setCellValue("G{$row}", $asset->assignee_label);
             $sheet->setCellValue("H{$row}", $asset->serial_number ?? '—');
             $sheet->setCellValue("I{$row}", Asset::STATUSES[$asset->status] ?? ucfirst($asset->status));
             $sheet->setCellValue("J{$row}", $asset->assigned_date?->format('M j, Y') ?? '—');
 
-            if (! $asset->user_id) {
+            if ($asset->assignment === 'stock') {
                 $sheet->getStyle("G{$row}")->getFont()->setItalic(true)->getColor()->setRGB('B45309');
             }
             $row++;

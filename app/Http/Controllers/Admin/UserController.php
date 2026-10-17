@@ -373,7 +373,32 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->orderBy('name')->paginate(15)->withQueryString();
+        // Same Branch + Department filters as Admin > Manage Users. Anything that isn't a
+        // real branch / department is ignored rather than producing an empty list.
+        $branches = Branch::options();
+        $departments = Department::orderBy('name')->get(['id', 'name']);
+        $branch = (string) $request->query('branch', '');
+        $departmentId = $request->integer('department_id');
+
+        if (array_key_exists($branch, $branches)) {
+            $query->where('location', $branch);
+        } else {
+            $branch = '';
+        }
+
+        if ($departmentId && $departments->contains('id', $departmentId)) {
+            $query->where('department_id', $departmentId);
+        } else {
+            $departmentId = 0;
+        }
+
+        $filters = array_filter([
+            'role' => in_array($role, ['staff', 'it_support'], true) ? $role : '',
+            'branch' => $branch,
+            'department_id' => $departmentId ?: null,
+        ]);
+
+        $users = $query->with('department')->orderBy('name')->paginate(15)->withQueryString();
 
         $this->rememberList($request, 'directory');
 
@@ -384,7 +409,7 @@ class UserController extends Controller
             ->groupBy('user_id')
             ->pluck('count', 'user_id');
 
-        return view('admin.users.directory', compact('users', 'search', 'assetCounts'));
+        return view('admin.users.directory', compact('users', 'search', 'assetCounts', 'branches', 'departments', 'filters'));
     }
 
     /**

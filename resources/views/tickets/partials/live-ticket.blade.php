@@ -1,3 +1,5 @@
+@include('admin.supplies._ticket-panel')
+
 <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
     <div class="px-4 sm:px-6 py-5 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2">

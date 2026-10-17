@@ -39,8 +39,24 @@ class Asset extends Model
         'LT' => 'Laptop',
         'MN' => 'Monitor',
         'PR' => 'Printer',
-        'PH' => 'Phone',
+        'PH' => 'Mobile Phone',
+        'TP' => 'Telephone',          // desk / IP phone
         'NW' => 'Network Equipment',
+    ];
+
+    /**
+     * Equipment that normally belongs to the IT Department rather than to one person
+     * (routers, switches, access points…). The asset forms suggest it for these types.
+     */
+    public const DEPARTMENT_TYPES = ['NW'];
+
+    /** Asset-code of the department shared IT equipment is assigned to. */
+    public const IT_DEPARTMENT_CODE = 'IT';
+
+    public const ASSIGNMENTS = [
+        'person' => 'A person',
+        'department' => 'A department',
+        'stock' => 'Not assigned',
     ];
 
     public const STATUSES = [
@@ -52,6 +68,7 @@ class Asset extends Model
     protected $fillable = [
         'user_id',
         'department_id',
+        'department_assigned',
         'company',
         'location',
         'type',
@@ -68,6 +85,7 @@ class Asset extends Model
     {
         return [
             'assigned_date' => 'date',
+            'department_assigned' => 'boolean',
         ];
     }
 
@@ -79,6 +97,36 @@ class Asset extends Model
     public function department()
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /** The IT Department's id, if one exists — used to pre-select it for network equipment. */
+    public static function itDepartmentId(): ?int
+    {
+        // The standard "IT" code first; otherwise whichever IT department the admin already made.
+        return Department::where('code', self::IT_DEPARTMENT_CODE)->value('id')
+            ?? Department::whereIn('name', ['IT Department', 'IT', 'IT Support', 'Information Technology'])->orderBy('id')->value('id');
+    }
+
+    /**
+     * Who has it: a person, a department (shared equipment) or nobody (in stock).
+     */
+    public function getAssignmentAttribute(): string
+    {
+        if ($this->user_id) {
+            return 'person';
+        }
+
+        return $this->department_assigned ? 'department' : 'stock';
+    }
+
+    /** Text for "Assigned to" columns: the person's name, "IT Department", or "Unassigned". */
+    public function getAssigneeLabelAttribute(): string
+    {
+        return match ($this->assignment) {
+            'person' => $this->user?->name ?? 'Unknown user',
+            'department' => ($this->department?->name ?? 'a department').' (shared)',
+            default => 'Unassigned',
+        };
     }
 
     /**

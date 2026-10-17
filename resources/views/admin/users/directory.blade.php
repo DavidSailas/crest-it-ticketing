@@ -12,20 +12,46 @@
             @endif
         </p>
 
-        <form method="GET" action="{{ route('users.directory') }}" data-live-filter class="flex flex-wrap gap-2 max-w-xl">
-            <input type="text" name="q" value="{{ $search }}" placeholder="Search name or email" autocomplete="off"
-                class="flex-1 min-w-[12rem] rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
-            <select name="role" aria-label="Filter by role" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
-                <option value="">All roles</option>
-                <option value="staff" @selected(request('role') === 'staff')>Staff</option>
-                <option value="it_support" @selected(request('role') === 'it_support')>IT Support</option>
-            </select>
-            <a href="{{ route('users.directory') }}" data-live-clear
-               @if($search === '' && ! request('role')) style="display:none" @endif
-               class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Clear</a>
+        {{-- Search + filters (same Branch / Department filters as Admin > Manage Users) --}}
+        <form method="GET" action="{{ route('users.directory') }}" data-live-filter class="bg-white rounded-xl border border-gray-200 shadow-sm p-3.5 flex flex-col lg:flex-row gap-3">
+            <div class="relative flex-1">
+                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                <input type="text" name="q" value="{{ $search }}" placeholder="Search name or email" autocomplete="off"
+                    class="w-full rounded-lg border-gray-300 text-sm pl-9 focus:border-green-700 focus:ring-green-700">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 lg:flex gap-3">
+                <select name="role" aria-label="Filter by role" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-36">
+                    <option value="">All roles</option>
+                    <option value="staff" @selected(($filters['role'] ?? '') === 'staff')>Staff</option>
+                    <option value="it_support" @selected(($filters['role'] ?? '') === 'it_support')>IT Support</option>
+                </select>
+                <select name="branch" aria-label="Filter by branch office" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-40">
+                    <option value="">All branches</option>
+                    @foreach($branches as $code => $label)
+                        <option value="{{ $code }}" @selected(($filters['branch'] ?? '') === (string) $code)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <select name="department_id" aria-label="Filter by department" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-44">
+                    <option value="">All departments</option>
+                    @foreach($departments as $department)
+                        <option value="{{ $department->id }}" @selected((int) ($filters['department_id'] ?? 0) === $department->id)>{{ $department->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex gap-2 shrink-0">
+                <a href="{{ route('users.directory') }}" data-live-clear
+                   @if($search === '' && ! count($filters)) style="display:none" @endif
+                   class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Clear</a>
+            </div>
         </form>
 
         <div id="directory-results" data-live-list data-live-scroll class="space-y-4">
+
+        @if($search !== '' || count($filters))
+            <p class="text-sm text-gray-500 px-1">
+                Showing <span class="font-semibold text-gray-700">{{ number_format($users->total()) }}</span> matching user{{ $users->total() === 1 ? '' : 's' }}
+            </p>
+        @endif
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
             <table class="w-full text-sm">
@@ -33,6 +59,7 @@
                     <tr class="bg-gray-50/80 border-b border-gray-200">
                         <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Name</th>
                         <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Role</th>
+                        <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Department</th>
                         <th class="hidden md:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Branch</th>
                         <th class="hidden sm:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">VIP</th>
                         <th class="hidden lg:table-cell px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assets</th>
@@ -54,6 +81,8 @@
                                     <span class="sm:hidden capitalize">{{ str_replace('_', ' ', $user->role) }}</span>
                                     <span class="sm:hidden text-gray-300">·</span>
                                     <span>{{ $user->branch_name ?? '—' }}</span>
+                                    <span class="text-gray-300">·</span>
+                                    <span class="truncate max-w-[8rem]">{{ $user->department->name ?? '—' }}</span>
                                     <span class="lg:hidden text-gray-300">·</span>
                                     <span class="lg:hidden">{{ $assetCounts[$user->id] ?? 0 }} asset{{ ($assetCounts[$user->id] ?? 0) === 1 ? '' : 's' }}</span>
                                     @if($user->is_vip)
@@ -64,6 +93,7 @@
                             <td class="hidden sm:table-cell px-5 py-3.5 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize {{ $user->role === 'it_support' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ str_replace('_', ' ', $user->role) }}</span>
                             </td>
+                            <td class="hidden md:table-cell px-5 py-3.5 text-gray-600 whitespace-nowrap"><span class="block truncate max-w-[10rem]">{{ $user->department->name ?? '—' }}</span></td>
                             <td class="hidden md:table-cell px-5 py-3.5 text-gray-600 whitespace-nowrap">{{ $user->branch_name ?? '—' }}</td>
                             <td class="hidden sm:table-cell px-5 py-3.5 whitespace-nowrap">
                                 @if($user->is_vip)
@@ -78,7 +108,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-5 py-14 text-center text-gray-400">No matching accounts.</td></tr>
+                        <tr><td colspan="7" class="px-5 py-14 text-center text-gray-400">No matching accounts.</td></tr>
                     @endforelse
                 </tbody>
             </table>

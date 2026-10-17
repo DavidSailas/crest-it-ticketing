@@ -210,4 +210,5 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
     });
 });
 
+require __DIR__.'/supplies.php';
 require __DIR__.'/auth.php';
