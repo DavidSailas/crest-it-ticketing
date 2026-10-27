@@ -9,6 +9,25 @@ class Ticket extends Model
 {
     use HasFactory;
 
+    /**
+     * How each status is shown to people. The stored value for "Pending User" stays `pending`
+     * (so nothing in the database or the filters changes) — only its label does.
+     * Always use Ticket::statusLabel() instead of formatting the raw value.
+     */
+    public const STATUS_LABELS = [
+        'open' => 'Open',
+        'in_progress' => 'In Progress',
+        'pending' => 'Pending User',
+        'resolved' => 'Resolved',
+        'closed' => 'Closed',
+        'cancelled' => 'Cancelled',
+    ];
+
+    public static function statusLabel(?string $status): string
+    {
+        return self::STATUS_LABELS[$status] ?? ucfirst(str_replace('_', ' ', (string) $status));
+    }
+
     protected $fillable = [
         'user_id',
         'on_behalf_of_user_id',

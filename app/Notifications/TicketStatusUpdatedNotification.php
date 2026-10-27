@@ -24,7 +24,7 @@ class TicketStatusUpdatedNotification extends Notification
 
     private function label(string $status): string
     {
-        return str_replace('_', ' ', ucfirst($status));
+        return \App\Models\Ticket::statusLabel($status);
     }
 
     public function toMail(object $notifiable): MailMessage

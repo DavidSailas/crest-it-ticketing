@@ -3,3 +3,68 @@
 @tailwind utilities;
 
 [x-cloak] { display: none !important; }
+
+/* ---------------------------------------------------------------------------
+   Buttons — one consistent set. 44px tall on phones (a comfortable thumb target),
+   a tighter 40px from tablets up.
+   --------------------------------------------------------------------------- */
+@layer components {
+    .btn {
+        @apply inline-flex min-h-[44px] items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-semibold transition
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-1
+               disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[40px];
+    }
+    .btn-primary { @apply text-white shadow-sm; background-color: #1a6b3c; }
+    .btn-primary:hover { background-color: #14532d; }
+    .btn-secondary { @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50; }
+    .btn-soft { color: #1a6b3c; background-color: #ecf7f0; }
+    .btn-soft:hover { background-color: #d8f0e1; }
+    .btn-danger { @apply bg-rose-50 text-rose-600 hover:bg-rose-100; }
+    .btn-sm { @apply min-h-[40px] px-3 text-[13px] sm:min-h-[32px] sm:text-xs; }
+}
+
+/* Buttons at the foot of a mobile card share the row; if there are too many they wrap neatly. */
+.m-actions > * { flex: 1 1 5.5rem; }
+
+/* ---------------------------------------------------------------------------
+   Phones (under 640px)
+   --------------------------------------------------------------------------- */
+@media (max-width: 639px) {
+
+    /* Page header: for the common "title + action buttons" shape, the title gets its own line and
+       the buttons share the next one equally, instead of being squeezed beside it. Headers with
+       other shapes (breadcrumbs, a lone title) are left alone — they only get to wrap.
+       (.app-header > div is the layout's container; its child is the page's own row.) */
+    .app-header > div > div { flex-wrap: wrap; row-gap: .75rem; }
+    .app-header > div > div > :first-child:nth-last-child(2) { flex: 1 1 100%; min-width: 0; }
+    .app-header > div > div > :nth-child(2):last-child { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: .5rem; min-width: 0; }
+    /* Buttons share the row equally; one that can't fit its label wraps to the next row. */
+    .app-header > div > div > :nth-child(2):last-child > * { flex: 1 1 0%; min-width: max-content; }
+    .app-header > div > div > :nth-child(2):last-child > .relative > button,
+    .app-header > div > div > :nth-child(2):last-child > form > :is(label, button) { width: 100%; }
+    .app-header > div > div > :nth-child(2):last-child :is(a, button, label):not(.no-touch) {
+        min-height: 44px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
+    }
+    .app-header h2 { font-size: 1.25rem; line-height: 1.5rem; }
+
+    /* Overview cards: compact, so the list starts on the first screen, not the fourth. */
+    body .stat-card { padding: .875rem; border-radius: .875rem; }
+    body .stat-card .stat-icon { width: 2rem; height: 2rem; border-radius: .625rem; }
+    body .stat-card .stat-icon svg { width: 1rem; height: 1rem; }
+    body .stat-card p.lbl { font-size: .625rem; line-height: 1rem; }
+    body .stat-card .val { font-size: 1.75rem !important; line-height: 1 !important; margin-top: .375rem !important; }
+    body .stat-card .sub { font-size: .6875rem; line-height: 1rem; margin-top: .25rem !important; }
+    body .stat-card .stat-bar { margin-top: .625rem !important; height: 4px; }
+    /* the grand total becomes a slim banner */
+    body .stat-card.tone-hero { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 1rem; padding: .875rem 1rem; }
+    body .stat-card.tone-hero .stat-icon { display: none; }
+    body .stat-card.tone-hero .val { grid-row: span 2; margin-top: 0 !important; font-size: 2.25rem !important; }
+
+    /* Category / device-type tiles: one swipeable row instead of a tall grid. */
+    .tile-strip {
+        display: flex !important; gap: .625rem; overflow-x: auto; scroll-snap-type: x proximity;
+        margin-inline: -1rem; padding: .125rem 1rem .5rem; scrollbar-width: none;
+    }
+    .tile-strip::-webkit-scrollbar { display: none; }
+    .tile-strip > * { flex: 0 0 9.5rem; scroll-snap-align: start; }
+}

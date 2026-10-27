@@ -22,9 +22,7 @@
     @endphp
 
     <div class="rounded-xl border {{ $tone[0] }} {{ $tone[1] }} px-4 sm:px-6 py-4 flex items-start gap-3">
-        <span class="flex items-center justify-center w-9 h-9 rounded-lg shrink-0 {{ $tone[2] }}">
-            <x-supply-icon :category="$supply->category" class="w-5 h-5" />
-        </span>
+        <x-supply-image :supply="$supply" size="md" />
         <div class="min-w-0 text-sm">
             <p class="font-semibold {{ $tone[3] }}">
                 Supply request · {{ number_format($supplyRequest->quantity) }} {{ $supply->unit }} of

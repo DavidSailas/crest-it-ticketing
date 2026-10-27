@@ -68,9 +68,9 @@
             <span class="text-xs text-gray-400">Waiting for pickup · critical first</span>
         </div>
 
-        <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+        <div class="md:bg-white md:shadow-sm md:rounded-xl md:border md:border-gray-100 md:overflow-hidden">
             @if($openQueue->isEmpty())
-                <div class="flex flex-col items-center justify-center text-center px-6 py-12">
+                <div class="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white px-6 py-12 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                     <div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3">
                         <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                     </div>
@@ -78,7 +78,14 @@
                     <p class="text-gray-400 text-sm mt-1">Nothing waiting right now — great job staying on top of it.</p>
                 </div>
             @else
-                    <table class="w-full text-sm border-collapse">
+                    {{-- Phones: one card per ticket --}}
+                    <div class="space-y-3 md:hidden">
+                        @foreach($openQueue as $ticket)
+                            <x-m-ticket-card :ticket="$ticket" :requester="true" :department="true" />
+                        @endforeach
+                    </div>
+
+                    <table class="hidden w-full text-sm border-collapse md:table">
                         <thead>
                             <tr class="bg-gray-50/80 border-b border-gray-200">
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket</th>
@@ -124,7 +131,7 @@
             <h3 class="text-base font-semibold text-gray-800">Assigned Tickets</h3>
             <span class="text-xs text-gray-400">
                 @if($selectedAgent)
-                    {{ $selectedAgent->name }} · {{ $assignedTickets->total() }} in progress / pending · critical first
+                    {{ $selectedAgent->name }} · {{ $assignedTickets->total() }} in progress / pending user · critical first
                 @else
                     All IT Support · {{ $assignedTickets->total() }} ticket{{ $assignedTickets->total() === 1 ? '' : 's' }} · critical first
                 @endif
@@ -145,7 +152,7 @@
                         : route('dashboard', ['agent' => $agent->id]).'#assigned-tickets';
                 @endphp
                 <a href="{{ $href }}"
-                   title="{{ $selected ? 'Show everyone' : 'Show '.$agent->name.'\'s in-progress and pending tickets' }}"
+                   title="{{ $selected ? 'Show everyone' : 'Show '.$agent->name.'\'s in-progress and pending-user tickets' }}"
                    class="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border shadow-sm transition
                           {{ $selected ? 'border-green-600 bg-green-100 ring-2 ring-green-200' : ($isMe ? 'border-green-300 bg-green-50 hover:bg-green-100' : 'border-gray-200 bg-white hover:bg-gray-50') }}">
                     <span class="relative shrink-0">
@@ -162,22 +169,29 @@
             @endforeach
         </div>
 
-        <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
+        <div class="md:bg-white md:shadow-sm md:rounded-xl md:border md:border-gray-100 md:overflow-hidden">
             @if($assignedTickets->isEmpty())
-                <div class="flex flex-col items-center justify-center text-center px-6 py-12">
+                <div class="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white px-6 py-12 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                     <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
                         <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     </div>
                     @if($selectedAgent)
                         <p class="text-gray-700 font-medium">No open tickets for {{ $selectedAgent->name }}</p>
-                        <p class="text-gray-400 text-sm mt-1">Nothing is in progress or pending for this person right now.</p>
+                        <p class="text-gray-400 text-sm mt-1">Nothing is in progress or pending user for this person right now.</p>
                     @else
                         <p class="text-gray-700 font-medium">Nothing assigned yet</p>
                         <p class="text-gray-400 text-sm mt-1">Accept a ticket from the queue above to get started.</p>
                     @endif
                 </div>
             @else
-                    <table class="w-full text-sm border-collapse">
+                    {{-- Phones: one card per ticket --}}
+                    <div class="space-y-3 md:hidden">
+                        @foreach($assignedTickets as $ticket)
+                            <x-m-ticket-card :ticket="$ticket" :assignee="true" :requester="true" :mine="$ticket->assigned_to === Auth::id()" :resolved-as-closed="true" />
+                        @endforeach
+                    </div>
+
+                    <table class="hidden w-full text-sm border-collapse md:table">
                         <thead>
                             <tr class="bg-gray-50/80 border-b border-gray-200">
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket</th>

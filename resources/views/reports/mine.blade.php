@@ -15,7 +15,7 @@
             <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Still open</p>
                 <p class="mt-1.5 text-3xl font-semibold tabular-nums" style="color:#b45309;">{{ $openMine }}</p>
-                <p class="mt-0.5 text-xs text-gray-400">Open, in progress or pending</p>
+                <p class="mt-0.5 text-xs text-gray-400">Open, in progress or pending user</p>
             </div>
             <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Resolved</p>

@@ -13,13 +13,23 @@
         </p>
 
         {{-- Search + filters (same Branch / Department filters as Admin > Manage Users) --}}
-        <form method="GET" action="{{ route('users.directory') }}" data-live-filter class="bg-white rounded-xl border border-gray-200 shadow-sm p-3.5 flex flex-col lg:flex-row gap-3">
-            <div class="relative flex-1">
+        <form method="GET" action="{{ route('users.directory') }}" data-live-filter class="bg-white rounded-xl border border-gray-200 shadow-sm p-3.5 flex flex-col lg:flex-row gap-3"
+              x-data="{ filters: {{ count($filters) ? 'true' : 'false' }} }">
+            <div class="flex flex-1 items-center gap-2">
+            <div class="relative min-w-0 flex-1">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
                 <input type="text" name="q" value="{{ $search }}" placeholder="Search name or email" autocomplete="off"
                     class="w-full rounded-lg border-gray-300 text-sm pl-9 focus:border-green-700 focus:ring-green-700">
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 lg:flex gap-3">
+                {{-- Phones: the dropdowns tuck away behind this button so the list stays in view. --}}
+                <button type="button" @click="filters = ! filters" :aria-expanded="filters" aria-controls="directory-filter-fields"
+                        class="btn btn-secondary shrink-0 sm:hidden" :class="filters ? 'border-green-700 bg-green-50 text-green-800' : ''">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12m-9 7.5h6" /></svg>
+                    Filters
+                    @if(count($filters) > 0)<span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-green-700 px-1.5 text-[11px] font-semibold text-white">{{ count($filters) }}</span>@endif
+                </button>
+            </div>
+            <div id="directory-filter-fields" class="hidden grid-cols-1 gap-3 sm:grid sm:grid-cols-3 lg:flex" :class="filters && 'max-sm:!grid'">
                 <select name="role" aria-label="Filter by role" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-36">
                     <option value="">All roles</option>
                     <option value="staff" @selected(($filters['role'] ?? '') === 'staff')>Staff</option>
@@ -41,7 +51,7 @@
             <div class="flex gap-2 shrink-0">
                 <a href="{{ route('users.directory') }}" data-live-clear
                    @if($search === '' && ! count($filters)) style="display:none" @endif
-                   class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Clear</a>
+                   class="btn btn-secondary btn-sm">Clear</a>
             </div>
         </form>
 
@@ -53,7 +63,35 @@
             </p>
         @endif
 
-        <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        {{-- Phones: one card per person --}}
+        <div class="space-y-3 md:hidden">
+            @forelse($users as $user)
+                @php $assetTotal = $assetCounts[$user->id] ?? 0; @endphp
+                <x-m-card :href="route('users.directory.show', $user)" :label="'View '.$user->name">
+                    <x-slot name="lead"><x-avatar :user="$user" size="md" /></x-slot>
+                    <x-slot name="title">{{ $user->name }}</x-slot>
+                    <x-slot name="sub">
+                        <span class="break-all">{{ $user->email }}</span>
+                        <span class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize {{ $user->role === 'it_support' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ str_replace('_', ' ', $user->role) }}</span>
+                            @if($user->is_vip)<x-vip-badge size="compact" />@endif
+                        </span>
+                    </x-slot>
+                    <x-slot name="badge">
+                        <svg class="mt-1 h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </x-slot>
+
+                    <x-m-meta label="Department">{{ $user->department->name ?? '—' }}</x-m-meta>
+                    <x-m-meta label="Branch">{{ $user->branch_name ?? '—' }}</x-m-meta>
+                    <x-m-meta label="Assets">{{ $assetTotal }} asset{{ $assetTotal === 1 ? '' : 's' }}</x-m-meta>
+                </x-m-card>
+            @empty
+                <div class="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-400 shadow-sm">No matching accounts.</div>
+            @endforelse
+        </div>
+
+        {{-- Tablets and up: the table --}}
+        <div class="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50/80 border-b border-gray-200">

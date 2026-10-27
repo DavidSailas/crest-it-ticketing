@@ -102,7 +102,7 @@
 
     <script>
         function chatInbox() {
-            const statusLabels = { open: 'Open', in_progress: 'In Progress', pending: 'Pending', resolved: 'Resolved', closed: 'Closed', cancelled: 'Cancelled' };
+            const statusLabels = { open: 'Open', in_progress: 'In Progress', pending: 'Pending User', resolved: 'Resolved', closed: 'Closed', cancelled: 'Cancelled' };
             const decorate = (list) => (list || []).map(t => ({ ...t, status_label: statusLabels[t.status] || t.status }));
 
             let initialThreads = [];

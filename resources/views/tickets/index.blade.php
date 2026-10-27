@@ -64,12 +64,18 @@
         @endif
 
         {{-- Filters --}}
-        <div class="bg-white shadow-sm rounded-xl border border-gray-200 mb-5 overflow-hidden">
+        <div class="bg-white shadow-sm rounded-xl border border-gray-200 mb-5 overflow-hidden"
+             x-data="{ filters: {{ ($filters['status'] || $filters['priority'] || $filters['dateFrom'] || $filters['dateTo']) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between px-4 sm:px-5 pt-4">
                 <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
                     <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12m-9 7.5h6" /></svg>
                     Filter tickets
                 </div>
+                <button type="button" @click="filters = ! filters" :aria-expanded="filters" aria-controls="ticket-filter-fields"
+                        class="btn btn-secondary btn-sm sm:hidden" :class="filters ? 'border-green-700 bg-green-50 text-green-800' : ''">
+                    <span x-text="filters ? 'Hide filters' : 'More filters'">More filters</span>
+                    <svg class="h-3.5 w-3.5 transition-transform" :class="filters ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                </button>
                 <a href="{{ route('tickets.index') }}" data-live-clear
                    @if(! $hasActiveFilters) style="display:none" @endif
                    class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600 transition">
@@ -89,12 +95,13 @@
                     </div>
                 </div>
 
+                <div id="ticket-filter-fields" class="col-span-2 hidden grid-cols-2 gap-3 sm:contents max-sm:[&.open]:grid" :class="filters && 'open'">
                 <div class="col-span-1 lg:col-span-2">
                     <label for="filter-status" class="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Status</label>
                     <select name="status" id="filter-status" class="w-full rounded-lg border-gray-300 bg-gray-50/60 text-sm focus:bg-white focus:border-green-700 focus:ring-green-700">
                         <option value="">All statuses</option>
                         @foreach($statusOptions as $option)
-                            <option value="{{ $option }}" @selected($filters['status'] === $option)>{{ str_replace('_', ' ', ucfirst($option)) }}</option>
+                            <option value="{{ $option }}" @selected($filters['status'] === $option)>{{ \App\Models\Ticket::statusLabel($option) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -121,6 +128,7 @@
                                class="w-full min-w-0 rounded-lg border-gray-300 bg-gray-50/60 text-sm focus:bg-white focus:border-green-700 focus:ring-green-700">
                     </div>
                 </div>
+                </div>
 
             </form>
 
@@ -133,7 +141,7 @@
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-gray-200 text-gray-600">“{{ $filters['search'] }}”</span>
                     @endif
                     @if($filters['status'])
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-gray-200 text-gray-600">Status: {{ str_replace('_', ' ', ucfirst($filters['status'])) }}</span>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-gray-200 text-gray-600">Status: {{ \App\Models\Ticket::statusLabel($filters['status']) }}</span>
                     @endif
                     @if($filters['priority'])
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-white ring-1 ring-inset ring-gray-200 text-gray-600">Priority: {{ ucfirst($filters['priority']) }}</span>
@@ -151,7 +159,57 @@
              this reads as one clean sheet instead of a boxed grid, and never
              needs to scroll. Anything not shown here (department, location,
              full description) is one click away on the ticket page. --}}
-        <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        {{-- Phones: one card per ticket --}}
+        <div class="space-y-3 md:hidden">
+            @forelse($tickets as $ticket)
+                <x-m-card :href="route('tickets.show', $ticket)" :label="'Open ticket '.$ticket->ticket_number">
+                    <x-slot name="title">
+                        {{ $ticket->category }}
+                        @if($ticket->attachment_path)
+                            <svg class="ml-1 inline h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-label="Has attachment"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" /></svg>
+                        @endif
+                    </x-slot>
+                    <x-slot name="sub">
+                        <span class="font-mono font-semibold text-gray-600">{{ $ticket->ticket_number }}</span>@if($ticket->subcategory) · {{ $ticket->subcategory }}@endif
+                        <span class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <x-priority-badge :priority="$ticket->priority" />
+                            <x-status-badge :status="$ticket->status" />
+                        </span>
+                    </x-slot>
+                    <x-slot name="badge">
+                        <svg class="mt-1 h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </x-slot>
+
+                    @if($showRequestedBy)
+                        <x-m-meta label="Requested by">
+                            <span class="inline-flex flex-wrap items-center gap-1.5">{{ $ticket->creator->name }}@if($ticket->creator->is_vip)<x-vip-badge size="compact" />@endif</span>
+                        </x-m-meta>
+                    @endif
+                    @if($showAssignedTo)
+                        <x-m-meta label="Assigned to">
+                            @if($ticket->assignee){{ $ticket->assignee->name }}@else<span class="text-gray-400">{{ $ticket->isCancelled() ? '—' : 'Unassigned' }}</span>@endif
+                        </x-m-meta>
+                    @endif
+                    <x-m-meta label="Created">{{ $ticket->created_at->format('M j, Y') }}</x-m-meta>
+                </x-m-card>
+            @empty
+                <div class="flex flex-col items-center rounded-xl border border-gray-200 bg-white px-6 py-12 text-center shadow-sm">
+                    <p class="font-medium text-gray-600">No tickets found</p>
+                    <p class="mt-1 text-sm text-gray-400">
+                        @if($hasActiveFilters)
+                            No tickets match your filters. <a href="{{ route('tickets.index') }}" class="font-medium text-green-700 underline underline-offset-2">Clear them</a> to see everything.
+                        @elseif($isStaff)
+                            Submit a request and it'll show up here.
+                        @else
+                            Nothing matches right now.
+                        @endif
+                    </p>
+                </div>
+            @endforelse
+        </div>
+
+        {{-- Tablets and up: the table --}}
+        <div class="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
             <table class="w-full text-sm border-collapse">
                 <thead>
                     <tr class="bg-gray-50/80 border-b border-gray-200">

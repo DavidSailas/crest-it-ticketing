@@ -169,7 +169,7 @@ class TicketController extends Controller
             $parts[] = "Search: \"{$search}\"";
         }
         if ($status = trim((string) $request->query('status', ''))) {
-            $parts[] = 'Status: '.str_replace('_', ' ', ucfirst($status));
+            $parts[] = 'Status: '.Ticket::statusLabel($status);
         }
         if ($priority = trim((string) $request->query('priority', ''))) {
             $parts[] = 'Priority: '.ucfirst($priority);
@@ -238,7 +238,7 @@ class TicketController extends Controller
             $sheet->setCellValue("D{$row}", $ticket->creator->name ?? '—');
             $sheet->setCellValue("E{$row}", $ticket->assigneeLabel());
             $sheet->setCellValue("F{$row}", ucfirst($ticket->priority));
-            $sheet->setCellValue("G{$row}", str_replace('_', ' ', ucfirst($ticket->status)));
+            $sheet->setCellValue("G{$row}", Ticket::statusLabel($ticket->status));
             $sheet->setCellValue("H{$row}", $ticket->created_at->format('M j, Y g:i A'));
             $sheet->setCellValue("I{$row}", $ticket->resolved_at?->format('M j, Y g:i A') ?? '—');
             $sheet->setCellValue("J{$row}", $ticket->closed_at?->format('M j, Y g:i A') ?? '—');
@@ -537,13 +537,7 @@ class TicketController extends Controller
     /** Human label for a ticket status. */
     private function statusLabel(string $status): string
     {
-        return [
-            'open' => 'Open',
-            'in_progress' => 'In Progress',
-            'pending' => 'Pending',
-            'resolved' => 'Resolved',
-            'closed' => 'Closed',
-        ][$status] ?? ucfirst(str_replace('_', ' ', $status));
+        return Ticket::statusLabel($status);
     }
 
     /**

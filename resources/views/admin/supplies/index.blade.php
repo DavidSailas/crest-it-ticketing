@@ -182,7 +182,7 @@
                     </h3>
                     <p class="text-xs text-gray-400 hidden sm:block">Click a category to filter the list</p>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="tile-strip grid grid-cols-2 sm:grid-cols-4 gap-3">
                     @foreach($summary['byCategory'] as $code => $row)
                         @php
                             $active = request('category') === $code;
@@ -235,14 +235,25 @@
             }
         @endphp
 
-        <form method="GET" action="{{ route('supplies.index') }}" data-live-filter class="bg-white shadow-sm rounded-2xl border border-gray-100 p-4 space-y-4">
-            <div class="relative">
+        <form method="GET" action="{{ route('supplies.index') }}" data-live-filter class="bg-white shadow-sm rounded-2xl border border-gray-100 p-4 space-y-4"
+              x-data="{ filters: {{ (count($chips) - (filled(request('search')) ? 1 : 0)) > 0 ? 'true' : 'false' }} }">
+            <div class="flex items-center gap-2">
+            <div class="relative min-w-0 flex-1">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by item name, brand, or model / part number..." autocomplete="off"
                        class="block w-full pl-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ filled(request('search')) ? 'filter-active' : '' }}">
             </div>
+                {{-- Phones: the dropdowns tuck away behind this button so the list stays in view. --}}
+                @php $activeFilters = count($chips) - (filled(request('search')) ? 1 : 0); @endphp
+                <button type="button" @click="filters = ! filters" :aria-expanded="filters" aria-controls="supply-filter-fields"
+                        class="btn btn-secondary shrink-0 sm:hidden" :class="filters ? 'border-green-700 bg-green-50 text-green-800' : ''">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12m-9 7.5h6" /></svg>
+                    Filters
+                    @if($activeFilters > 0)<span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-green-700 px-1.5 text-[11px] font-semibold text-white">{{ $activeFilters }}</span>@endif
+                </button>
+            </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div id="supply-filter-fields" class="hidden grid-cols-1 gap-3 sm:grid sm:grid-cols-3" :class="filters && '!grid'">
                 @foreach($filterFields as $f)
                     @php $isOn = (string) request($f['name'], '') !== '' && array_key_exists((string) request($f['name']), $f['options']); @endphp
                     <div class="min-w-0 filter-field">
@@ -278,9 +289,9 @@
 
         <div id="supply-results" data-live-list data-live-scroll class="space-y-6">
             {{-- Item + Stock always show; everything else folds in progressively so the table never scrolls sideways. --}}
-            <div class="bg-white shadow-sm rounded-2xl border border-gray-100 overflow-hidden">
+            <div class="md:bg-white md:shadow-sm md:rounded-2xl md:border md:border-gray-100 md:overflow-hidden">
                 @if($supplies->isEmpty())
-                    <div class="flex flex-col items-center justify-center text-center px-6 py-14">
+                    <div class="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white px-6 py-14 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                         @if($hasFilters)
                             <p class="text-gray-700 font-medium">No supplies match your filters</p>
                             <p class="text-gray-400 text-sm mt-1">Try a different term or clear the filters.</p>
@@ -294,7 +305,60 @@
                         @endif
                     </div>
                 @else
-                    <table class="w-full text-sm">
+                    {{-- Phones: one card per item --}}
+                    <div class="space-y-3 md:hidden">
+                        @foreach($supplies as $supply)
+                            @php
+                                $qtyColor = ['ok' => 'text-gray-900', 'low' => 'text-amber-700', 'critical' => 'text-orange-600', 'out' => 'text-rose-600'][$supply->stock_status];
+                                $reserved = $supply->reserved_quantity;
+                                $canRequest = ! $canManage && $supply->available_quantity > 0 && $supply->location === $user->location;
+                                $detail = collect([$supply->brand, $supply->model_no])->filter()->implode(' · ');
+                            @endphp
+                            <x-m-card :href="route('supplies.show', $supply)" :label="'View '.$supply->name">
+                                <x-slot name="lead"><x-supply-image :supply="$supply" size="md" /></x-slot>
+                                <x-slot name="title">{{ $supply->name }}</x-slot>
+                                <x-slot name="sub">
+                                    <span class="font-mono">{{ $supply->code }}</span>@if($detail) · {{ $detail }}@endif
+                                    <span class="mt-1.5 block"><x-supply-status-badge :status="$supply->stock_status" /></span>
+                                </x-slot>
+
+                                <x-m-meta label="In stock">
+                                    <span class="font-semibold tabular-nums {{ $qtyColor }}">{{ number_format($supply->quantity) }}</span>
+                                    <span class="text-xs text-gray-400">{{ $supply->unit }}</span>
+                                    @if($reserved > 0)
+                                        <span class="block text-[11px] text-sky-600">{{ number_format($reserved) }} reserved</span>
+                                    @elseif($canManage)
+                                        <span class="block text-[11px] text-gray-400">Reorder at {{ number_format($supply->reorder_level) }}</span>
+                                    @endif
+                                </x-m-meta>
+                                <x-m-meta label="Branch">{{ $supply->branch_name ?? '—' }}</x-m-meta>
+                                <x-m-meta label="Category" wide>{{ $supply->category_label }}</x-m-meta>
+
+                                <x-slot name="actions">
+                                    <a href="{{ route('supplies.show', $supply) }}" class="btn btn-secondary btn-sm flex-1">View</a>
+                                    @if($canManage)
+                                        <a href="{{ route('supplies.edit', $supply) }}" class="btn btn-soft btn-sm flex-1">Edit</a>
+                                    @elseif($canRequest)
+                                        <a href="{{ route('supplies.show', [$supply, 'request' => 1]) }}" class="btn btn-primary btn-sm flex-1">Request</a>
+                                    @endif
+                                    @if($isAdmin)
+                                        <x-confirm-action-modal
+                                            id="delete-supply-m-{{ $supply->id }}"
+                                            action="{{ route('admin.supplies.destroy', $supply) }}"
+                                            title="Delete this item?"
+                                            message="Remove {{ $supply->name }} ({{ $supply->code }}) and its stock history? This can't be undone."
+                                            confirm-label="Delete Item"
+                                            trigger-label="Delete"
+                                            trigger-class="btn btn-danger btn-sm flex-1"
+                                        />
+                                    @endif
+                                </x-slot>
+                            </x-m-card>
+                        @endforeach
+                    </div>
+
+                    {{-- Tablets and up: the table --}}
+                    <table class="hidden w-full text-sm md:table">
                         <thead>
                             <tr class="asset-thead border-b border-gray-200">
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Item</th>
@@ -317,9 +381,10 @@
                                 <tr class="asset-row">
                                     <td class="px-4 py-3.5 max-w-0 w-full align-top">
                                         <div class="flex items-start gap-3">
-                                            <span class="type-chip hidden sm:flex" style="width:2.25rem;height:2.25rem;border-radius:.625rem;">
-                                                <x-supply-icon :category="$supply->category" class="w-4 h-4" />
-                                            </span>
+                                            {{-- The photo helps people pick the right item, so it shows on phones too. --}}
+                                            <a href="{{ route('supplies.show', $supply) }}" tabindex="-1" aria-hidden="true" class="shrink-0">
+                                                <x-supply-image :supply="$supply" size="sm" />
+                                            </a>
                                             <div class="min-w-0">
                                                 <a href="{{ route('supplies.show', $supply) }}" class="font-medium text-gray-800 hover:text-green-800 truncate block">{{ $supply->name }}</a>
                                                 <p class="text-xs text-gray-400 mt-0.5 truncate">

@@ -312,21 +312,7 @@ class SupplyTest extends TestCase
             ->assertSee('Almost gone');
     }
 
-    /* ---------- Brother / Epson only ---------- */
-
-    public function test_ink_and_toner_must_be_brother_or_epson(): void
-    {
-        $admin = $this->userWithRole('admin');
-        $ink = fn (array $o = []) => $this->payload($o + ['name' => 'Toner', 'category' => 'ink_toner', 'model_no' => 'X1']);
-
-        $this->actingAs($admin)->post(route('supplies.store'), $ink(['brand' => 'HP']))->assertSessionHasErrors('brand');
-        $this->actingAs($admin)->post(route('supplies.store'), $ink(['brand' => null]))->assertSessionHasErrors('brand');
-        $this->assertDatabaseCount('supplies', 0);
-
-        $this->actingAs($admin)->post(route('supplies.store'), $ink(['brand' => 'Epson']))->assertSessionHasNoErrors();
-        $this->actingAs($admin)->post(route('supplies.store'), $ink(['name' => 'Toner B', 'brand' => 'Brother']))->assertSessionHasNoErrors();
-        $this->assertDatabaseCount('supplies', 2);
-    }
+    /* ---------- Brands (see also SupplyBrandTest) ---------- */
 
     public function test_other_categories_can_use_any_brand_or_none(): void
     {

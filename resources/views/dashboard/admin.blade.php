@@ -62,13 +62,13 @@
         {{-- Team --}}
         <div>
             <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Team</h3>
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-3 gap-2.5 sm:gap-4">
                 @foreach([
                     ['label' => 'Total Users', 'value' => $stats['users'], 'icon' => 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-4-4'],
                     ['label' => 'IT Support', 'value' => $stats['it_support'], 'icon' => 'M9.5 14.5L4 9l5.5-5.5M14.5 3.5L20 9l-5.5 5.5'],
                     ['label' => 'Staff', 'value' => $stats['staff'], 'icon' => 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
                 ] as $stat)
-                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-3.5">
+                    <div class="flex min-w-0 flex-col items-start gap-2.5 rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm sm:flex-row sm:items-center sm:gap-3.5 sm:p-5">
                         <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background-color:#e7f3ec;">
                             <svg class="w-5 h-5" style="color:#1a6b3c;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $stat['icon'] }}" /></svg>
                         </div>
@@ -91,9 +91,9 @@
                 </a>
             </div>
 
-            <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+            <div class="md:bg-white md:shadow-sm md:rounded-xl md:border md:border-gray-100 md:overflow-hidden">
                 @if($recentTickets->isEmpty())
-                    <div class="flex flex-col items-center justify-center text-center px-6 py-14">
+                    <div class="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white px-6 py-14 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                         <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h.01M15 12h.01M9 16h.01M15 16h.01M4 7h16a1 1 0 011 1v2a2 2 0 000 4v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2a2 2 0 000-4V8a1 1 0 011-1z" /></svg>
                         </div>
@@ -101,7 +101,14 @@
                         <p class="text-gray-400 text-sm mt-1">Once employees start submitting requests, they'll show up here.</p>
                     </div>
                 @else
-                    <table class="w-full text-sm">
+                    {{-- Phones: one card per ticket --}}
+                    <div class="space-y-3 md:hidden">
+                        @foreach($recentTickets as $ticket)
+                            <x-m-ticket-card :ticket="$ticket" :requester="true" :assignee="true" />
+                        @endforeach
+                    </div>
+
+                    <table class="hidden w-full text-sm md:table">
                         <thead>
                             <tr class="bg-gray-50/80 border-b border-gray-200">
                                 <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Ticket</th>

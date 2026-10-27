@@ -79,13 +79,18 @@
                 @endforeach
             </div>
 
-            <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+            <div class="md:bg-white md:shadow-sm md:rounded-xl md:border md:border-gray-200 md:overflow-hidden">
                 @if($submittedTickets->isEmpty())
-                    <div class="px-6 py-12 text-center">
+                    <div class="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                         <p class="text-sm text-gray-400">This user hasn't submitted any tickets yet.</p>
                     </div>
                 @else
-                    <table class="w-full text-sm">
+                    <div class="space-y-3 md:hidden">
+                        @foreach($submittedTickets as $ticket)
+                            <x-m-ticket-card :ticket="$ticket" :created="true" />
+                        @endforeach
+                    </div>
+                    <table class="hidden w-full text-sm md:table">
                         <thead>
                             <tr class="bg-gray-50/80 border-b border-gray-200">
                                 <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket</th>
@@ -137,13 +142,18 @@
                     @endforeach
                 </div>
 
-                <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+                <div class="md:bg-white md:shadow-sm md:rounded-xl md:border md:border-gray-200 md:overflow-hidden">
                     @if($handledTickets->isEmpty())
-                        <div class="px-6 py-12 text-center">
+                        <div class="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                             <p class="text-sm text-gray-400">Nothing assigned to this agent yet.</p>
                         </div>
                     @else
-                        <table class="w-full text-sm">
+                        <div class="space-y-3 md:hidden">
+                            @foreach($handledTickets as $ticket)
+                                <x-m-ticket-card :ticket="$ticket" :requester="true" :created="true" />
+                            @endforeach
+                        </div>
+                        <table class="hidden w-full text-sm md:table">
                             <thead>
                                 <tr class="bg-gray-50/80 border-b border-gray-200">
                                     <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket</th>
@@ -177,14 +187,27 @@
         {{-- Assigned assets --}}
         <div>
             <h3 class="text-base font-semibold text-gray-800 mb-3">Assigned Assets</h3>
-            <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+            <div class="md:bg-white md:shadow-sm md:rounded-xl md:border md:border-gray-200 md:overflow-hidden">
                 @if($assets->isEmpty())
-                    <div class="flex flex-col items-center justify-center text-center px-6 py-12">
+                    <div class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-12 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                         <svg class="w-9 h-9 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" /></svg>
                         <p class="text-sm text-gray-400">No assets issued to this user.</p>
                     </div>
                 @else
-                    <table class="w-full text-sm">
+                    <div class="space-y-3 md:hidden">
+                        @foreach($assets as $asset)
+                            <x-m-card>
+                                <x-slot name="title">{{ $asset->device_name }}</x-slot>
+                                <x-slot name="sub">
+                                    <span class="inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold" style="background:#ecf7f0;color:#14532d;">{{ $asset->asset_tag }}</span>
+                                    <span class="mt-1.5 block"><x-asset-status-badge :status="$asset->status" /></span>
+                                </x-slot>
+                                <x-m-meta label="Type">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</x-m-meta>
+                                <x-m-meta label="Serial"><span class="font-mono text-xs">{{ $asset->serial_number ?? '—' }}</span></x-m-meta>
+                            </x-m-card>
+                        @endforeach
+                    </div>
+                    <table class="hidden w-full text-sm md:table">
                         <thead>
                             <tr class="bg-gray-50/80 border-b border-gray-200">
                                 <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Asset Tag</th>

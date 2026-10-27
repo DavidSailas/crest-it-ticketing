@@ -167,7 +167,7 @@
                                     title="{{ !$ticket->assigned_to ? 'Assign this ticket to an IT agent first' : '' }}">
                                     @foreach(['open','in_progress','pending','resolved','closed'] as $status)
                                         @php $locked = $status === 'closed' && ! $ticket->canBeClosed(); @endphp
-                                        <option value="{{ $status }}" @selected($ticket->status === $status) @disabled($locked)>{{ str_replace('_',' ', ucfirst($status)) }}{{ $locked ? ' (mark as Resolved first)' : '' }}</option>
+                                        <option value="{{ $status }}" @selected($ticket->status === $status) @disabled($locked)>{{ \App\Models\Ticket::statusLabel($status) }}{{ $locked ? ' (mark as Resolved first)' : '' }}</option>
                                     @endforeach
                                 </select>
                                 <button

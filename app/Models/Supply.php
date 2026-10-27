@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Support\SupplyImage;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * An IT supply item — a consumable counted by quantity (ink, batteries, mice,
@@ -25,7 +27,7 @@ class Supply extends Model
         'keyboard' => 'Keyboard',
         'usb_storage' => 'USB & Storage',
         'cables' => 'Cables & Adapters',
-        'headsets' => 'Headsets & Webcams',
+        'telephone' => 'Telephone & Handsets',   // desk phones, spare handsets, handset cords, phone line cords
         'other' => 'Other',
     ];
 
@@ -52,8 +54,26 @@ class Supply extends Model
         'out' => 'Nothing left in stock',
     ];
 
-    /** The only printers used in the company — ink & toner is stocked for these brands only. */
+    /**
+     * The company's own printers. These are always offered first for ink & toner.
+     * Another brand is still allowed (a printer that isn't on the list yet, or a third-party
+     * cartridge) — it just has to say which printer it is for. See SupplyController::detailRules().
+     */
     public const PRINTER_BRANDS = ['Brother', 'Epson'];
+
+    /**
+     * Starter suggestions for the Brand picker. Every brand already in stock is added to these,
+     * and anything new is typed once under "Other brand…" and is a one-click choice from then on.
+     */
+    public const COMMON_BRANDS = [
+        'ink_toner' => self::PRINTER_BRANDS,
+        'batteries' => ['Duracell', 'Energizer'],
+        'mouse' => ['Logitech', 'A4Tech'],
+        'keyboard' => ['Logitech', 'A4Tech'],
+        'usb_storage' => ['Kingston', 'SanDisk'],
+        'cables' => ['Ugreen', 'Belkin'],
+        'telephone' => ['Panasonic', 'Yealink', 'Grandstream'],
+    ];
 
     /** What each kind of stock movement is called on screen. */
     public const MOVEMENT_LABELS = [
@@ -74,6 +94,7 @@ class Supply extends Model
         'critical_level',
         'location',
         'notes',
+        'image_path',
     ];
 
     protected function casts(): array
@@ -101,6 +122,21 @@ class Supply extends Model
     }
 
     /* ---------- Display helpers ---------- */
+
+    /** The full-size photo, or null when the item has none. */
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image_path ? Storage::disk(SupplyImage::DISK)->url($this->image_path) : null;
+    }
+
+    /** The small version for lists and dialogs, or null when the item has no photo. */
+    public function getThumbUrlAttribute(): ?string
+    {
+        return $this->image_path
+            ? Storage::disk(SupplyImage::DISK)->url(SupplyImage::thumbPath($this->image_path))
+            : null;
+    }
+
 
     /** Stable, human-friendly item code, e.g. SUP-0042. */
     public function getCodeAttribute(): string
@@ -200,6 +236,107 @@ class Supply extends Model
     public static function needingRestockCount(): int
     {
         return static::restockAlert()['total'];
+    }
+
+    /* ---------- Brands ---------- */
+
+    /** Letters and digits only, lower-case — so "A4 Tech", "a4-tech" and "A4Tech" are the same brand. */
+    private static function brandKey(string $brand): string
+    {
+        return (string) preg_replace('/[^\p{L}\p{N}]+/u', '', mb_strtolower($brand));
+    }
+
+    /** Is this one of the company's own printer brands (Brother, Epson)? */
+    public static function isCompanyPrinterBrand(?string $brand): bool
+    {
+        if (blank($brand)) {
+            return false;
+        }
+
+        $key = self::brandKey($brand);
+
+        foreach (self::PRINTER_BRANDS as $printerBrand) {
+            if (self::brandKey($printerBrand) === $key) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Every brand we already know: the starter lists first, then whatever is in stock
+     * (most used first). One entry per brand, whatever the capitalisation or spacing.
+     *
+     * @return list<string>
+     */
+    public static function knownBrands(): array
+    {
+        $inStock = static::query()->toBase()
+            ->whereNotNull('brand')->where('brand', '!=', '')
+            ->groupBy('brand')
+            ->orderByRaw('COUNT(*) DESC')->orderBy('brand')
+            ->pluck('brand');
+
+        return collect(self::COMMON_BRANDS)->flatten()
+            ->merge($inStock)
+            ->unique(fn ($brand) => self::brandKey($brand))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Tidy a typed brand so one brand never turns into several: trims and collapses spaces, and
+     * reuses the spelling we already have ("logitech" and "A4 Tech" become "Logitech" and "A4Tech").
+     * Returns null when nothing was entered.
+     */
+    public static function normalizeBrand(?string $brand): ?string
+    {
+        $brand = trim((string) preg_replace('/\s+/u', ' ', (string) $brand));
+
+        if ($brand === '') {
+            return null;
+        }
+
+        $key = self::brandKey($brand);
+
+        if ($key !== '') {
+            foreach (self::knownBrands() as $known) {
+                if (self::brandKey($known) === $key) {
+                    return $known;
+                }
+            }
+        }
+
+        return $brand;
+    }
+
+    /**
+     * What the Brand picker offers for each category: the starter brands, then any other brand
+     * already used in that category.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function brandOptions(): array
+    {
+        $used = static::query()->toBase()
+            ->whereNotNull('brand')->where('brand', '!=', '')
+            ->groupBy('category', 'brand')
+            ->orderBy('brand')
+            ->get(['category', 'brand'])
+            ->groupBy('category');
+
+        $options = [];
+
+        foreach (array_keys(self::CATEGORIES) as $category) {
+            $options[$category] = collect(self::COMMON_BRANDS[$category] ?? [])
+                ->merge(($used->get($category) ?? collect())->pluck('brand'))
+                ->unique(fn ($brand) => self::brandKey($brand))
+                ->values()
+                ->all();
+        }
+
+        return $options;
     }
 
     /* ---------- Stock changes ---------- */

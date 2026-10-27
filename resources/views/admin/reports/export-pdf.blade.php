@@ -328,7 +328,7 @@
                     <th style="width:17%;">Share of workload</th>
                     <th class="num" style="width:7%;">Open</th>
                     <th class="num" style="width:9%;">In progress</th>
-                    <th class="num" style="width:8%;">Pending</th>
+                    <th class="num" style="width:9%;">Pending User</th>
                     <th class="num" style="width:8%;">Resolved</th>
                     <th class="num" style="width:7%;">Closed</th>
                     <th class="num" style="width:13%;">Avg. resolution</th>

@@ -1,14 +1,7 @@
 @props(['status'])
 
 @php
-    $labels = [
-        'open' => 'Open',
-        'in_progress' => 'In Progress',
-        'pending' => 'Pending',
-        'resolved' => 'Resolved',
-        'closed' => 'Closed',
-        'cancelled' => 'Cancelled',
-    ];
+    $labels = \App\Models\Ticket::STATUS_LABELS;
     $styles = [
         'open' => 'bg-amber-100 text-amber-700',
         'in_progress' => 'bg-blue-100 text-blue-700',

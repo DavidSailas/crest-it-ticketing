@@ -169,7 +169,7 @@ class ReportController extends Controller
         return [
             'key' => 'engineers',
             'title' => 'IT Engineer report',
-            'headers' => ['IT Engineer', 'Department', 'Tickets', 'Open', 'In progress', 'Pending', 'Resolved', 'Closed', 'Avg. resolution'],
+            'headers' => ['IT Engineer', 'Department', 'Tickets', 'Open', 'In progress', 'Pending User', 'Resolved', 'Closed', 'Avg. resolution'],
             'numeric' => [2, 3, 4, 5, 6, 7, 8],
             'totalCols' => [2, 3, 4, 5, 6, 7],
             'rows' => $rows->map(fn ($r) => array_values($r))->all(),
@@ -208,7 +208,7 @@ class ReportController extends Controller
             'numeric' => [3, 4, 5],
             'totalCols' => [3, 4, 5],
             'rows' => $rows->map(fn ($r) => array_values($r))->all(),
-            'note' => 'Tickets submitted by each staff member in the period · Still open = Open, In Progress or Pending',
+            'note' => 'Tickets submitted by each staff member in the period · Still open = Open, In Progress or Pending User',
         ];
     }
 
@@ -295,7 +295,7 @@ class ReportController extends Controller
      *
      * Handled = tickets assigned to that agent that were resolved/closed in
      * the period (resolved_at). "Working now" is their live workload: tickets
-     * still In Progress or Pending, regardless of period.
+     * still In Progress or Pending User, regardless of period.
      *
      * Query params: act (period), act_from/act_to (custom), act_agent (id|all).
      */
@@ -644,7 +644,7 @@ class ReportController extends Controller
         return [
             'totalTickets' => $totalTickets,
             'byStatus' => $this->labelPieData($byStatus, [
-                'open' => 'Open', 'in_progress' => 'In Progress', 'pending' => 'Pending',
+                'open' => 'Open', 'in_progress' => 'In Progress', 'pending' => 'Pending User',
                 'resolved' => 'Resolved', 'closed' => 'Closed', 'cancelled' => 'Cancelled',
             ], [
                 'open' => '#3b82f6', 'in_progress' => '#6366f1', 'pending' => '#f59e0b',

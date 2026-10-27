@@ -157,14 +157,29 @@
             {{-- Details --}}
             <div class="lg:col-span-2 lg:order-1 bg-white shadow-sm rounded-2xl border border-gray-100 overflow-hidden self-start">
                 <div class="flex items-center gap-3 px-5 sm:px-6 py-4 border-b border-gray-100">
-                    <span class="flex items-center justify-center w-10 h-10 rounded-xl shrink-0" style="background:linear-gradient(135deg,#dff2e6,#c4e6d0);color:#1a6b3c;">
-                        <x-supply-icon :category="$supply->category" class="w-5 h-5" />
-                    </span>
+                    <x-supply-image :supply="$supply" size="md" />
                     <div class="min-w-0">
                         <p class="text-sm font-semibold text-gray-800 truncate">{{ $supply->name }}</p>
                         <p class="text-xs text-gray-400"><span class="font-mono">{{ $supply->code }}</span> · {{ $supply->category_label }}</p>
                     </div>
                 </div>
+
+                {{-- Big photo: tap to enlarge. Without one, IT Support gets a nudge to add it. --}}
+                @if($supply->image_url)
+                    <button type="button" x-data @click="$dispatch('open-modal', 'supply-photo')" aria-label="View a larger photo of {{ $supply->name }}"
+                            class="group relative block w-full cursor-zoom-in border-b border-gray-100 bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-700">
+                        <img src="{{ $supply->image_url }}" alt="{{ $supply->name }}" class="mx-auto max-h-72 w-full object-contain p-4">
+                        <span class="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium text-gray-600 shadow-sm ring-1 ring-gray-200 transition group-hover:text-green-800">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" /></svg>
+                            Enlarge
+                        </span>
+                    </button>
+                @elseif($canManage)
+                    <a href="{{ route('supplies.edit', $supply) }}" class="flex items-center justify-center gap-2 border-b border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500 transition hover:bg-green-50/60 hover:text-green-800">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
+                        Add a photo so staff can recognise this item
+                    </a>
+                @endif
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 p-5 sm:p-6 text-sm">
                     @foreach([
                         'Brand' => $supply->brand,
@@ -205,7 +220,29 @@
                     <p class="text-gray-400 text-sm mt-1">Every time stock goes in or out, it shows up here.</p>
                 </div>
             @else
-                <table class="w-full text-sm">
+                {{-- Phones: a compact timeline instead of a four-column table --}}
+                <ul class="divide-y divide-gray-100 md:hidden">
+                    @foreach($movements as $m)
+                        <li class="flex items-start gap-3 px-4 py-3.5">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $moveStyle[$m->type] ?? 'bg-slate-100 text-slate-600' }}">{{ $m->type_label }}</span>
+                                    <span class="text-xs text-gray-400">{{ $m->created_at->format('M j, Y · g:i A') }}</span>
+                                </div>
+                                @if(filled($m->note))
+                                    <p class="mt-1 break-words text-sm text-gray-600">{{ $m->note }}</p>
+                                @endif
+                                <p class="mt-0.5 text-xs text-gray-400">by {{ $m->user?->name ?? 'a removed user' }}</p>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <p class="text-base font-semibold tabular-nums {{ $m->change > 0 ? 'text-emerald-600' : ($m->change < 0 ? 'text-rose-600' : 'text-gray-500') }}">{{ $m->change > 0 ? '+' : '' }}{{ number_format($m->change) }}</p>
+                                <p class="text-[11px] text-gray-400">now {{ number_format($m->balance_after) }}</p>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+
+                <table class="hidden w-full text-sm md:table">
                     <thead>
                         <tr class="border-b border-gray-200 bg-gray-50/80">
                             <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">When</th>
@@ -329,15 +366,35 @@
         </x-modal>
     @endif
 
+    {{-- Enlarged photo --}}
+    @if($supply->image_url)
+        <x-modal name="supply-photo" maxWidth="2xl">
+            <div class="relative bg-white">
+                <img src="{{ $supply->image_url }}" alt="{{ $supply->name }}" class="mx-auto max-h-[80vh] w-full object-contain">
+                <button type="button" x-on:click="$dispatch('close')" aria-label="Close photo"
+                        class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-gray-600 shadow ring-1 ring-gray-200 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+        </x-modal>
+    @endif
+
     {{-- Request dialog (staff) --}}
     @if($mine && ! $myPending && $sameBranch && $available > 0)
         <x-modal name="request-supply" :show="$openRequest" maxWidth="md" focusable>
             <form method="POST" action="{{ route('supplies.request', $supply) }}" novalidate>
                 @csrf
 
-                <div class="px-6 pt-6 pb-2">
-                    <h2 class="text-lg font-semibold text-gray-900">Request this item</h2>
-                    <p class="text-sm text-gray-500 mt-0.5 truncate">{{ $supply->name }} · {{ number_format($available) }} {{ $supply->unit }} available</p>
+                <div class="flex items-start gap-4 px-6 pt-6 pb-2">
+                    <x-supply-image :supply="$supply" size="xl" />
+                    <div class="min-w-0">
+                        <h2 class="text-lg font-semibold text-gray-900">Request this item</h2>
+                        <p class="mt-0.5 text-sm font-medium text-gray-700">{{ $supply->name }}</p>
+                        <p class="text-xs text-gray-500">{{ number_format($available) }} {{ $supply->unit }} available</p>
+                        @if($supply->image_url)
+                            <p class="mt-1.5 text-xs text-gray-400">Check the photo — is this the one you need?</p>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="px-6 py-4 space-y-5">

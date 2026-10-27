@@ -85,7 +85,7 @@
                     <td>{{ $ticket->creator->name ?? '—' }}</td>
                     <td>{{ $ticket->assignee->name ?? '—' }}</td>
                     <td><span class="badge priority-{{ $ticket->priority }}">{{ ucfirst($ticket->priority) }}</span></td>
-                    <td><span class="badge status-{{ $ticket->status }}">{{ str_replace('_', ' ', ucfirst($ticket->status)) }}</span></td>
+                    <td><span class="badge status-{{ $ticket->status }}">{{ \App\Models\Ticket::statusLabel($ticket->status) }}</span></td>
                     <td>{{ $ticket->created_at->format('M j, Y g:i A') }}</td>
                     <td>{{ $ticket->resolved_at?->format('M j, Y g:i A') ?? '—' }}</td>
                     <td>{{ $ticket->closed_at?->format('M j, Y g:i A') ?? '—' }}</td>

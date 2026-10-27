@@ -7,7 +7,10 @@ use App\Models\ActivityLog;
 use App\Models\Branch;
 use App\Models\Supply;
 use App\Models\SupplyRequest;
+use App\Support\SupplyImage;
 use DomainException;
+use Illuminate\Support\Arr;
+use InvalidArgumentException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -75,6 +78,8 @@ class SupplyController extends Controller
 
     public function store(Request $request)
     {
+        $this->normalizeBrandInput($request);
+
         $data = $request->validate($this->detailRules($request) + [
             'quantity' => ['required', 'integer', 'min:0', 'max:1000000'],
         ], $this->messages());
@@ -85,21 +90,38 @@ class SupplyController extends Controller
                 ->withInput();
         }
 
-        $supply = DB::transaction(function () use ($data) {
-            $supply = Supply::create($data);
-
-            if ($supply->quantity > 0) {
-                $supply->movements()->create([
-                    'user_id' => auth()->id(),
-                    'type' => 'initial',
-                    'change' => $supply->quantity,
-                    'balance_after' => $supply->quantity,
-                    'note' => 'Opening stock',
-                ]);
+        // Process the photo first: a bad picture should stop the save, not leave a half-made item.
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            try {
+                $imagePath = SupplyImage::store($request->file('image'));
+            } catch (InvalidArgumentException $e) {
+                return back()->withErrors(['image' => $e->getMessage()])->withInput();
             }
+        }
 
-            return $supply;
-        });
+        $data = Arr::except($data, ['image', 'remove_image']) + ['image_path' => $imagePath];
+
+        try {
+            $supply = DB::transaction(function () use ($data) {
+                $supply = Supply::create($data);
+
+                if ($supply->quantity > 0) {
+                    $supply->movements()->create([
+                        'user_id' => auth()->id(),
+                        'type' => 'initial',
+                        'change' => $supply->quantity,
+                        'balance_after' => $supply->quantity,
+                        'note' => 'Opening stock',
+                    ]);
+                }
+
+                return $supply;
+            });
+        } catch (\Throwable $e) {
+            SupplyImage::delete($imagePath);   // don't leave an orphaned photo behind
+            throw $e;
+        }
 
         ActivityLog::record('supply_created', "Added supply {$supply->code} {$supply->name}", ['supply_id' => $supply->id]);
 
@@ -119,6 +141,8 @@ class SupplyController extends Controller
      */
     public function update(Request $request, Supply $supply)
     {
+        $this->normalizeBrandInput($request);
+
         $data = $request->validate($this->detailRules($request), $this->messages());
 
         if ($existing = $this->duplicateOf($data, $supply->id)) {
@@ -127,7 +151,29 @@ class SupplyController extends Controller
                 ->withInput();
         }
 
+        $newPath = null;
+        if ($request->hasFile('image')) {
+            try {
+                $newPath = SupplyImage::store($request->file('image'));
+            } catch (InvalidArgumentException $e) {
+                return back()->withErrors(['image' => $e->getMessage()])->withInput();
+            }
+        }
+
+        $oldPath = $supply->image_path;
+        $data = Arr::except($data, ['image', 'remove_image']);
+
+        if ($newPath) {
+            $data['image_path'] = $newPath;                       // replaced
+        } elseif ($request->boolean('remove_image')) {
+            $data['image_path'] = null;                           // removed
+        }
+
         $supply->update($data);
+
+        if (array_key_exists('image_path', $data) && $oldPath) {
+            SupplyImage::delete($oldPath);
+        }
 
         ActivityLog::record('supply_updated', "Updated supply {$supply->code} {$supply->name}", ['supply_id' => $supply->id]);
 
@@ -185,7 +231,9 @@ class SupplyController extends Controller
 
         $name = $supply->name;
         $code = $supply->code;
+        $imagePath = $supply->image_path;
         $supply->delete();
+        SupplyImage::delete($imagePath);
 
         ActivityLog::record('supply_deleted', "Deleted supply {$code} {$name}");
 
@@ -199,22 +247,38 @@ class SupplyController extends Controller
     /** Validation shared by create and edit (everything except the quantity). */
     private function detailRules(Request $request): array
     {
-        // Ink & toner is only bought for the company's printers: Brother and Epson.
+        // Ink & toner always needs a brand. Brother and Epson are the company's printers, but another
+        // brand is allowed (a new printer, a third-party cartridge) — it just has to say which printer
+        // it is for, so nobody has to enter a wrong brand to get the item recorded.
         $isInk = $request->input('category') === 'ink_toner';
+        $brand = $request->input('brand');
+        $needsPrinterNote = $isInk && is_string($brand) && filled($brand) && ! Supply::isCompanyPrinterBrand($brand);
 
         return [
             'name' => ['required', 'string', 'max:150'],
             'category' => ['required', Rule::in(array_keys(Supply::CATEGORIES))],
-            'brand' => $isInk
-                ? ['required', 'string', Rule::in(Supply::PRINTER_BRANDS)]
-                : ['nullable', 'string', 'max:100'],
+            'brand' => [$isInk ? 'required' : 'nullable', 'string', 'max:100'],
             'model_no' => ['nullable', 'string', 'max:100'],
             'unit' => ['required', Rule::in(Supply::UNITS)],
             'reorder_level' => ['required', 'integer', 'min:0', 'max:1000000'],
             'critical_level' => ['required', 'integer', 'min:0', 'max:1000000', 'lte:reorder_level'],
             'location' => ['required', Rule::in(array_keys(Branch::options()))],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'notes' => [$needsPrinterNote ? 'required' : 'nullable', 'string', 'max:1000'],
+            // The browser shrinks big photos first; this is the safety net.
+            'image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'remove_image' => ['nullable', 'boolean'],
         ];
+    }
+
+    /** Tidy the typed brand (spacing, capitalisation) so "logitech" and "Logitech" never become two brands. */
+    private function normalizeBrandInput(Request $request): void
+    {
+        $brand = $request->input('brand');
+
+        // Anything that isn't text is left alone, so the 'string' rule rejects it.
+        if ($brand === null || is_string($brand)) {
+            $request->merge(['brand' => Supply::normalizeBrand($brand)]);
+        }
     }
 
     private function messages(): array
@@ -229,10 +293,15 @@ class SupplyController extends Controller
             'critical_level.required' => 'Set a critical level (use 0 for no separate critical warning).',
             'critical_level.integer' => 'Critical level must be a whole number.',
             'critical_level.lte' => "The critical level can't be higher than the reorder level — it's the more urgent warning.",
-            'brand.required' => 'Pick Brother or Epson — ink & toner is only stocked for those printers.',
-            'brand.in' => 'Ink & toner is only stocked for Brother and Epson printers.',
+            'brand.required' => 'Choose a brand — or pick "Other brand…" and type it.',
+            'brand.max' => 'The brand name is too long (100 characters at most).',
+            'notes.required' => 'Say which printer this is for. Brother and Epson are the company printers, so other ink & toner brands need a short note (e.g. "For the Accounting HP LaserJet").',
             'quantity.required' => 'Enter the quantity on hand (0 is fine).',
             'quantity.integer' => 'Quantity must be a whole number.',
+            'image.mimes' => 'Use a JPG, PNG or WebP photo.',
+            'image.max' => 'That photo is over 8 MB. Try a smaller one.',
+            'image.uploaded' => "The photo couldn't be uploaded — it may be too large. Try a smaller one.",
+            'image.file' => 'Please choose a photo file.',
             'location.required' => 'Choose the branch this stock is kept in.',
             'location.in' => 'Choose one of the listed branches.',
         ];

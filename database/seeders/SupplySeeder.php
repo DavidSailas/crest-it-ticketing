@@ -35,7 +35,8 @@ class SupplySeeder extends Seeder
             ['USB Keyboard', 'keyboard', 'Logitech', 'K120', 'pcs', 9, 3, 1],
             ['USB Flash Drive 32GB', 'usb_storage', 'Kingston', 'DataTraveler', 'pcs', 15, 5, 2],
             ['HDMI Cable 1.8m', 'cables', null, null, 'pcs', 7, 3, 1],
-            ['USB Headset', 'headsets', 'Logitech', 'H111', 'pcs', 4, 2, 1],
+            ['Telephone Handset', 'telephone', 'Panasonic', null, 'pcs', 4, 2, 1],
+            ['Telephone Line Cord (RJ11)', 'telephone', null, null, 'pcs', 12, 4, 2],
         ];
 
         foreach ($items as [$name, $category, $brand, $model, $unit, $quantity, $reorder, $critical]) {

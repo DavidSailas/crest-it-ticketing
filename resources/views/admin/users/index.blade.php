@@ -114,14 +114,24 @@
         <p class="text-xs text-gray-400 mb-3">CSV or Excel (.xlsx) import expects columns: <span class="font-mono">First Name, Last Name, Username, Email, Department, Position, Role, Branch, VIP</span> (Role: staff / it_support / admin. Branch: Cebu / Manila / Cagayan de Oro / Davao, or CEB / MNL / CDO / DVO. Department and Position must each match an existing name exactly). New accounts get a random temporary password.</p>
 
         {{-- Search + filters --}}
-        <form method="GET" action="{{ route('admin.users.index') }}" data-live-filter class="bg-white rounded-xl border border-gray-200 shadow-sm p-3.5 mb-5 flex flex-col lg:flex-row gap-3">
+        <form method="GET" action="{{ route('admin.users.index') }}" data-live-filter class="bg-white rounded-xl border border-gray-200 shadow-sm p-3.5 mb-5 flex flex-col lg:flex-row gap-3"
+              x-data="{ filters: {{ count($filters) ? 'true' : 'false' }} }">
             <input type="hidden" name="tab" value="{{ $tab }}">
-            <div class="relative flex-1">
+            <div class="flex flex-1 items-center gap-2">
+            <div class="relative min-w-0 flex-1">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
                 <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, username or email" autocomplete="off"
                        class="w-full rounded-lg border-gray-300 text-sm pl-9 focus:border-green-700 focus:ring-green-700">
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 lg:flex gap-3">
+                {{-- Phones: the dropdowns tuck away behind this button so the list stays in view. --}}
+                <button type="button" @click="filters = ! filters" :aria-expanded="filters" aria-controls="user-filter-fields"
+                        class="btn btn-secondary shrink-0 sm:hidden" :class="filters ? 'border-green-700 bg-green-50 text-green-800' : ''">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12m-9 7.5h6" /></svg>
+                    Filters
+                    @if(count($filters) > 0)<span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-green-700 px-1.5 text-[11px] font-semibold text-white">{{ count($filters) }}</span>@endif
+                </button>
+            </div>
+            <div id="user-filter-fields" class="hidden grid-cols-1 gap-3 sm:grid sm:grid-cols-3 lg:flex" :class="filters && 'max-sm:!grid'">
                 <select name="branch" aria-label="Filter by branch office" class="rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 lg:w-40">
                     <option value="">All branches</option>
                     @foreach($branches as $code => $label)
@@ -143,7 +153,7 @@
             <div class="flex gap-2 shrink-0">
                 <a href="{{ route('admin.users.index', ['tab' => $tab]) }}" data-live-clear
                    @if($search === '' && ! count($filters)) style="display:none" @endif
-                   class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">Clear</a>
+                   class="btn btn-secondary btn-sm">Clear</a>
             </div>
         </form>
 
@@ -158,7 +168,80 @@
         {{-- Name carries the folded columns on narrow screens; wider screens progressively
              reveal Username/Email/Department/Position/Role/Branch. Nothing ever needs to
              scroll horizontally. --}}
-        <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        {{-- Phones: one card per person --}}
+        <div class="space-y-3 md:hidden">
+            @forelse($users as $user)
+                <x-m-card :href="route('admin.users.show', $user)" :label="'View '.$user->name" actions-class="grid grid-cols-2">
+                    <x-slot name="lead"><x-avatar :user="$user" size="md" /></x-slot>
+                    <x-slot name="title">{{ $user->name }}</x-slot>
+                    <x-slot name="sub">
+                        <span class="break-all">{{ $user->email }}</span>
+                        <span class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium capitalize text-gray-600">{{ str_replace('_', ' ', $user->role) }}</span>
+                            @if($user->isSuspended())
+                                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 ring-1 ring-inset ring-gray-200">Suspended</span>
+                            @else
+                                <span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-200">Active</span>
+                            @endif
+                            @if($user->is_vip)
+                                <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">★ VIP</span>
+                            @endif
+                        </span>
+                    </x-slot>
+
+                    <x-m-meta label="Department">{{ $user->department->name ?? '—' }}</x-m-meta>
+                    <x-m-meta label="Position">{{ $user->position->name ?? '—' }}</x-m-meta>
+                    <x-m-meta label="Branch">{{ $user->branch_name ?? '—' }}</x-m-meta>
+                    <x-m-meta label="Username">{{ $user->username ?? '—' }}</x-m-meta>
+
+                    <x-slot name="actions">
+                        <a href="{{ route('admin.users.show', $user) }}" class="btn btn-secondary btn-sm">View</a>
+                        <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-soft btn-sm">Edit</a>
+                        @if($user->id !== auth()->id())
+                            @if($user->isSuspended())
+                                <form method="POST" action="{{ route('admin.users.activate', $user) }}" class="contents">
+                                    @csrf @method('PATCH')
+                                    <button class="btn btn-soft btn-sm">Activate</button>
+                                </form>
+                            @else
+                                <x-confirm-action-modal
+                                    id="suspend-user-m-{{ $user->id }}"
+                                    action="{{ route('admin.users.suspend', $user) }}"
+                                    method="PATCH"
+                                    tone="warning"
+                                    title="Suspend this account?"
+                                    message="{{ $user->name }} won't be able to sign in until an admin reactivates the account. Nothing is deleted, and this can be reversed at any time."
+                                    confirm-label="Suspend"
+                                    confirm-class="bg-amber-500 hover:bg-amber-600"
+                                    trigger-label="Suspend"
+                                    trigger-class="btn btn-sm bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                />
+                            @endif
+                        @endif
+                        <x-confirm-action-modal
+                            id="delete-user-m-{{ $user->id }}"
+                            action="{{ route('admin.users.destroy', $user) }}"
+                            title="Delete this account?"
+                            message="Delete {{ $user->name }}? This permanently removes the account and cannot be undone."
+                            confirm-label="Delete Account"
+                            trigger-label="Delete"
+                            trigger-class="btn btn-danger btn-sm"
+                        />
+                    </x-slot>
+                </x-m-card>
+            @empty
+                <div class="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-400 shadow-sm">
+                    @if($search !== '')
+                        No users match "<span class="font-medium text-gray-600">{{ $search }}</span>" in this group.
+                    @else
+                        No users in this group yet.
+                    @endif
+                </div>
+            @endforelse
+        </div>
+
+        {{-- Tablets and up: the table --}}
+        <div class="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50/80 border-b border-gray-200">

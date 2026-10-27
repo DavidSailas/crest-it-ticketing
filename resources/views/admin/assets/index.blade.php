@@ -166,7 +166,7 @@
             $resetFacets = route('assets.index', array_filter(request()->only('search', 'department_id', 'location')));
 
             $typeIcons = [
-                'DT' => 'M9 3.75h6a1.5 1.5 0 011.5 1.5v13.5a1.5 1.5 0 01-1.5 1.5H9a1.5 1.5 0 01-1.5-1.5V5.25A1.5 1.5 0 019 3.75zM10.5 7.5h3M12 17.25h.008',
+                'DT' => 'M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z',
                 'LT' => 'M3 5.25A1.5 1.5 0 014.5 3.75h15A1.5 1.5 0 0121 5.25v9.75H3V5.25zM1.5 18h21l-1.5 1.5h-18L1.5 18z',
                 'MN' => 'M6 20.25h12m-7.5-3v3m3-3v3m-10.5-3h18a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5h-18a1.5 1.5 0 00-1.5 1.5v10.5a1.5 1.5 0 001.5 1.5z',
                 'PR' => 'M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z',
@@ -233,7 +233,7 @@
                 </h3>
                 <p class="text-xs text-gray-400 hidden sm:block">Click a type to filter the list</p>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
+            <div class="tile-strip grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
                 @foreach($summary['byType'] as $code => $row)
                     @php $active = request('type') === $code; @endphp
                     <a href="{{ $toggle('type', $code) }}" class="type-card {{ $active ? 'is-on' : '' }}">
@@ -285,16 +285,25 @@
             }
         @endphp
 
-        <form method="GET" action="{{ route('assets.index') }}" data-live-filter class="bg-white shadow-sm rounded-2xl border border-gray-100 p-4 space-y-4">
-            <div class="flex flex-col sm:flex-row gap-3">
-                <div class="flex-1 relative">
+        <form method="GET" action="{{ route('assets.index') }}" data-live-filter class="bg-white shadow-sm rounded-2xl border border-gray-100 p-4 space-y-4"
+              x-data="{ filters: {{ (count($chips) - (filled(request('search')) ? 1 : 0)) > 0 ? 'true' : 'false' }} }">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="flex-1 relative min-w-0">
                     <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by tag, device, serial number, or assigned user..." autocomplete="off"
                            class="block w-full pl-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ filled(request('search')) ? 'filter-active' : '' }}">
                 </div>
+                {{-- Phones: the dropdowns tuck away behind this button so the list stays in view. --}}
+                @php $activeFilters = count($chips) - (filled(request('search')) ? 1 : 0); @endphp
+                <button type="button" @click="filters = ! filters" :aria-expanded="filters" aria-controls="asset-filter-fields"
+                        class="btn btn-secondary shrink-0 sm:hidden" :class="filters ? 'border-green-700 bg-green-50 text-green-800' : ''">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12m-9 7.5h6" /></svg>
+                    Filters
+                    @if($activeFilters > 0)<span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-green-700 px-1.5 text-[11px] font-semibold text-white">{{ $activeFilters }}</span>@endif
+                </button>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div id="asset-filter-fields" class="hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-3 lg:grid-cols-5" :class="filters && '!grid'">
                 @foreach($filterFields as $f)
                     @php $isOn = (string) request($f['name'], '') !== '' && array_key_exists((string) request($f['name']), $f['options']); @endphp
                     <div class="min-w-0 filter-field">
@@ -331,9 +340,9 @@
         <div id="asset-results" data-live-list data-live-scroll class="space-y-6">
         {{-- Table: Asset Tag + Device always show; everything else folds progressively
              so the table never needs a horizontal scrollbar. --}}
-        <div class="bg-white shadow-sm rounded-2xl border border-gray-100 overflow-hidden">
+        <div class="md:bg-white md:shadow-sm md:rounded-2xl md:border md:border-gray-100 md:overflow-hidden">
             @if($assets->isEmpty())
-                <div class="flex flex-col items-center justify-center text-center px-6 py-14">
+                <div class="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white px-6 py-14 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                     @if($hasFilters)
                         <p class="text-gray-700 font-medium">No assets match your filters</p>
                         <p class="text-gray-400 text-sm mt-1">Try a different term or clear the filters.</p>
@@ -344,7 +353,65 @@
                     @endif
                 </div>
             @else
-                <table class="w-full text-sm">
+                {{-- Phones: one card per asset --}}
+                <div class="space-y-3 md:hidden">
+                    @foreach($assets as $asset)
+                        <x-m-card>
+                            <x-slot name="lead">
+                                <span class="flex h-11 w-11 items-center justify-center rounded-lg text-green-800" style="background:linear-gradient(135deg,#dff2e6,#c4e6d0);">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $typeIcons[$asset->type] ?? $typeIcons['DT'] }}" /></svg>
+                                </span>
+                            </x-slot>
+                            <x-slot name="title">{{ $asset->device_name }}</x-slot>
+                            <x-slot name="sub">
+                                <span class="inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold" style="background:#ecf7f0;color:#14532d;">{{ $asset->asset_tag }}</span>
+                                <span class="mt-1.5 block">
+                                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset {{ $statusStyles[$asset->status] ?? 'bg-gray-100 text-gray-500 ring-gray-200' }}">
+                                        <span class="h-1.5 w-1.5 rounded-full {{ $statusDots[$asset->status] ?? 'bg-slate-400' }}"></span>
+                                        {{ \App\Models\Asset::STATUSES[$asset->status] ?? ucfirst($asset->status) }}
+                                    </span>
+                                </span>
+                            </x-slot>
+
+                            <x-m-meta label="Type">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</x-m-meta>
+                            <x-m-meta label="Department">{{ $asset->department->name ?? '—' }}</x-m-meta>
+                            <x-m-meta label="Assigned to" wide>
+                                @if($asset->assignment === 'department')
+                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-200">Shared · {{ $asset->department?->name ?? 'Department' }}</span>
+                                @elseif($asset->user)
+                                    {{ $asset->user->name }}
+                                    @if($asset->assigned_date)<span class="text-xs text-gray-400"> · since {{ $asset->assigned_date->format('M j, Y') }}</span>@endif
+                                @else
+                                    <span class="text-gray-400">Unassigned</span>
+                                @endif
+                            </x-m-meta>
+                            @if($asset->serial_number)
+                                <x-m-meta label="Serial" wide><span class="font-mono text-xs text-gray-600">{{ $asset->serial_number }}</span></x-m-meta>
+                            @endif
+
+                            <x-slot name="actions">
+                                <button type="button" @click="viewingId = {{ $asset->id }}" class="btn btn-secondary btn-sm flex-1">View</button>
+                                @if($canEditAsset)
+                                    <a href="{{ route('assets.edit', $asset) }}" class="btn btn-soft btn-sm flex-1">Edit</a>
+                                @endif
+                                @if($isAdmin)
+                                    <x-confirm-action-modal
+                                        id="delete-asset-m-{{ $asset->id }}"
+                                        action="{{ route('admin.assets.destroy', $asset) }}"
+                                        title="Delete this asset?"
+                                        message="Remove {{ $asset->asset_tag }} ({{ $asset->device_name }}) from inventory? This can't be undone."
+                                        confirm-label="Delete Asset"
+                                        trigger-label="Delete"
+                                        trigger-class="btn btn-danger btn-sm flex-1"
+                                    />
+                                @endif
+                            </x-slot>
+                        </x-m-card>
+                    @endforeach
+                </div>
+
+                {{-- Tablets and up: the table --}}
+                <table class="hidden w-full text-sm md:table">
                     <thead>
                         <tr class="asset-thead border-b border-gray-200">
                             <th class="px-3 sm:px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Asset Tag</th>
@@ -423,9 +490,15 @@
                                 </td>
                             </tr>
 
+
+                        @endforeach
+                    </tbody>
+                </table>
+
+                {{-- Details dialogs live outside the table so they open from the phone cards too. --}}
+                @foreach($assets as $asset)
                             {{-- Read-only details modal — available to everyone --}}
-                            <tr x-show="viewingId === {{ $asset->id }}" x-cloak>
-                                <td colspan="7" class="px-0 py-0">
+                            <div x-show="viewingId === {{ $asset->id }}" x-cloak>
                                     <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 flex items-center justify-center p-4"
                                          x-show="viewingId === {{ $asset->id }}"
                                          x-transition.opacity.duration.150ms
@@ -564,12 +637,8 @@
                                             </div>
                                         </div>
                                     </div>
-                                </td>
-                            </tr>
-
-                        @endforeach
-                    </tbody>
-                </table>
+                            </div>
+                @endforeach
             @endif
         </div>
 

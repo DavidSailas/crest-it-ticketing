@@ -85,9 +85,9 @@
                 </a>
             </div>
 
-            <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+            <div class="md:bg-white md:shadow-sm md:rounded-xl md:border md:border-gray-100 md:overflow-hidden">
                 @if($recentTickets->isEmpty())
-                    <div class="flex flex-col items-center justify-center text-center px-6 py-14">
+                    <div class="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white px-6 py-14 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                         <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h.01M15 12h.01M9 16h.01M15 16h.01M4 7h16a1 1 0 011 1v2a2 2 0 000 4v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2a2 2 0 000-4V8a1 1 0 011-1z" />
@@ -103,7 +103,14 @@
                         </a>
                     </div>
                 @else
-                    <table class="w-full text-sm">
+                    {{-- Phones: one card per ticket --}}
+                    <div class="space-y-3 md:hidden">
+                        @foreach($recentTickets as $ticket)
+                            <x-m-ticket-card :ticket="$ticket" :dates="true" />
+                        @endforeach
+                    </div>
+
+                    <table class="hidden w-full text-sm md:table">
                         <thead>
                             <tr class="bg-gray-50/80 border-b border-gray-200">
                                 <th class="px-4 sm:px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ticket</th>

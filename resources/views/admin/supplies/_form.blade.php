@@ -6,12 +6,28 @@
     $isCreate = $mode === 'create';
     $field = 'block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700';
 
-    // Alpine state: the brand control depends on the category, and the critical level
-    // follows half the reorder level until someone sets it by hand.
+    // Alpine state (see supplyForm() below): the brand picker depends on the category, and the
+    // critical level follows half the reorder level until someone sets it by hand.
+    // Examples shown in the Model box, so each category suggests things that make sense for it.
+    $modelHints = [
+        'mouse' => 'e.g. M185', 'keyboard' => 'e.g. K120', 'usb_storage' => 'e.g. DataTraveler 32GB',
+        'telephone' => 'e.g. KX-TS500, T31P',
+    ];
     $startReorder = (int) old('reorder_level', $supply->reorder_level);
     $startCritical = (int) old('critical_level', $isCreate ? intdiv($startReorder, 2) : $supply->critical_level);
     // On edit the saved value is respected; on create it follows the reorder level until typed over.
     $criticalTouched = $isCreate ? old('critical_level') !== null : true;
+
+    $formConfig = [
+        'category' => (string) old('category', $supply->category),
+        'brand' => (string) old('brand', $supply->brand),
+        'reorder' => $startReorder,
+        'critical' => $startCritical,
+        'criticalTouched' => $criticalTouched,
+        'modelHints' => $modelHints,
+        'brandOptions' => \App\Models\Supply::brandOptions(),
+        'printerBrands' => \App\Models\Supply::PRINTER_BRANDS,
+    ];
 @endphp
 
 @if ($errors->any())
@@ -25,14 +41,149 @@
     </div>
 @endif
 
-<form method="POST" action="{{ $action }}" class="space-y-8" novalidate
-      x-data="{
-          category: @js((string) old('category', $supply->category)),
-          reorder: {{ $startReorder }},
-          critical: {{ $startCritical }},
-          criticalTouched: {{ $criticalTouched ? 'true' : 'false' }},
-          get isInk() { return this.category === 'ink_toner'; },
-      }">
+<script>
+    // State for the whole supply form: category, stock-warning levels and the brand picker.
+    //
+    // Brand picker: a dropdown of known brands for the category plus "Other brand…", which reveals a
+    // text box. The form submits ONE value (the hidden `brand` input); the server then tidies it
+    // (spacing, capitalisation) so "logitech" and "Logitech" can't become two different brands.
+    function supplyForm(cfg) {
+        const OTHER = '__other__';
+        const key = (text) => String(text || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+
+        return {
+            OTHER,
+            category: cfg.category,
+            reorder: cfg.reorder,
+            critical: cfg.critical,
+            criticalTouched: cfg.criticalTouched,
+            modelHints: cfg.modelHints,
+            choice: '',      // what the dropdown shows: '' (none), a listed brand, or OTHER
+            custom: '',      // the text typed under "Other brand…"
+
+            init() {
+                this.setBrand(cfg.brand);
+
+                // Switching category swaps the list of brands. A brand the person typed is kept; one they
+                // picked from the old list is cleared if the new category doesn't offer it.
+                this.$watch('category', () => {
+                    if (this.choice === OTHER) return;
+                    const match = this.options.find(o => key(o) === key(this.choice));
+                    this.choice = match || '';
+                });
+            },
+
+            get isInk() { return this.category === 'ink_toner'; },
+            get options() { return cfg.brandOptions[this.category] || []; },
+
+            /** The one value that is submitted. */
+            get brand() { return (this.choice === OTHER ? this.custom : this.choice).trim(); },
+
+            /** Ink & toner for a brand other than the company's printers: needs a note saying which printer. */
+            get offList() {
+                return this.isInk && this.brand !== '' && !cfg.printerBrands.some(p => key(p) === key(this.brand));
+            },
+
+            setBrand(value) {
+                value = (value || '').trim();
+                const match = this.options.find(o => key(o) === key(value));
+
+                if (value === '') { this.choice = ''; this.custom = ''; }
+                else if (match) { this.choice = match; this.custom = ''; }
+                else { this.choice = OTHER; this.custom = value; }
+            },
+        };
+    }
+
+    // Photo picker for the supply form. Phone photos are often 4–8 MB, so the picture is shrunk in the
+    // browser (max 1200px, JPEG) before it is uploaded; the server resizes again and strips metadata.
+    function supplyPhoto(existing) {
+        return {
+            preview: existing || null,
+            removed: false,
+            note: '',
+            error: '',
+            objectUrl: null,
+
+            async picked(event) {
+                const file = event.target.files[0];
+                if (file) await this.use(file);
+            },
+            async dropped(event) {
+                const file = event.dataTransfer.files[0];
+                if (file) await this.use(file);
+            },
+            async use(file) {
+                this.error = '';
+                this.note = '';
+
+                if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+                    this.error = 'Please choose a JPG, PNG or WebP photo.';
+                    this.$refs.file.value = '';
+                    return;
+                }
+
+                let out = file;
+                try { out = await this.shrink(file); } catch (e) { /* keep the original — the server copes */ }
+
+                if (out.size > 8 * 1024 * 1024) {
+                    this.error = 'That photo is over 8 MB. Please choose a smaller one.';
+                    this.$refs.file.value = '';
+                    return;
+                }
+
+                try {
+                    const transfer = new DataTransfer();
+                    transfer.items.add(out);
+                    this.$refs.file.files = transfer.files;
+                } catch (e) { /* very old browser: the originally chosen file is still attached */ }
+
+                if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+                this.objectUrl = URL.createObjectURL(out);
+                this.preview = this.objectUrl;
+                this.removed = false;
+                this.note = out === file ? file.name : file.name + ' — resized to ' + Math.max(1, Math.round(out.size / 1024)) + ' KB';
+            },
+            async shrink(file) {
+                const max = 1200;
+                let bitmap;
+                try { bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+                catch (e) { bitmap = await createImageBitmap(file); }
+
+                const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+                if (scale === 1 && file.type === 'image/jpeg' && file.size < 1.5 * 1024 * 1024) {
+                    if (bitmap.close) bitmap.close();
+                    return file;                                   // already small — leave it alone
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(bitmap.width * scale);
+                canvas.height = Math.round(bitmap.height * scale);
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#fff';                            // transparent PNGs land on white
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                if (bitmap.close) bitmap.close();
+
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.86));
+                if (!blob) return file;
+                return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+            },
+            clear() {
+                this.$refs.file.value = '';
+                if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+                this.objectUrl = null;
+                this.preview = null;
+                this.note = '';
+                this.error = '';
+                this.removed = !!existing;                         // tell the server to delete the saved photo
+            },
+        };
+    }
+</script>
+
+<form method="POST" action="{{ $action }}" enctype="multipart/form-data" class="space-y-8" novalidate
+      x-data="supplyForm(@js($formConfig))">
     @csrf
     @if($method !== 'POST') @method($method) @endif
 
@@ -67,24 +218,43 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-                <label for="brand" class="block text-sm font-medium text-gray-700 mb-1.5">
+                <label for="brand-choice" class="block text-sm font-medium text-gray-700 mb-1.5">
                     Brand <span class="font-normal text-gray-400" x-show="!isInk">(optional)</span>
                 </label>
 
-                {{-- Ink & toner: only the company's printer brands. Everything else: free text. --}}
-                <div x-show="isInk" x-cloak>
-                    <select id="brand" name="brand" :disabled="!isInk" class="{{ $field }}">
-                        <option value="">Choose Brother or Epson…</option>
-                        @foreach(\App\Models\Supply::PRINTER_BRANDS as $brand)
-                            <option value="{{ $brand }}" @selected(old('brand', $supply->brand) === $brand)>{{ $brand }}</option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-gray-400 mt-1">Ink &amp; toner is stocked for Brother and Epson printers only.</p>
+                {{-- The one value that is saved; the controls below just fill it in. --}}
+                <input type="hidden" name="brand" :value="brand" value="{{ old('brand', $supply->brand) }}">
+
+                <select id="brand-choice" x-model="choice"
+                        @change="if (choice === OTHER) $nextTick(() => $refs.customBrand.focus())"
+                        class="{{ $field }}">
+                    <option value="" x-text="isInk ? 'Choose a brand…' : 'No brand'">No brand</option>
+                    <template x-for="option in options" :key="option">
+                        <option :value="option" :selected="option === choice" x-text="option"></option>
+                    </template>
+                    <option :value="OTHER" :selected="choice === OTHER">Other brand…</option>
+                </select>
+
+                <div x-show="choice === OTHER" x-cloak class="mt-2">
+                    <label for="brand-custom" class="sr-only">Brand name</label>
+                    <input id="brand-custom" type="text" x-ref="customBrand" x-model="custom" maxlength="100" autocomplete="off"
+                           placeholder="Type the brand name" class="{{ $field }}">
                 </div>
-                <div x-show="!isInk">
-                    <input id="brand-text" type="text" name="brand" value="{{ old('brand', $supply->brand) }}" maxlength="100" :disabled="isInk"
-                           placeholder="e.g. Logitech, Kingston" class="{{ $field }}">
+
+                <p x-show="isInk && !offList" x-cloak class="text-xs text-gray-400 mt-1">
+                    Brother and Epson are the company's printers. Using something else? Choose "Other brand…".
+                </p>
+
+                {{-- Not an error: another brand is fine, it just needs to say which printer it is for. --}}
+                <div x-show="offList" x-cloak role="status"
+                     class="mt-2 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800">
+                    <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                    <p>
+                        <span class="font-semibold" x-text="brand"></span> isn't one of the company's printer brands (Brother, Epson).
+                        That's fine &mdash; just say which printer it's for in the <strong>Notes</strong> below.
+                    </p>
                 </div>
+
                 <x-input-error :messages="$errors->get('brand')" class="mt-1" />
             </div>
             <div>
@@ -93,9 +263,48 @@
                     <span class="font-normal text-gray-400">(optional)</span>
                 </label>
                 <input id="model_no" type="text" name="model_no" value="{{ old('model_no', $supply->model_no) }}" maxlength="100"
-                       :placeholder="isInk ? 'e.g. TN-2380, 003 / T00V100' : 'e.g. M185, CF230A'" class="{{ $field }}">
+                       :placeholder="isInk ? 'e.g. TN-2380, 003 / T00V100' : (modelHints[category] || 'e.g. model or part number')" class="{{ $field }}">
                 <x-input-error :messages="$errors->get('model_no')" class="mt-1" />
             </div>
+        </div>
+
+        {{-- Photo: lets staff confirm they are requesting the right item --}}
+        <div x-data="supplyPhoto(@js($supply->image_url))" @dragover.prevent @drop.prevent="dropped($event)">
+            <p class="block text-sm font-medium text-gray-700 mb-1.5">Photo <span class="font-normal text-gray-400">(optional)</span></p>
+
+            <input type="hidden" name="remove_image" :value="removed ? 1 : 0">
+            <input x-ref="file" type="file" name="image" accept="image/jpeg,image/png,image/webp" class="sr-only" tabindex="-1" @change="picked($event)">
+
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <button type="button" @click="$refs.file.click()" aria-label="Choose a photo"
+                        class="group relative flex h-36 w-36 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition hover:border-green-700 hover:bg-green-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
+                    <template x-if="preview">
+                        <img :src="preview" alt="Photo preview" class="h-full w-full object-cover">
+                    </template>
+                    <template x-if="!preview">
+                        <span class="flex flex-col items-center gap-1.5 px-2 text-center text-xs text-gray-400 group-hover:text-green-800">
+                            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
+                            Tap or drop a photo
+                        </span>
+                    </template>
+                </button>
+
+                <div class="min-w-0 space-y-2">
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" @click="$refs.file.click()"
+                                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                            <span x-text="preview ? 'Change photo' : 'Add photo'">Add photo</span>
+                        </button>
+                        <button type="button" x-show="preview" x-cloak @click="clear()"
+                                class="inline-flex items-center rounded-lg px-3.5 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50">Remove</button>
+                    </div>
+                    <p class="text-xs text-gray-400">A clear photo of the item helps staff pick the right one when they request it. JPG, PNG or WebP — large photos are shrunk automatically.</p>
+                    <p x-show="note" x-cloak x-text="note" class="text-xs text-gray-500"></p>
+                    <p x-show="error" x-cloak x-text="error" class="text-xs font-medium text-rose-600" role="alert"></p>
+                    <p x-show="removed && !preview" x-cloak class="text-xs text-amber-700">The current photo will be removed when you save.</p>
+                </div>
+            </div>
+            <x-input-error :messages="$errors->get('image')" class="mt-1.5" />
         </div>
     </section>
 
@@ -186,8 +395,15 @@
         </div>
 
         <div>
-            <label for="notes" class="block text-sm font-medium text-gray-700 mb-1.5">Notes <span class="font-normal text-gray-400">(optional)</span></label>
-            <textarea id="notes" name="notes" rows="3" maxlength="1000" placeholder="Where it's kept, compatible printers, supplier, etc." class="{{ $field }}">{{ old('notes', $supply->notes) }}</textarea>
+            <label for="notes" class="block text-sm font-medium text-gray-700 mb-1.5">
+                Notes
+                <span x-show="!offList" class="font-normal text-gray-400">(optional)</span>
+                <span x-show="offList" x-cloak class="font-medium text-amber-700">(required &mdash; which printer is this for?)</span>
+            </label>
+            <textarea id="notes" name="notes" rows="3" maxlength="1000" class="{{ $field }}"
+                      :class="offList && 'border-amber-400 bg-amber-50/40'"
+                      :placeholder="offList ? 'e.g. For the Accounting HP LaserJet Pro M404' : 'Where it\'s kept, compatible printers, supplier, etc.'"
+                      placeholder="Where it's kept, compatible printers, supplier, etc.">{{ old('notes', $supply->notes) }}</textarea>
             <x-input-error :messages="$errors->get('notes')" class="mt-1" />
         </div>
     </section>
