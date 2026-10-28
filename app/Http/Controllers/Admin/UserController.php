@@ -47,7 +47,6 @@ class UserController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('username', 'like', "%{$search}%");
             });
         }
@@ -113,7 +112,6 @@ class UserController extends Controller
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:users,username'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', Password::defaults()],
             'department_id' => ['required', 'exists:departments,id'],
             'position_id' => ['required', 'exists:positions,id'],
@@ -121,7 +119,6 @@ class UserController extends Controller
             'location' => ['required', 'in:'.implode(',', array_keys(Asset::locations()))],
             'is_vip' => ['nullable', 'boolean'],
         ], [
-            'email.unique' => 'That email is already registered.',
             'username.unique' => 'That username is already taken.',
             'username.alpha_dash' => 'Username can only contain letters, numbers, dashes, and underscores.',
             'password.min' => 'Password must be at least :min characters.',
@@ -139,7 +136,6 @@ class UserController extends Controller
             'middle_name' => $validated['middle_name'] ?? null,
             'last_name' => $validated['last_name'],
             'username' => $validated['username'],
-            'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'department_id' => $validated['department_id'],
             'position_id' => $validated['position_id'],
@@ -216,7 +212,6 @@ class UserController extends Controller
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:users,username,'.$user->id],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'password' => ['nullable', 'string', Password::defaults()],
             'department_id' => ['required', 'exists:departments,id'],
             'position_id' => ['required', 'exists:positions,id'],
@@ -224,7 +219,6 @@ class UserController extends Controller
             'location' => ['required', 'in:'.implode(',', array_keys(Asset::locations()))],
             'is_vip' => ['nullable', 'boolean'],
         ], [
-            'email.unique' => 'That email is already registered.',
             'username.unique' => 'That username is already taken.',
             'username.alpha_dash' => 'Username can only contain letters, numbers, dashes, and underscores.',
             'password.min' => 'Password must be at least :min characters.',
@@ -241,7 +235,6 @@ class UserController extends Controller
             'middle_name' => $validated['middle_name'] ?? null,
             'last_name' => $validated['last_name'],
             'username' => $validated['username'],
-            'email' => $validated['email'],
             'department_id' => $validated['department_id'],
             'position_id' => $validated['position_id'],
             'role' => $validated['role'],
@@ -369,7 +362,7 @@ class UserController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('username', 'like', "%{$search}%");
             });
         }
 
@@ -516,50 +509,49 @@ class UserController extends Controller
 
         // Title row
         $sheet->setCellValue('A1', 'Crest IT Service Desk — User Directory');
-        $sheet->mergeCells('A1:H1');
+        $sheet->mergeCells('A1:G1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getFont()->getColor()->setRGB('123F24');
 
         $sheet->setCellValue('A2', 'Generated '.now()->format('F j, Y g:i A').' · '.($tab === 'all' ? 'All users' : ucfirst(str_replace('_', ' ', $tab))));
-        $sheet->mergeCells('A2:H2');
+        $sheet->mergeCells('A2:G2');
         $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(9);
         $sheet->getStyle('A2')->getFont()->getColor()->setRGB('6B7280');
 
         // Header row
-        $headers = ['Name', 'Username', 'Email', 'Department', 'Position', 'Role', 'Branch', 'VIP'];
+        $headers = ['Name', 'Username', 'Department', 'Position', 'Role', 'Branch', 'VIP'];
         $sheet->fromArray($headers, null, 'A4');
-        $sheet->getStyle('A4:H4')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A4:H4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1A6B3C');
-        $sheet->getStyle('A4:H4')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('A4:G4')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A4:G4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1A6B3C');
+        $sheet->getStyle('A4:G4')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
 
         // Data rows
         $row = 5;
         foreach ($users as $user) {
             $sheet->setCellValue("A{$row}", $user->name);
             $sheet->setCellValue("B{$row}", $user->username ?? '—');
-            $sheet->setCellValue("C{$row}", $user->email);
-            $sheet->setCellValue("D{$row}", $user->department->name ?? '—');
-            $sheet->setCellValue("E{$row}", $user->position->name ?? '—');
-            $sheet->setCellValue("F{$row}", ucfirst(str_replace('_', ' ', $user->role)));
-            $sheet->setCellValue("G{$row}", $user->branch_name ?? '—');
-            $sheet->setCellValue("H{$row}", $user->is_vip ? 'Yes' : 'No');
+            $sheet->setCellValue("C{$row}", $user->department->name ?? '—');
+            $sheet->setCellValue("D{$row}", $user->position->name ?? '—');
+            $sheet->setCellValue("E{$row}", ucfirst(str_replace('_', ' ', $user->role)));
+            $sheet->setCellValue("F{$row}", $user->branch_name ?? '—');
+            $sheet->setCellValue("G{$row}", $user->is_vip ? 'Yes' : 'No');
             $row++;
         }
 
         $lastRow = $row - 1;
 
         // Borders around the whole table
-        $sheet->getStyle("A4:H{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
+        $sheet->getStyle("A4:G{$lastRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
 
         // Zebra striping for readability
         for ($i = 5; $i <= $lastRow; $i++) {
             if ($i % 2 === 0) {
-                $sheet->getStyle("A{$i}:H{$i}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9FAFB');
+                $sheet->getStyle("A{$i}:G{$i}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F9FAFB');
             }
         }
 
         // Autosize columns
-        foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as $col) {
+        foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G'] as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -586,13 +578,12 @@ class UserController extends Controller
 
         $callback = function () use ($request) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Name', 'Username', 'Email', 'Department', 'Position', 'Role', 'Branch', 'VIP']);
+            fputcsv($handle, ['Name', 'Username', 'Department', 'Position', 'Role', 'Branch', 'VIP']);
 
             foreach ($this->filteredUsers($request) as $user) {
                 fputcsv($handle, [
                     $user->name,
                     $user->username ?? '',
-                    $user->email,
                     $user->department->name ?? '',
                     $user->position->name ?? '',
                     $user->role,
@@ -611,9 +602,10 @@ class UserController extends Controller
 
     /**
      * Bulk-create users from an uploaded CSV or Excel (.xlsx) file. Expected
-     * columns (with header row): Name, Email, Role, VIP (optional). New
-     * accounts get a random temporary password — share it with each person,
-     * or have them use "Forgot password" to set their own.
+     * columns (with header row): First Name, Last Name, Username, Department,
+     * Position (Role, Branch and VIP optional). New accounts get a random
+     * temporary password — set a real one for each person afterwards from
+     * Admin > Users > Edit.
      */
     public function import(Request $request)
     {
@@ -660,7 +652,6 @@ class UserController extends Controller
             }
 
             $username = $this->cleanImportedText((string) ($row['username'] ?? ''), false);
-            $email = trim((string) ($row['email'] ?? ''));
             $role = strtolower(trim((string) ($row['role'] ?? 'staff')));
             $isVip = in_array(strtolower(trim((string) ($row['vip'] ?? 'no'))), ['yes', 'true', '1']);
 
@@ -693,9 +684,8 @@ class UserController extends Controller
                 : null;
 
             if (
-                $firstName === '' || $lastName === '' || $email === ''
+                $firstName === '' || $lastName === ''
                 || $username === '' || $departmentId === null || $positionId === null
-                || User::where('email', $email)->exists()
                 || User::where('username', $username)->exists()
             ) {
                 $skipped++;
@@ -711,7 +701,6 @@ class UserController extends Controller
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'username' => $username,
-                'email' => $email,
                 'password' => Hash::make(str()->random(12)),
                 'department_id' => $departmentId,
                 'position_id' => $positionId,
@@ -723,7 +712,7 @@ class UserController extends Controller
             $created++;
         }
 
-        return back()->with('status', "Imported {$created} user(s)." . ($skipped > 0 ? " Skipped {$skipped} (missing/duplicate data — check First Name, Last Name, Username, Email, Department, and Position for each skipped row)." : ''));
+        return back()->with('status', "Imported {$created} user(s)." . ($skipped > 0 ? " Skipped {$skipped} (missing/duplicate data — check First Name, Last Name, Username, Department, and Position for each skipped row)." : ''));
     }
 
     /**

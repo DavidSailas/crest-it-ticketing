@@ -246,4 +246,13 @@ class SupplyBrandTest extends TestCase
             ->assertSee('value="Canon"', false)                    // the brand they typed is still there
             ->assertSee('Say which printer this is for', false);   // and the form says what is missing
     }
+
+    public function test_the_photo_box_can_take_a_pasted_picture(): void
+    {
+        $this->actingAs($this->admin())->get(route('supplies.create'))
+            ->assertOk()
+            ->assertSee('@paste.window="pasted($event)"', false)
+            ->assertSee('Tap, drop or paste a photo')
+            ->assertSee('Paste from clipboard');
+    }
 }

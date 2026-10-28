@@ -72,7 +72,7 @@
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 ring-1 ring-inset ring-green-200">Active</span>
                         @endif
                     </div>
-                    <p class="text-sm text-gray-500 mt-0.5">{{ $user->username ?? '—' }} · {{ $user->email }}</p>
+                    <p class="text-sm text-gray-500 mt-0.5">{{ $user->username ?? '—' }}</p>
 
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mt-5 pt-5 border-t border-gray-100 text-sm">
                         <div>

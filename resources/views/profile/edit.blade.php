@@ -40,11 +40,21 @@
                         </label>
                     </div>
 
-                    <form method="POST" action="{{ route('profile.avatar.update') }}" enctype="multipart/form-data" id="avatar-form">
+                    {{-- Choosing (or pasting) a photo opens the crop window; "Save photo" there submits this form. --}}
+                    <form method="POST" action="{{ route('profile.avatar.update') }}" enctype="multipart/form-data" id="avatar-form"
+                          x-ref="form" x-data="avatarCropper()" @paste.window="pasted($event)">
                         @csrf
                         @method('PATCH')
                         <input type="file" id="avatar-input" name="avatar" accept="image/png,image/jpeg,image/webp"
-                               class="hidden" onchange="this.form.submit()">
+                               x-ref="input" class="hidden" @change="picked($event)">
+
+                        <p x-show="error" x-cloak x-text="error" role="alert"
+                           class="mt-1 max-w-[12rem] text-center text-xs font-medium text-amber-200"></p>
+                        @error('avatar')
+                            <p role="alert" class="mt-1 max-w-[12rem] text-center text-xs font-medium text-amber-200">{{ $message }}</p>
+                        @enderror
+
+                        <x-avatar-cropper />
                     </form>
                     @if(auth()->user()->avatar)
                         <form method="POST" action="{{ route('profile.avatar.destroy') }}">
@@ -58,7 +68,7 @@
                 </div>
                 <div class="min-w-0">
                     <p class="text-white text-xl font-semibold truncate">{{ auth()->user()->name }}</p>
-                    <p class="text-green-100/80 text-sm mt-0.5 truncate">{{ auth()->user()->email }}</p>
+                    <p class="text-green-100/80 text-sm mt-0.5 truncate">{{ auth()->user()->username }}</p>
                     <div class="flex items-center justify-center sm:justify-start gap-2 mt-3">
                         <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/15 text-white capitalize">
                             {{ str_replace('_', ' ', auth()->user()->role) }}

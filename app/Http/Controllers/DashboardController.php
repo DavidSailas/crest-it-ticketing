@@ -22,7 +22,7 @@ class DashboardController extends Controller
 
             // Mapped the same way TicketController::create() builds this list,
             // so both paths that render the ticket form stay in sync and the
-            // colleague picker's email never silently goes missing again.
+            // colleague picker's username never silently goes missing again.
             $colleagues = User::where('role', 'staff')
                 ->where('id', '!=', $user->id)
                 ->orderBy('name')
@@ -31,7 +31,7 @@ class DashboardController extends Controller
                     return [
                         'id' => $colleague->id,
                         'name' => $colleague->name,
-                        'email' => $colleague->email ?? $colleague->email_address ?? null,
+                        'username' => $colleague->username,
                     ];
                 });
 

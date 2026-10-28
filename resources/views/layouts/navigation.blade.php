@@ -162,7 +162,7 @@
                                         <span class="inline-flex shrink-0 items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">★ VIP</span>
                                     @endif
                                 </p>
-                                <p class="truncate text-xs text-gray-500">{{ $authUser->email }}</p>
+                                <p class="truncate text-xs text-gray-500">{{ $authUser->username }}</p>
                                 <p class="mt-1 text-[11px] font-medium uppercase tracking-wide text-gray-400">{{ $roleLabel }}</p>
                             </div>
 
@@ -255,7 +255,7 @@
                             <span class="inline-flex shrink-0 items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">★ VIP</span>
                         @endif
                     </p>
-                    <p class="truncate text-sm text-gray-500">{{ $authUser->email }}</p>
+                    <p class="truncate text-sm text-gray-500">{{ $authUser->username }}</p>
                     <p class="text-[11px] font-medium uppercase tracking-wide text-gray-400">{{ $roleLabel }}</p>
                 </div>
             </div>

@@ -12,21 +12,21 @@ class DatabaseSeeder extends Seeder
     {
         User::create([
             'name' => 'Admin',
-            'email' => 'admin@jmsoneit.com',
+            'username' => 'admin',
             'password' => Hash::make('P@ssw0rd123'),
             'role' => 'admin',
         ]);
 
         User::create([
             'name' => 'David Villondo',
-            'email' => 'davidvillondo@jmsoneit.com',
+            'username' => 'davidvillondo',
             'password' => Hash::make('dasai2123'),
             'role' => 'it_support',
         ]);
 
         User::create([
             'name' => 'Staff Employee',
-            'email' => 'staff@company.com',
+            'username' => 'staff',
             'password' => Hash::make('password'),
             'role' => 'staff',
         ]);

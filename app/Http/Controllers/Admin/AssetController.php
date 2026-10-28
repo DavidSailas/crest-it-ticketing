@@ -58,7 +58,7 @@ class AssetController extends Controller
      */
     public function create()
     {
-        $users = User::orderBy('name')->get(['id', 'name', 'email']);
+        $users = User::orderBy('name')->get(['id', 'name', 'username']);
         $departments = Department::orderBy('name')->get();
         $itDepartmentId = Asset::itDepartmentId();
 
@@ -185,7 +185,7 @@ class AssetController extends Controller
      */
     public function edit(Asset $asset)
     {
-        $users = User::orderBy('name')->get(['id', 'name', 'email']);
+        $users = User::orderBy('name')->get(['id', 'name', 'username']);
         $departments = Department::orderBy('name')->get();
         $itDepartmentId = Asset::itDepartmentId();
 

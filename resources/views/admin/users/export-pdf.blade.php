@@ -53,7 +53,6 @@
             <tr>
                 <th>Name</th>
                 <th>Username</th>
-                <th>Email</th>
                 <th>Department</th>
                 <th>Position</th>
                 <th>Role</th>
@@ -66,7 +65,6 @@
                 <tr>
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->username ?? '—' }}</td>
-                    <td>{{ $user->email }}</td>
                     <td>{{ $user->department->name ?? '—' }}</td>
                     <td>{{ $user->position->name ?? '—' }}</td>
                     <td style="text-transform: capitalize;">{{ str_replace('_', ' ', $user->role) }}</td>
@@ -78,7 +76,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="8" style="text-align:center; color:#9ca3af; padding: 18px;">No users found.</td></tr>
+                <tr><td colspan="7" style="text-align:center; color:#9ca3af; padding: 18px;">No users found.</td></tr>
             @endforelse
         </tbody>
     </table>

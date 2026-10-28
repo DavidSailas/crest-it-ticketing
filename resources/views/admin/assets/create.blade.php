@@ -8,7 +8,7 @@
             newUserId: "{{ old("user_id", "") }}",
             newUserQuery: "",
             userDropdownOpen: false,
-            userDirectory: @json($users->map(fn ($u) => ["id" => $u->id, "name" => $u->name, "email" => $u->email]), JSON_HEX_APOS),
+            userDirectory: @json($users->map(fn ($u) => ["id" => $u->id, "name" => $u->name, "username" => $u->username]), JSON_HEX_APOS),
             assignTo: "{{ old("assignment", "person") }}",
             assignTouched: {{ old("assignment") ? "true" : "false" }},
             suggested: false,
@@ -46,7 +46,7 @@
                 const q = this.newUserQuery.trim().toLowerCase();
                 const list = q === ""
                     ? this.userDirectory
-                    : this.userDirectory.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+                    : this.userDirectory.filter(u => u.name.toLowerCase().includes(q) || (u.username ?? '').toLowerCase().includes(q));
                 return list.slice(0, 30);
             },
             initials(name) {
@@ -129,7 +129,7 @@
                                           x-text="initials(selectedUser?.name)"></span>
                                     <div class="min-w-0">
                                         <p class="text-sm font-medium text-gray-800 truncate" x-text="selectedUser?.name"></p>
-                                        <p class="text-xs text-gray-500 truncate" x-text="selectedUser?.email"></p>
+                                        <p class="text-xs text-gray-500 truncate" x-text="selectedUser?.username"></p>
                                     </div>
                                 </div>
                                 <button type="button" @click="clearUser()" class="text-xs font-medium text-green-700 hover:underline shrink-0">Change</button>
@@ -143,7 +143,7 @@
                                            x-model="newUserQuery"
                                            @focus="userDropdownOpen = true"
                                            @input="userDropdownOpen = true"
-                                           placeholder="Search by name or email..."
+                                           placeholder="Search by name or username..."
                                            autocomplete="off"
                                            class="block w-full pl-9 pr-9 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
                                     <button type="button" x-show="newUserQuery" @click="newUserQuery = ''" x-cloak
@@ -166,7 +166,7 @@
                                                   x-text="initials(u.name)"></span>
                                             <div class="min-w-0">
                                                 <p class="text-sm font-medium text-gray-800 truncate" x-text="u.name"></p>
-                                                <p class="text-xs text-gray-400 truncate" x-text="u.email"></p>
+                                                <p class="text-xs text-gray-400 truncate" x-text="u.username || '—'"></p>
                                             </div>
                                         </button>
                                     </template>

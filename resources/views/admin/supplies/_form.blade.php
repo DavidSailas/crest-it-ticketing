@@ -95,7 +95,8 @@
         };
     }
 
-    // Photo picker for the supply form. Phone photos are often 4–8 MB, so the picture is shrunk in the
+    // Photo picker for the supply form. A photo can be chosen, dropped, or pasted (Ctrl+V / the Paste
+    // button) — all three end up in use(). Phone photos are often 4–8 MB, so the picture is shrunk in the
     // browser (max 1200px, JPEG) before it is uploaded; the server resizes again and strips metadata.
     function supplyPhoto(existing) {
         return {
@@ -104,6 +105,7 @@
             note: '',
             error: '',
             objectUrl: null,
+            canPasteButton: !!(navigator.clipboard && navigator.clipboard.read),   // needs a secure (https) page
 
             async picked(event) {
                 const file = event.target.files[0];
@@ -112,6 +114,40 @@
             async dropped(event) {
                 const file = event.dataTransfer.files[0];
                 if (file) await this.use(file);
+            },
+            /** Ctrl+V / Cmd+V anywhere on the page: use a copied picture or screenshot, if there is one. */
+            async pasted(event) {
+                const items = [...((event.clipboardData && event.clipboardData.items) || [])];
+                const picture = items.find(i => i.kind === 'file' && i.type.startsWith('image/'));
+                if (!picture) return;                                    // plain text etc.: paste as normal
+
+                // Copying cells or text from Word/Excel puts a picture on the clipboard as well as the text.
+                // Pasting that into a text box should paste the text, not swap the photo.
+                const hasText = items.some(i => i.kind === 'string' && i.type === 'text/plain');
+                if (hasText && event.target.closest('input, textarea, [contenteditable="true"]')) return;
+
+                const file = picture.getAsFile();
+                if (!file) return;
+                event.preventDefault();
+                await this.use(this.named(file));
+            },
+            /** The "Paste" button — for phones and anyone who prefers clicking. */
+            async pasteFromClipboard() {
+                this.error = '';
+                try {
+                    for (const entry of await navigator.clipboard.read()) {
+                        const type = entry.types.find(t => t.startsWith('image/'));
+                        if (type) { await this.use(this.named(await entry.getType(type))); return; }
+                    }
+                    this.error = 'There is no picture on the clipboard. Copy a picture first, then try again.';
+                } catch (e) {
+                    this.error = 'Your browser did not allow pasting from the clipboard. Click on the page and press Ctrl+V instead.';
+                }
+            },
+            /** Pasted pictures have no real file name, so give them a sensible one. */
+            named(blob) {
+                const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[blob.type] || 'png';
+                return new File([blob], 'pasted-photo.' + ext, { type: blob.type });
             },
             async use(file) {
                 this.error = '';
@@ -269,7 +305,7 @@
         </div>
 
         {{-- Photo: lets staff confirm they are requesting the right item --}}
-        <div x-data="supplyPhoto(@js($supply->image_url))" @dragover.prevent @drop.prevent="dropped($event)">
+        <div x-data="supplyPhoto(@js($supply->image_url))" @dragover.prevent @drop.prevent="dropped($event)" @paste.window="pasted($event)">
             <p class="block text-sm font-medium text-gray-700 mb-1.5">Photo <span class="font-normal text-gray-400">(optional)</span></p>
 
             <input type="hidden" name="remove_image" :value="removed ? 1 : 0">
@@ -284,7 +320,7 @@
                     <template x-if="!preview">
                         <span class="flex flex-col items-center gap-1.5 px-2 text-center text-xs text-gray-400 group-hover:text-green-800">
                             <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>
-                            Tap or drop a photo
+                            Tap, drop or paste a photo
                         </span>
                     </template>
                 </button>
@@ -295,10 +331,13 @@
                                 class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
                             <span x-text="preview ? 'Change photo' : 'Add photo'">Add photo</span>
                         </button>
+                        <button type="button" x-show="canPasteButton" x-cloak @click="pasteFromClipboard()"
+                                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">Paste from clipboard</button>
                         <button type="button" x-show="preview" x-cloak @click="clear()"
                                 class="inline-flex items-center rounded-lg px-3.5 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50">Remove</button>
                     </div>
                     <p class="text-xs text-gray-400">A clear photo of the item helps staff pick the right one when they request it. JPG, PNG or WebP — large photos are shrunk automatically.</p>
+                    <p class="text-xs text-gray-400">Tip: copy a picture or take a screenshot, then press <kbd class="rounded border border-gray-300 bg-gray-50 px-1 py-0.5 font-sans text-[11px] text-gray-600">Ctrl</kbd> + <kbd class="rounded border border-gray-300 bg-gray-50 px-1 py-0.5 font-sans text-[11px] text-gray-600">V</kbd> (<kbd class="rounded border border-gray-300 bg-gray-50 px-1 py-0.5 font-sans text-[11px] text-gray-600">&#8984;V</kbd> on a Mac) anywhere on this page.</p>
                     <p x-show="note" x-cloak x-text="note" class="text-xs text-gray-500"></p>
                     <p x-show="error" x-cloak x-text="error" class="text-xs font-medium text-rose-600" role="alert"></p>
                     <p x-show="removed && !preview" x-cloak class="text-xs text-amber-700">The current photo will be removed when you save.</p>

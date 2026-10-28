@@ -63,18 +63,12 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
                                 <input type="text" name="username" value="{{ old('username') }}" placeholder="e.g. maria.santos"
                                        class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
-                                <p class="text-xs text-gray-400 mt-1">Letters, numbers, dashes, and underscores only.</p>
+                                <p class="text-xs text-gray-400 mt-1">Used to sign in. Letters, numbers, dashes, and underscores only.</p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-                                <input type="email" name="email" value="{{ old('email') }}" placeholder="name@company.com"
-                                       class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
-                                <p class="text-xs text-gray-400 mt-1">Used to sign in.</p>
-                            </div>
-                            <div class="sm:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
                                 <input type="password" name="password"
-                                       class="block w-full sm:w-1/2 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
+                                       class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
                                 <p class="text-xs text-gray-400 mt-1">At least 8 characters.</p>
                             </div>
                         </div>

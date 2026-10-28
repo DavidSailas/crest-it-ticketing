@@ -55,24 +55,20 @@
     </div>
 
     <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+        <label for="username" class="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
         <div class="relative">
-            <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-            <input id="email" name="email" type="email" class="block w-full rounded-lg border-gray-300 pl-10 focus:border-green-700 focus:ring-green-700 text-sm" value="{{ old('email', $user->email) }}" required autocomplete="username">
+            <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            @if ($user->role === 'admin')
+                <input id="username" name="username" type="text" class="block w-full rounded-lg border-gray-300 pl-10 focus:border-green-700 focus:ring-green-700 text-sm" value="{{ old('username', $user->username) }}" required autocomplete="username" autocapitalize="none" spellcheck="false">
+            @else
+                <input id="username" type="text" class="block w-full rounded-lg border-gray-200 bg-gray-50 pl-10 text-sm text-gray-600 cursor-not-allowed" value="{{ $user->username ?? '—' }}" disabled>
+            @endif
         </div>
-        <x-input-error class="mt-2" :messages="$errors->get('email')" />
-
-        @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-            <div class="mt-2 text-sm bg-amber-50 border border-amber-100 text-amber-800 rounded-lg px-3 py-2">
-                Your email address is unverified.
-                <button form="send-verification" class="underline font-medium hover:no-underline">
-                    Click here to re-send the verification email.
-                </button>
-
-                @if (session('status') === 'verification-link-sent')
-                    <p class="mt-1 font-medium text-green-700">A new verification link has been sent.</p>
-                @endif
-            </div>
+        @if ($user->role === 'admin')
+            <x-input-error class="mt-2" :messages="$errors->get('username')" />
+            <p class="mt-1.5 text-xs text-gray-400">This is what you use to sign in. Letters, numbers, dashes, and underscores only.</p>
+        @else
+            <p class="mt-1.5 text-xs text-gray-400">This is what you use to sign in. Contact the IT Support Team if you need it changed.</p>
         @endif
     </div>
 

@@ -35,7 +35,7 @@
             </div>
 
             <div class="p-6 sm:p-8">
-                @if ($errors->hasAny(['first_name', 'middle_name', 'last_name', 'username', 'email', 'password', 'department_id', 'role', 'location']))
+                @if ($errors->hasAny(['first_name', 'middle_name', 'last_name', 'username', 'password', 'department_id', 'role', 'location']))
                     <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3.5">
                         <p class="text-sm font-semibold text-red-800 mb-1">Please fix the following:</p>
                         <ul class="text-sm text-red-700 list-disc list-inside space-y-0.5">
@@ -78,12 +78,8 @@
                                 <input type="text" name="username" value="{{ old('username', $user->username) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-                                <input type="email" name="email" value="{{ old('email', $user->email) }}" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700" required>
-                            </div>
-                            <div class="sm:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">New Password <span class="text-gray-400 font-normal">(optional)</span></label>
-                                <input type="password" name="password" placeholder="Leave blank to keep current" class="block w-full sm:w-1/2 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                                <input type="password" name="password" placeholder="Leave blank to keep current" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
                             </div>
                         </div>
                     </div>

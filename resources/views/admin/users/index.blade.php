@@ -111,7 +111,7 @@
             </div>
         @endif
 
-        <p class="text-xs text-gray-400 mb-3">CSV or Excel (.xlsx) import expects columns: <span class="font-mono">First Name, Last Name, Username, Email, Department, Position, Role, Branch, VIP</span> (Role: staff / it_support / admin. Branch: Cebu / Manila / Cagayan de Oro / Davao, or CEB / MNL / CDO / DVO. Department and Position must each match an existing name exactly). New accounts get a random temporary password.</p>
+        <p class="text-xs text-gray-400 mb-3">CSV or Excel (.xlsx) import expects columns: <span class="font-mono">First Name, Last Name, Username, Department, Position, Role, Branch, VIP</span> (Role: staff / it_support / admin. Branch: Cebu / Manila / Cagayan de Oro / Davao, or CEB / MNL / CDO / DVO. Department and Position must each match an existing name exactly). New accounts get a random temporary password.</p>
 
         {{-- Search + filters --}}
         <form method="GET" action="{{ route('admin.users.index') }}" data-live-filter class="bg-white rounded-xl border border-gray-200 shadow-sm p-3.5 mb-5 flex flex-col lg:flex-row gap-3"
@@ -120,7 +120,7 @@
             <div class="flex flex-1 items-center gap-2">
             <div class="relative min-w-0 flex-1">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, username or email" autocomplete="off"
+                <input type="text" name="q" value="{{ $search }}" placeholder="Search by name or username" autocomplete="off"
                        class="w-full rounded-lg border-gray-300 text-sm pl-9 focus:border-green-700 focus:ring-green-700">
             </div>
                 {{-- Phones: the dropdowns tuck away behind this button so the list stays in view. --}}
@@ -166,7 +166,7 @@
 
 
         {{-- Name carries the folded columns on narrow screens; wider screens progressively
-             reveal Username/Email/Department/Position/Role/Branch. Nothing ever needs to
+             reveal Username/Department/Position/Role/Branch. Nothing ever needs to
              scroll horizontally. --}}
         {{-- Phones: one card per person --}}
         <div class="space-y-3 md:hidden">
@@ -175,7 +175,7 @@
                     <x-slot name="lead"><x-avatar :user="$user" size="md" /></x-slot>
                     <x-slot name="title">{{ $user->name }}</x-slot>
                     <x-slot name="sub">
-                        <span class="break-all">{{ $user->email }}</span>
+                        <span class="break-all">{{ $user->username ?? '—' }}</span>
                         <span class="mt-1.5 flex flex-wrap items-center gap-1.5">
                             <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium capitalize text-gray-600">{{ str_replace('_', ' ', $user->role) }}</span>
                             @if($user->isSuspended())
@@ -262,7 +262,7 @@
                                     <x-avatar :user="$user" size="sm" />
                                     <div class="min-w-0">
                                         <a href="{{ route('admin.users.show', $user) }}" class="font-medium text-gray-800 hover:text-green-700 hover:underline truncate block">{{ $user->name }}</a>
-                                        <p class="text-xs text-gray-400 truncate">{{ $user->username ?? '—' }} · {{ $user->email }}</p>
+                                        <p class="text-xs text-gray-400 truncate">{{ $user->username ?? '—' }}</p>
                                     </div>
                                 </div>
                                 {{-- Folds in whatever is hidden at this breakpoint --}}

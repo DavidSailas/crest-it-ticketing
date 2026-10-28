@@ -189,7 +189,7 @@
                                         const q = this.query.trim().toLowerCase();
                                         if (!q) return this.colleagues;
                                         return this.colleagues.filter(c =>
-                                            (c.name ?? '').toLowerCase().includes(q) || (c.email ?? '').toLowerCase().includes(q)
+                                            (c.name ?? '').toLowerCase().includes(q) || (c.username ?? '').toLowerCase().includes(q)
                                         );
                                     },
                                     pick(c) { this.query = c.name; colleagueId = c.id; directoryOpen = false; },
@@ -201,7 +201,7 @@
                                 <div class="relative">
                                     <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
                                     <input type="text" x-ref="search" x-model="query" @focus="directoryOpen = true" @input="directoryOpen = true; colleagueId = ''"
-                                        :disabled="forWhom !== 'colleague'" autocomplete="off" placeholder="Search by name or email…"
+                                        :disabled="forWhom !== 'colleague'" autocomplete="off" placeholder="Search by name or username…"
                                         class="block w-full rounded-lg border-gray-300 text-sm bg-white pl-9 pr-8 focus:border-green-700 focus:ring-green-700">
                                     <button type="button" x-show="query" @click="reset()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -222,7 +222,7 @@
                                                     <span class="block text-sm font-medium text-gray-800 truncate" x-text="c.name"></span>
                                                     <span x-show="!c.profile_complete" class="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700">Profile incomplete</span>
                                                 </span>
-                                                <span class="block text-xs text-gray-400 truncate" x-text="c.email || '—'"></span>
+                                                <span class="block text-xs text-gray-400 truncate" x-text="c.username || '—'"></span>
                                             </span>
                                         </button>
                                     </template>

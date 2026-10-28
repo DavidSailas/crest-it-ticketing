@@ -18,7 +18,7 @@
             <div class="flex flex-1 items-center gap-2">
             <div class="relative min-w-0 flex-1">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                <input type="text" name="q" value="{{ $search }}" placeholder="Search name or email" autocomplete="off"
+                <input type="text" name="q" value="{{ $search }}" placeholder="Search name or username" autocomplete="off"
                     class="w-full rounded-lg border-gray-300 text-sm pl-9 focus:border-green-700 focus:ring-green-700">
             </div>
                 {{-- Phones: the dropdowns tuck away behind this button so the list stays in view. --}}
@@ -71,7 +71,7 @@
                     <x-slot name="lead"><x-avatar :user="$user" size="md" /></x-slot>
                     <x-slot name="title">{{ $user->name }}</x-slot>
                     <x-slot name="sub">
-                        <span class="break-all">{{ $user->email }}</span>
+                        <span class="break-all">{{ $user->username ?? '—' }}</span>
                         <span class="mt-1.5 flex flex-wrap items-center gap-1.5">
                             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize {{ $user->role === 'it_support' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ str_replace('_', ' ', $user->role) }}</span>
                             @if($user->is_vip)<x-vip-badge size="compact" />@endif
@@ -112,7 +112,7 @@
                                     <x-avatar :user="$user" size="sm" />
                                     <div class="min-w-0">
                                         <p class="font-medium text-gray-800 truncate">{{ $user->name }}</p>
-                                        <p class="text-xs text-gray-400 truncate">{{ $user->email }}</p>
+                                        <p class="text-xs text-gray-400 truncate">{{ $user->username ?? '—' }}</p>
                                     </div>
                                 </div>
                                 <div class="md:hidden mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500">

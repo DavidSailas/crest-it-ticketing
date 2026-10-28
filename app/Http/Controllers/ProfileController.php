@@ -37,20 +37,28 @@ class ProfileController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $isAdmin = $request->user()->role === 'admin';
+
+        $rules = [
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $request->user()->id],
-        ], [
+        ];
+
+        // Only admins can change a username (everyone else asks the IT desk).
+        if ($isAdmin) {
+            $rules['username'] = ['required', 'string', 'max:255', 'alpha_dash', 'unique:users,username,' . $request->user()->id];
+        }
+
+        $validated = $request->validate($rules, [
+            'username.required' => 'Please enter a username.',
+            'username.alpha_dash' => 'Username can only contain letters, numbers, dashes, and underscores.',
+            'username.unique' => 'That username is already taken.',
             'first_name.required' => 'Please enter your first name.',
             'first_name.max' => 'First name is too long — please keep it under 255 characters.',
             'middle_name.max' => 'Middle name is too long — please keep it under 255 characters.',
             'last_name.required' => 'Please enter your last name.',
             'last_name.max' => 'Last name is too long — please keep it under 255 characters.',
-            'email.required' => 'Please enter your email address.',
-            'email.email' => 'Please enter a valid email address.',
-            'email.unique' => 'That email is already in use by another account.',
         ]);
 
         // The full name is stored as typed in first_name / middle_name /
@@ -62,10 +70,6 @@ class ProfileController extends Controller
         $validated['last_name'] = trim($validated['last_name']);
 
         $request->user()->fill($validated);
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
 
         $request->user()->save();
 
