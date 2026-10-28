@@ -14,20 +14,20 @@
         .itsm-field { position: relative; }
         .itsm-field .itsm-ico { position: absolute; inset: 0 auto 0 0; display: flex; align-items: center; padding-left: .95rem; color: #1d2b27; pointer-events: none; }
         .itsm-field input.itsm-input {
-            display: block; width: 100%; height: 2.85rem; box-sizing: border-box;
+            display: block; width: 100%; height: 3rem; box-sizing: border-box;
             padding: 0 2.8rem 0 2.8rem;
             border: 1px solid var(--itsm-line); border-radius: .75rem;
-            background: #fff; color: var(--itsm-ink); font-size: .9rem; box-shadow: none;
+            background: #fff; color: var(--itsm-ink); font-size: 1rem; box-shadow: none;
         }
         .itsm-field input.itsm-input::placeholder { color: #7a8a93; }
-        .itsm-field .itsm-eye { position: absolute; inset: 0 0 0 auto; display: flex; align-items: center; padding: 0 .95rem; color: #1d2b27; background: none; border: 0; cursor: pointer; border-radius: 0 .75rem .75rem 0; }
+        .itsm-field .itsm-eye { position: absolute; inset: 0 0 0 auto; display: flex; align-items: center; justify-content: center; min-width: 3rem; padding: 0 .75rem; touch-action: manipulation; color: #1d2b27; background: none; border: 0; cursor: pointer; border-radius: 0 .75rem .75rem 0; }
         .itsm-field .itsm-eye:focus-visible { outline: 2px solid var(--itsm-green-600); outline-offset: -2px; }
 
-        .itsm-remember { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; font-size: .82rem; color: var(--itsm-ink); }
-        .itsm-remember input { width: 1.1rem; height: 1.1rem; border-radius: .3rem; border-color: var(--itsm-line); }
+        .itsm-remember { display: inline-flex; align-items: center; gap: .6rem; min-height: 2.5rem; cursor: pointer; font-size: .88rem; color: var(--itsm-ink); }
+        .itsm-remember input { width: 1.2rem; height: 1.2rem; border-radius: .3rem; border-color: var(--itsm-line); }
         .itsm-signin {
             display: flex; align-items: center; justify-content: center; gap: .55rem;
-            width: 100%; height: 2.95rem; border: 0; border-radius: .75rem; cursor: pointer;
+            width: 100%; min-height: 3rem; border: 0; border-radius: .75rem; cursor: pointer; touch-action: manipulation;
             background: var(--itsm-green-700); color: #fff; font-size: .98rem; font-weight: 600;
             transition: background-color .15s;
         }
@@ -39,25 +39,80 @@
         .itsm-help__top { display: flex; align-items: flex-start; gap: .75rem; }
         .itsm-help__dot { flex: none; width: 1.7rem; height: 1.7rem; border-radius: 9999px; background: #12332a; color: #fff; display: flex; align-items: center; justify-content: center; }
         .itsm-help__text { line-height: 1.35; }
-        .itsm-help__text b { display: block; font-weight: 600; font-size: .84rem; color: var(--itsm-ink); }
-        .itsm-help__text span { font-size: .76rem; color: #4a5a54; }
+        .itsm-help__text b { display: block; font-weight: 600; font-size: .88rem; color: var(--itsm-ink); }
+        .itsm-help__text span { font-size: .8rem; color: #4a5a54; }
         .itsm-help__row { display: flex; flex-wrap: wrap; align-items: stretch; gap: .5rem; }
-        .itsm-help__mail { flex: 1 1 100%; min-width: 0; display: flex; align-items: center; gap: .45rem; padding: .3rem .3rem .3rem .65rem; border: 1px solid var(--itsm-line); border-radius: .6rem; background: #fff; font-size: .78rem; color: var(--itsm-ink); }
+        .itsm-help__mail { flex: 1 1 100%; min-width: 0; display: flex; align-items: center; gap: .45rem; padding: .3rem .3rem .3rem .75rem; min-height: 2.75rem; border: 1px solid var(--itsm-line); border-radius: .6rem; background: #fff; font-size: .82rem; color: var(--itsm-ink); }
         .itsm-help__addr { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; user-select: all; }
-        .itsm-help__copy { flex: none; border: 0; border-radius: .4rem; padding: .28rem .6rem; background: var(--itsm-green-100); color: var(--itsm-green-800); font-size: .72rem; font-weight: 600; cursor: pointer; transition: background-color .15s; }
+        .itsm-help__copy { flex: none; align-self: stretch; min-width: 4rem; border: 0; border-radius: .45rem; padding: 0 .8rem; touch-action: manipulation; background: var(--itsm-green-100); color: var(--itsm-green-800); font-size: .72rem; font-weight: 600; cursor: pointer; transition: background-color .15s; }
         .itsm-help__copy:hover { background: #d5e9df; }
         .itsm-help__copy:focus-visible, .itsm-help__send:focus-visible { outline: 2px solid var(--itsm-green-600); outline-offset: 2px; }
-        .itsm-help__send { flex: 1 1 100%; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; padding: 0 .9rem; min-height: 2.3rem; border-radius: .6rem; border: 1px solid var(--itsm-green-700); color: var(--itsm-green-700); background: transparent; font-size: .8rem; font-weight: 600; text-decoration: none; transition: background-color .15s, color .15s; }
+        .itsm-help__send { flex: 1 1 100%; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; padding: 0 .9rem; min-height: 2.75rem; border-radius: .6rem; border: 1px solid var(--itsm-green-700); color: var(--itsm-green-700); background: transparent; font-size: .8rem; font-weight: 600; text-decoration: none; transition: background-color .15s, color .15s; }
         .itsm-help__send:hover { background: var(--itsm-green-700); color: #fff; }
+        @media (min-width: 420px) {
+            .itsm-help__mail { flex: 1 1 9.5rem; }
+            .itsm-help__send { flex: 0 0 auto; }
+        }
+        @media (min-width: 1024px) {
+            .itsm-help__mail { flex: 1 1 13rem; }
+            .itsm-help__send { flex: 0 0 auto; }
+        }
+
+        /* Laptop / desktop: scale the form to the screen height so the page never scrolls */
+        @media (min-width: 1024px) and (max-height: 860px) {
+            .itsm-login .itsm-form { margin-top: .9rem !important; }
+            .itsm-login .itsm-form > * + * { margin-top: .7rem !important; }
+            .itsm-field input.itsm-input { height: 2.75rem; }
+            .itsm-remember { min-height: 2rem; }
+            .itsm-signin { min-height: 2.75rem; }
+            .itsm-help { margin-top: .8rem !important; padding: .7rem .85rem; gap: .5rem; }
+        }
+        @media (min-width: 1024px) and (max-height: 700px) {
+            .itsm-login h2 { font-size: 1.25rem; }
+            .itsm-login .itsm-sub { font-size: .82rem; margin-top: .15rem; }
+            .itsm-login .itsm-form { margin-top: .7rem !important; }
+            .itsm-login .itsm-form > * + * { margin-top: .5rem !important; }
+            .itsm-field input.itsm-input { height: 2.6rem; font-size: .95rem; }
+            .itsm-signin { min-height: 2.6rem; font-size: .92rem; }
+            .itsm-help__text span { display: none; }
+            .itsm-help { margin-top: .6rem !important; padding: .6rem .75rem; }
+            .itsm-help__mail, .itsm-help__send { min-height: 2.4rem; }
+            .itsm-help__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+            .itsm-help__send { padding: 0 .7rem; }
+            .itsm-help__mail { font-size: .76rem; padding-left: .6rem; gap: .3rem; }
+            .itsm-help__copy { min-width: 3.3rem; padding: 0 .5rem; }
+            .itsm-help__row { flex-wrap: nowrap; gap: .4rem; }
+            .itsm-help__mail { flex: 1 1 0; }
+        }
+        @media (min-width: 1024px) and (max-width: 1320px) and (max-height: 700px) {
+            .itsm-help__copy { display: none; }
+        }
+        @media (min-width: 1024px) and (max-height: 580px) {
+            .itsm-login .itsm-sub { display: none; }
+            .itsm-login .itsm-form > * + * { margin-top: .35rem !important; }
+            .itsm-field input.itsm-input { height: 2.4rem; }
+            .itsm-signin { min-height: 2.4rem; }
+            .itsm-remember { min-height: 1.6rem; }
+            .itsm-help__top { display: none; }
+        }
+        .itsm-login .itsm-sub { font-size: .92rem; }
+        @media (max-width: 380px) {
+            .itsm-login h2 { font-size: 1.2rem; }
+            .itsm-help { padding: .75rem; }
+        }
     </style>
 
     <div class="itsm-login">
+        <div class="itsm-mobile-brand">
+            <b>IT Service Management System</b>
+            <span>Better Service · Smarter Support</span>
+        </div>
         <h2>Welcome Back!</h2>
         <p class="itsm-sub">Sign in to your ITSM account</p>
 
         <x-auth-session-status class="mt-4" :status="session('status')" />
 
-        <form method="POST" action="{{ route('login') }}" class="space-y-4" style="margin-top: clamp(1rem, 1.5vw, 1.4rem);" x-data="{ loading: false }" @submit="loading = true">
+        <form method="POST" action="{{ route('login') }}" class="space-y-4 itsm-form" style="margin-top: clamp(1rem, 1.5vw, 1.4rem);" x-data="{ loading: false }" @submit="loading = true">
             @csrf
 
             {{-- Username (the account's login name) --}}
@@ -67,7 +122,7 @@
                         <svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0115 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.5-1.632z"/></svg>
                     </span>
                     <input id="username" name="username" type="text" value="{{ old('username') }}" required autofocus
-                        autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"
+                        autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" inputmode="text"
                         placeholder="Username" aria-label="Username" class="itsm-input">
                 </div>
                 @if($errors->has('username'))
@@ -84,7 +139,7 @@
                     <span class="itsm-ico">
                         <svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
                     </span>
-                    <input id="password" name="password" required autocomplete="current-password"
+                    <input id="password" name="password" required autocomplete="current-password" enterkeyhint="go"
                         placeholder="Password" aria-label="Password" class="itsm-input"
                         :type="show ? 'text' : 'password'" type="password"
                         @keyup="caps = $event.getModifierState && $event.getModifierState('CapsLock')"
@@ -142,9 +197,9 @@
                     <span class="itsm-help__addr">{{ $supportEmail }}</span>
                     <button type="button" class="itsm-help__copy" @click="copy()" :aria-label="copied ? 'Email address copied' : 'Copy email address'" x-text="copied ? 'Copied!' : 'Copy'">Copy</button>
                 </div>
-                <a class="itsm-help__send" href="{{ $mailto }}">
+                <a class="itsm-help__send" href="{{ $mailto }}" aria-label="Send email" title="Send email">
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
-                    Send email
+                    <span class="itsm-help__label">Send email</span>
                 </a>
             </div>
         </div>

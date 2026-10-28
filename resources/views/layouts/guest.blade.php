@@ -7,7 +7,8 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b3d27">
     <title>{{ config('app.name', 'IT Service Management System') }}</title>
 
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -41,6 +42,8 @@
             color: var(--itsm-ink);
             overflow: hidden;
             isolation: isolate;
+            display: flex; flex-direction: column;
+            -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
         }
 
         /* ---------- Background ---------- */
@@ -56,7 +59,7 @@
         }
         
         /* ---------- Page grid ---------- */
-        .itsm-grid { display: grid; grid-template-columns: minmax(0, 1fr); min-height: inherit; }
+        .itsm-grid { display: grid; grid-template-columns: minmax(0, 1fr); flex: 1 0 auto; }
         @media (min-width: 1024px) {
             .itsm-grid { grid-template-columns: minmax(0, 1fr) clamp(380px, 34vw, 540px); }
         }
@@ -152,7 +155,12 @@
         .itsm-credit svg { width: .95rem; height: .95rem; opacity: .9; }
         .itsm-credit b { font-weight: 600; color: #fff; }
         @media (max-width: 1023px) {
-            .itsm-credit { right: 0; left: 0; justify-content: center; color: rgba(255,255,255,.9); }
+            /* in the normal flow (not floating over the card) and centred under it */
+            .itsm-credit {
+                position: relative; right: auto; bottom: auto; left: auto; flex: none;
+                justify-content: center; padding: .25rem 1rem calc(.9rem + env(safe-area-inset-bottom));
+                color: rgba(255,255,255,.92);
+            }
         }
 
         /* ---------- Right panel + card ---------- */
@@ -188,9 +196,83 @@
         .itsm-card .itsm-plain-slot button[type="submit"] { background-color: var(--itsm-green-700); }
         .itsm-card .itsm-plain-slot button[type="submit"]:hover { background-color: var(--itsm-green-900); }
 
+        /* ---------- Compact brand header (phones & tablets, where the left panel is hidden) ---------- */
+        .itsm-mobile-brand { display: none; text-align: center; margin: 0 0 .75rem; }
+        .itsm-mobile-brand b { display: block; font-size: .95rem; font-weight: 700; line-height: 1.25; color: var(--itsm-green-800); }
+        .itsm-mobile-brand span { display: block; margin-top: .15rem; font-size: .72rem; letter-spacing: .02em; color: var(--itsm-muted); }
+
+        /* ---------- Tablets & phones ---------- */
         @media (max-width: 1023px) {
             .itsm-bg--fallback { background: radial-gradient(70% 45% at 50% 0%, #fff, rgba(255,255,255,0) 70%), linear-gradient(180deg, #e4f1ec 0%, #cfe4dc 100%); }
-                        .itsm-panel { padding: 1rem; }
+            .itsm-bg--photo { background-position: 70% bottom; }
+            /* soft wash so the card edge stays crisp on top of the busy photo */
+            .itsm-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 40%, rgba(6,40,28,.35) 100%); }
+            .itsm-panel {
+                align-items: center;
+                padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 1rem max(1rem, env(safe-area-inset-left));
+            }
+            .itsm-card { max-width: 30rem; }
+            .itsm-mobile-brand { display: block; }
+        }
+        @media (min-width: 640px) and (max-width: 1023px) {
+            .itsm-panel { padding-top: clamp(2rem, 6vh, 4rem); padding-bottom: clamp(1.5rem, 4vh, 3rem); }
+            .itsm-card { max-width: 32rem; padding: 2.25rem 2.5rem 1.4rem; }
+        }
+
+        /* ---------- Small phones ---------- */
+        @media (max-width: 380px) {
+            .itsm-panel { padding-left: .75rem; padding-right: .75rem; }
+            .itsm-card { border-radius: 1.25rem; padding: 1.15rem 1.1rem 1rem; }
+        }
+
+        /* ---------- Short screens (phones in landscape, small laptops) ---------- */
+        @media (max-height: 520px) and (max-width: 1023px) {
+            .itsm-panel { align-items: flex-start; padding-top: .75rem; padding-bottom: .5rem; }
+            .itsm-card__logo { width: 72px; margin-bottom: .25rem; }
+            .itsm-mobile-brand { margin-bottom: .5rem; }
+        }
+
+
+        /* ---------- Desktop / laptop: the page is exactly one screen tall, never scrolls ---------- */
+        @media (min-width: 1024px) {
+            .itsm-stage { height: 100vh; height: 100dvh; min-height: 0; }
+            .itsm-grid { height: 100%; min-height: 0; }
+            .itsm-brand { min-height: 0; overflow: hidden; }
+            .itsm-brand__logo { width: min(clamp(150px, 13vw, 230px), 21vh); }
+            .itsm-brand__title { font-size: min(clamp(1.6rem, 2.5vw, 2.6rem), 5.4vh); margin-top: min(clamp(.5rem, 1.2vw, 1.25rem), 1.8vh); }
+            .itsm-brand__tagline { font-size: min(clamp(.85rem, 1vw, 1.05rem), 2.3vh); }
+            .itsm-features { margin-top: min(clamp(1rem, 1.8vw, 1.75rem), 2.6vh); }
+            .itsm-partner { padding-top: min(clamp(3.5rem, 7vw, 6rem), 10vh); }
+            .itsm-panel { min-height: 0; padding-top: 1rem; padding-bottom: 2.4rem; }
+            .itsm-card { padding: min(2rem, 3.2vh) clamp(1.4rem, 2.4vw, 2.25rem) min(1.25rem, 2vh); }
+            .itsm-card__logo { width: clamp(70px, 8.5vw, 140px); max-width: 100%; height: min(auto, 12vh); object-fit: contain; }
+            .itsm-card__foot { margin-top: min(1.25rem, 1.8vh); }
+        }
+        @media (min-width: 1024px) and (max-height: 760px) {
+            .itsm-features { display: none; }
+            .itsm-card__logo { width: auto; height: 11vh; max-height: 84px; }
+            .itsm-card__foot { font-size: .68rem; }
+        }
+        @media (min-width: 1024px) and (max-height: 640px) {
+            .itsm-card__logo { height: 9vh; }
+            .itsm-partner { padding-top: 3rem; }
+        }
+        @media (min-width: 1024px) and (max-height: 560px) {
+            .itsm-partner__body p { display: none; }
+        }
+        @media (min-width: 1024px) and (max-height: 540px) {
+            .itsm-card__logo { display: none; }
+            .itsm-card__foot { display: none; }
+            .itsm-brand__tagline { display: none; }
+        }
+
+        /* ---------- Very large screens: keep the content from stretching ---------- */
+        @media (min-width: 1700px) {
+            .itsm-card { max-width: 31rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .itsm-stage *, .itsm-stage *::before, .itsm-stage *::after { transition: none !important; animation: none !important; }
         }
     </style>
 </head>
