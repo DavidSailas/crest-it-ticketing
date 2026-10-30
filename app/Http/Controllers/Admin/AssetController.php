@@ -431,14 +431,14 @@ class AssetController extends Controller
 
     /**
      * Headline numbers for a set of assets: totals, assigned vs unassigned,
-     * repair/retired, and a per-device-type breakdown (every type is listed,
+     * repair/pending disposal, and a per-device-type breakdown (every type is listed,
      * even at zero, so the report always reads the same way).
      */
     private function summarize($query): array
     {
         // Three mutually exclusive states: a person has it / a department has it / it's in stock.
         $rows = $query->toBase()
-            ->selectRaw("type, COUNT(*) as total, SUM(CASE WHEN user_id IS NOT NULL THEN 1 ELSE 0 END) as people, SUM(CASE WHEN user_id IS NULL AND department_assigned = 1 THEN 1 ELSE 0 END) as departments, SUM(CASE WHEN status = 'in_repair' THEN 1 ELSE 0 END) as in_repair, SUM(CASE WHEN status = 'retired' THEN 1 ELSE 0 END) as retired")
+            ->selectRaw("type, COUNT(*) as total, SUM(CASE WHEN user_id IS NOT NULL THEN 1 ELSE 0 END) as people, SUM(CASE WHEN user_id IS NULL AND department_assigned = 1 THEN 1 ELSE 0 END) as departments, SUM(CASE WHEN status = 'in_repair' THEN 1 ELSE 0 END) as in_repair, SUM(CASE WHEN status = 'pending_disposal' THEN 1 ELSE 0 END) as pending_disposal")
             ->groupBy('type')
             ->get()
             ->keyBy('type');
@@ -472,7 +472,7 @@ class AssetController extends Controller
             'assigned' => $people + $departments,
             'unassigned' => $total - $people - $departments,
             'in_repair' => (int) $rows->sum('in_repair'),
-            'retired' => (int) $rows->sum('retired'),
+            'pending_disposal' => (int) $rows->sum('pending_disposal'),
             'byType' => $byType,
         ];
     }
@@ -579,7 +579,7 @@ class AssetController extends Controller
             ['Assigned', $summary['assigned']],
             ['Unassigned', $summary['unassigned']],
             ['In repair', $summary['in_repair']],
-            ['Retired', $summary['retired']],
+            ['Pending disposal', $summary['pending_disposal']],
             ['Assigned to departments', $summary['department']],
         ];
         $r = 5;

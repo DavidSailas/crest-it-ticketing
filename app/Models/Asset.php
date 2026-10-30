@@ -62,7 +62,7 @@ class Asset extends Model
     public const STATUSES = [
         'active' => 'Active',
         'in_repair' => 'In Repair',
-        'retired' => 'Retired',
+        'pending_disposal' => 'Pending Disposal',
     ];
 
     protected $fillable = [

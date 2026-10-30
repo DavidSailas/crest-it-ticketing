@@ -38,7 +38,7 @@
         .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 8.5px; font-weight: bold; white-space: nowrap; }
         .status-active { background-color: #d1fae5; color: #047857; }
         .status-in_repair { background-color: #fef3c7; color: #92400e; }
-        .status-retired { background-color: #e5e7eb; color: #4b5563; }
+        .status-pending_disposal { background-color: #e5e7eb; color: #4b5563; }
         .unassigned { background-color: #fef3c7; color: #92400e; }
         .shared { background-color: #e0f2fe; color: #075985; }
 
@@ -73,7 +73,7 @@
             <td>
                 <div class="card-label">In repair</div>
                 <div class="card-value">{{ number_format($summary['in_repair']) }}</div>
-                <div class="card-note">{{ $summary['retired'] }} retired</div>
+                <div class="card-note">{{ $summary['pending_disposal'] }} pending disposal</div>
             </td>
         </tr>
     </table>

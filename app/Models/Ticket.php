@@ -12,12 +12,15 @@ class Ticket extends Model
     /**
      * How each status is shown to people. The stored value for "Pending User" stays `pending`
      * (so nothing in the database or the filters changes) — only its label does.
+     * "Pending Backend" (`pending_backend`) is for tickets whose fix happens on the server
+     * side (spam filtering, cPanel, mail or hosting settings) — IT owns it, the user isn't being waited on.
      * Always use Ticket::statusLabel() instead of formatting the raw value.
      */
     public const STATUS_LABELS = [
         'open' => 'Open',
         'in_progress' => 'In Progress',
         'pending' => 'Pending User',
+        'pending_backend' => 'Pending Backend',
         'resolved' => 'Resolved',
         'closed' => 'Closed',
         'cancelled' => 'Cancelled',

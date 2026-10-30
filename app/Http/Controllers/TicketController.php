@@ -33,7 +33,7 @@ class TicketController extends Controller
         $dateFrom = trim((string) $request->query('date_from', ''));
         $dateTo = trim((string) $request->query('date_to', ''));
 
-        $allStatuses = ['open', 'in_progress', 'pending', 'resolved', 'closed', 'cancelled'];
+        $allStatuses = ['open', 'in_progress', 'pending', 'pending_backend', 'resolved', 'closed', 'cancelled'];
 
         if ($user->isStaff()) {
             $query = Ticket::where('user_id', $user->id);
@@ -42,7 +42,7 @@ class TicketController extends Controller
             // The Open Queue of unclaimed tickets lives on the dashboard — this
             // page is the agent's own ticket history: what they're actively
             // working on, plus what they've already resolved or closed.
-            $statusOptions = ['in_progress', 'pending', 'resolved', 'closed'];
+            $statusOptions = ['in_progress', 'pending', 'pending_backend', 'resolved', 'closed'];
             $query = Ticket::where('assigned_to', $user->id)
                 ->whereIn('status', $statusOptions);
         } else { // admin
@@ -137,7 +137,7 @@ class TicketController extends Controller
             });
         }
 
-        if (in_array($status, ['open', 'in_progress', 'pending', 'resolved', 'closed', 'cancelled'], true)) {
+        if (in_array($status, ['open', 'in_progress', 'pending', 'pending_backend', 'resolved', 'closed', 'cancelled'], true)) {
             $query->where('status', $status);
         }
 
@@ -590,7 +590,7 @@ class TicketController extends Controller
             'category' => 'required|in:'.implode(',', StoreTicketRequest::CATEGORIES),
             'priority' => 'required|in:low,medium,high,critical',
             // Closing needs a solution, so it stays on the ticket page's status form.
-            'status' => 'nullable|in:open,in_progress,pending,resolved',
+            'status' => 'nullable|in:open,in_progress,pending,pending_backend,resolved',
             // Optional note on why it was corrected — shown in the ticket thread.
             'reason' => 'nullable|string|max:500',
         ], [
@@ -790,7 +790,7 @@ class TicketController extends Controller
         }
 
         $request->validate([
-            'status' => 'required|in:open,in_progress,pending,resolved,closed',
+            'status' => 'required|in:open,in_progress,pending,pending_backend,resolved,closed',
             'solution' => ['required_if:status,closed', 'nullable', 'string', 'max:5000'],
         ], [
             'solution.required_if' => 'Describe how this was resolved before closing the ticket.',

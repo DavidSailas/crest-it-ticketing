@@ -323,15 +323,16 @@
         <table class="grid">
             <thead>
                 <tr>
-                    <th style="width:22%;">IT Engineer</th>
-                    <th class="num" style="width:9%;">Tickets</th>
-                    <th style="width:17%;">Share of workload</th>
-                    <th class="num" style="width:7%;">Open</th>
-                    <th class="num" style="width:9%;">In progress</th>
+                    <th style="width:19%;">IT Engineer</th>
+                    <th class="num" style="width:8%;">Tickets</th>
+                    <th style="width:13%;">Share of workload</th>
+                    <th class="num" style="width:6%;">Open</th>
+                    <th class="num" style="width:8%;">In progress</th>
                     <th class="num" style="width:9%;">Pending User</th>
+                    <th class="num" style="width:10%;">Pending Backend</th>
                     <th class="num" style="width:8%;">Resolved</th>
                     <th class="num" style="width:7%;">Closed</th>
-                    <th class="num" style="width:13%;">Avg. resolution</th>
+                    <th class="num" style="width:12%;">Avg. resolution</th>
                 </tr>
             </thead>
             <tbody>
@@ -346,6 +347,7 @@
                         <td class="num">{{ $r[6] }}</td>
                         <td class="num">{{ $r[7] }}</td>
                         <td class="num">{{ $r[8] }}</td>
+                        <td class="num">{{ $r[9] }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -359,6 +361,7 @@
                     <td class="num">{{ $engSum(5) }}</td>
                     <td class="num">{{ $engSum(6) }}</td>
                     <td class="num">{{ $engSum(7) }}</td>
+                    <td class="num">{{ $engSum(8) }}</td>
                     <td>&nbsp;</td>
                 </tr>
             </tfoot>

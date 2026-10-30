@@ -19,6 +19,7 @@
         'open'        => ['label' => 'Open',        'hint' => 'Waiting to be picked up',        'dot' => 'bg-amber-500',  'on' => 'border-amber-400 bg-amber-50 ring-2 ring-amber-500/20'],
         'in_progress' => ['label' => 'In Progress', 'hint' => 'An agent is working on it',      'dot' => 'bg-blue-500',   'on' => 'border-blue-400 bg-blue-50 ring-2 ring-blue-500/20'],
         'pending'     => ['label' => 'Pending User', 'hint' => 'Waiting on a reply or action from the requester', 'dot' => 'bg-purple-500', 'on' => 'border-purple-400 bg-purple-50 ring-2 ring-purple-500/20'],
+        'pending_backend' => ['label' => 'Pending Backend', 'hint' => 'Needs a server-side fix (e.g. spam, cPanel, mail settings)', 'dot' => 'bg-teal-500', 'on' => 'border-teal-400 bg-teal-50 ring-2 ring-teal-500/20'],
         'resolved'    => ['label' => 'Resolved',    'hint' => 'Fixed, waiting to be closed',    'dot' => 'bg-green-600',  'on' => 'border-green-400 bg-green-50 ring-2 ring-green-500/20'],
     ];
     $statusLabels = collect($statuses)->map(fn ($st) => $st['label'])->all();

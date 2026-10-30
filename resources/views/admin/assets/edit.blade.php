@@ -279,6 +279,9 @@
                                         <option value="{{ $value }}" @selected(old('status', $asset->status) === $value)>{{ $label }}</option>
                                     @endforeach
                                 </select>
+                                <p class="mt-1.5 text-xs text-gray-500">
+                                    <span class="font-medium text-gray-600">Pending Disposal</span> = out of service and waiting to be written off, recycled, sold or handed over. Add the reason in Notes.
+                                </p>
                             </div>
                             <div class="sm:col-span-2">
                                 <x-asset-notes-field :value="old('notes', $asset->notes)" />

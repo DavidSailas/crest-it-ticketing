@@ -47,7 +47,7 @@ class DashboardController extends Controller
             // Headline health metrics — what an admin actually needs at a glance.
             'unassigned' => Ticket::where('status', 'open')->whereNull('assigned_to')->count(),
             'critical' => Ticket::whereNotIn('status', ['resolved', 'closed', 'cancelled'])->where('priority', 'critical')->count(),
-            'active' => Ticket::whereIn('status', ['open', 'in_progress', 'pending'])->count(),
+            'active' => Ticket::whereIn('status', ['open', 'in_progress', 'pending', 'pending_backend'])->count(),
             'resolved_this_week' => Ticket::whereIn('status', ['resolved', 'closed'])
                 ->where('updated_at', '>=', now()->startOfWeek())
                 ->count(),
@@ -74,7 +74,7 @@ class DashboardController extends Controller
             'unassigned' => Ticket::where('status', 'open')->whereNull('assigned_to')->count(),
             'critical' => Ticket::whereNotIn('status', ['resolved', 'closed', 'cancelled'])->where('priority', 'critical')->count(),
             // This agent's own live workload.
-            'my_active' => Ticket::where('assigned_to', $user->id)->whereIn('status', ['in_progress', 'pending'])->count(),
+            'my_active' => Ticket::where('assigned_to', $user->id)->whereIn('status', ['in_progress', 'pending', 'pending_backend'])->count(),
             'resolved_today' => Ticket::where('assigned_to', $user->id)
                 ->whereIn('status', ['resolved', 'closed'])
                 ->whereDate('updated_at', today())
@@ -99,11 +99,11 @@ class DashboardController extends Controller
         // Every ticket that has an owner and isn't closed yet — across the
         // whole IT team, not just this agent — so everyone can see who is
         // carrying how much and jump in to help. Critical first, then newest.
-        $assignedStatuses = ['in_progress', 'pending', 'resolved'];
+        $assignedStatuses = ['in_progress', 'pending', 'pending_backend', 'resolved'];
 
         // Clicking an agent chip narrows the list to that agent's tickets that
         // are still being worked (In Progress / Pending) — nothing closed.
-        $activeStatuses = ['in_progress', 'pending'];
+        $activeStatuses = ['in_progress', 'pending', 'pending_backend'];
 
         $selectedAgent = $agentId
             ? User::where('role', 'it_support')->find($agentId)

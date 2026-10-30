@@ -41,6 +41,7 @@
         .status-open { background-color: #fef3c7; color: #92400e; }
         .status-in_progress { background-color: #dbeafe; color: #1d4ed8; }
         .status-pending { background-color: #ede9fe; color: #6d28d9; }
+        .status-pending_backend { background-color: #ccfbf1; color: #0f766e; }
         .status-resolved { background-color: #d1fae5; color: #047857; }
         .status-closed { background-color: #e5e7eb; color: #4b5563; }
 

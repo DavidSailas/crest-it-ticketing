@@ -131,7 +131,7 @@
             <h3 class="text-base font-semibold text-gray-800">Assigned Tickets</h3>
             <span class="text-xs text-gray-400">
                 @if($selectedAgent)
-                    {{ $selectedAgent->name }} · {{ $assignedTickets->total() }} in progress / pending user · critical first
+                    {{ $selectedAgent->name }} · {{ $assignedTickets->total() }} in progress / pending · critical first
                 @else
                     All IT Support · {{ $assignedTickets->total() }} ticket{{ $assignedTickets->total() === 1 ? '' : 's' }} · critical first
                 @endif
@@ -152,7 +152,7 @@
                         : route('dashboard', ['agent' => $agent->id]).'#assigned-tickets';
                 @endphp
                 <a href="{{ $href }}"
-                   title="{{ $selected ? 'Show everyone' : 'Show '.$agent->name.'\'s in-progress and pending-user tickets' }}"
+                   title="{{ $selected ? 'Show everyone' : 'Show '.$agent->name.'\'s in-progress and pending tickets' }}"
                    class="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border shadow-sm transition
                           {{ $selected ? 'border-green-600 bg-green-100 ring-2 ring-green-200' : ($isMe ? 'border-green-300 bg-green-50 hover:bg-green-100' : 'border-gray-200 bg-white hover:bg-gray-50') }}">
                     <span class="relative shrink-0">
@@ -177,7 +177,7 @@
                     </div>
                     @if($selectedAgent)
                         <p class="text-gray-700 font-medium">No open tickets for {{ $selectedAgent->name }}</p>
-                        <p class="text-gray-400 text-sm mt-1">Nothing is in progress or pending user for this person right now.</p>
+                        <p class="text-gray-400 text-sm mt-1">Nothing is in progress or pending for this person right now.</p>
                     @else
                         <p class="text-gray-700 font-medium">Nothing assigned yet</p>
                         <p class="text-gray-400 text-sm mt-1">Accept a ticket from the queue above to get started.</p>

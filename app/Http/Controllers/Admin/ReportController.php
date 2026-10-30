@@ -139,7 +139,7 @@ class ReportController extends Controller
 
         // Every ticket assigned to an engineer that was created in the period,
         // split by where it stands now — so "Tickets" is exactly the sum of the
-        // five status columns next to it.
+        // six status columns next to it.
         $tickets = Ticket::whereNotNull('assigned_to')
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
@@ -160,6 +160,7 @@ class ReportController extends Controller
                 'open' => $mine->where('status', 'open')->count(),
                 'in_progress' => $mine->where('status', 'in_progress')->count(),
                 'pending' => $mine->where('status', 'pending')->count(),
+                'pending_backend' => $mine->where('status', 'pending_backend')->count(),
                 'resolved' => $mine->where('status', 'resolved')->count(),
                 'closed' => $mine->where('status', 'closed')->count(),
                 'avg' => $avg === null ? '—' : ($avg < 24 ? round($avg, 1).' h' : round($avg / 24, 1).' d'),
@@ -169,9 +170,9 @@ class ReportController extends Controller
         return [
             'key' => 'engineers',
             'title' => 'IT Engineer report',
-            'headers' => ['IT Engineer', 'Department', 'Tickets', 'Open', 'In progress', 'Pending User', 'Resolved', 'Closed', 'Avg. resolution'],
-            'numeric' => [2, 3, 4, 5, 6, 7, 8],
-            'totalCols' => [2, 3, 4, 5, 6, 7],
+            'headers' => ['IT Engineer', 'Department', 'Tickets', 'Open', 'In progress', 'Pending User', 'Pending Backend', 'Resolved', 'Closed', 'Avg. resolution'],
+            'numeric' => [2, 3, 4, 5, 6, 7, 8, 9],
+            'totalCols' => [2, 3, 4, 5, 6, 7, 8],
             'rows' => $rows->map(fn ($r) => array_values($r))->all(),
             'note' => 'Tickets = everything assigned to the engineer that was created in the period, shown by its current status · Avg. resolution = created to resolved',
         ];
@@ -195,7 +196,7 @@ class ReportController extends Controller
                 'department' => $u->department->name ?? '—',
                 'branch' => $u->branch_name ?: '—',
                 'submitted' => $mine->count(),
-                'open' => $mine->whereIn('status', ['open', 'in_progress', 'pending'])->count(),
+                'open' => $mine->whereIn('status', ['open', 'in_progress', 'pending', 'pending_backend'])->count(),
                 'resolved' => $mine->whereIn('status', ['resolved', 'closed'])->count(),
                 'last' => $mine->isNotEmpty() ? $mine->max('created_at')->format('M j, Y') : '—',
             ];
@@ -208,7 +209,7 @@ class ReportController extends Controller
             'numeric' => [3, 4, 5],
             'totalCols' => [3, 4, 5],
             'rows' => $rows->map(fn ($r) => array_values($r))->all(),
-            'note' => 'Tickets submitted by each staff member in the period · Still open = Open, In Progress or Pending User',
+            'note' => 'Tickets submitted by each staff member in the period · Still open = Open, In Progress, Pending User or Pending Backend',
         ];
     }
 
@@ -355,7 +356,7 @@ class ReportController extends Controller
             ->pluck('total', 'assigned_to');
 
         $working = Ticket::whereNotNull('assigned_to')
-            ->whereIn('status', ['in_progress', 'pending'])
+            ->whereIn('status', ['in_progress', 'pending', 'pending_backend'])
             ->toBase()
             ->selectRaw('assigned_to, COUNT(*) as total')
             ->groupBy('assigned_to')
@@ -645,9 +646,9 @@ class ReportController extends Controller
             'totalTickets' => $totalTickets,
             'byStatus' => $this->labelPieData($byStatus, [
                 'open' => 'Open', 'in_progress' => 'In Progress', 'pending' => 'Pending User',
-                'resolved' => 'Resolved', 'closed' => 'Closed', 'cancelled' => 'Cancelled',
+                'pending_backend' => 'Pending Backend', 'resolved' => 'Resolved', 'closed' => 'Closed', 'cancelled' => 'Cancelled',
             ], [
-                'open' => '#3b82f6', 'in_progress' => '#6366f1', 'pending' => '#f59e0b',
+                'open' => '#3b82f6', 'in_progress' => '#6366f1', 'pending' => '#f59e0b', 'pending_backend' => '#14b8a6',
                 'resolved' => '#10b981', 'closed' => '#9ca3af', 'cancelled' => '#f87171',
             ]),
             'byPriority' => $this->labelPieData($byPriority, [
@@ -670,7 +671,7 @@ class ReportController extends Controller
             'unassignedAssets' => $unassignedAssets,
             'assetsByType' => $this->labelPieData($assetsByType, Asset::TYPES, null),
             'assetsByStatus' => $this->labelPieData($assetsByStatus, Asset::STATUSES, [
-                'active' => '#10b981', 'in_repair' => '#f59e0b', 'retired' => '#9ca3af',
+                'active' => '#10b981', 'in_repair' => '#f59e0b', 'pending_disposal' => '#9ca3af',
             ]),
 
             'usersByRole' => $this->labelPieData($usersByRole, [

@@ -17,7 +17,7 @@ class DashboardCharts
 
     /** Same colours as the status badges elsewhere in the app. */
     public const STATUS_COLORS = [
-        'open' => '#3b82f6', 'assigned' => '#6366f1', 'in_progress' => '#f59e0b', 'on_hold' => '#94a3b8',
+        'open' => '#3b82f6', 'assigned' => '#6366f1', 'in_progress' => '#f59e0b', 'pending_backend' => '#14b8a6', 'on_hold' => '#94a3b8',
         'resolved' => '#10b981', 'closed' => '#cbd5e1', 'cancelled' => '#fb7185',
     ];
 

@@ -4,12 +4,12 @@
     $labels = [
         'active' => 'Active',
         'in_repair' => 'In Repair',
-        'retired' => 'Retired',
+        'pending_disposal' => 'Pending Disposal',
     ];
     $styles = [
         'active' => 'bg-green-100 text-green-700',
         'in_repair' => 'bg-amber-100 text-amber-700',
-        'retired' => 'bg-gray-200 text-gray-600',
+        'pending_disposal' => 'bg-gray-200 text-gray-600',
     ][$status] ?? 'bg-gray-100 text-gray-600';
 @endphp
 
