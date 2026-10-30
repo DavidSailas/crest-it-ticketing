@@ -15,6 +15,8 @@
             <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
         @endif
 
+        @include('announcements._banner')
+
         {{-- Masthead --}}
         <div class="relative overflow-hidden rounded-xl" style="background-color:#123f24;">
             <svg class="absolute -right-6 -top-10 w-56 h-56 opacity-[0.07] pointer-events-none" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="1.5">

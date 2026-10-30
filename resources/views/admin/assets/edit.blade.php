@@ -46,7 +46,7 @@
                 const q = this.editUserQuery.trim().toLowerCase();
                 const list = q === ""
                     ? this.userDirectory
-                    : this.userDirectory.filter(u => u.name.toLowerCase().includes(q) || (u.username ?? '').toLowerCase().includes(q));
+                    : this.userDirectory.filter(u => u.name.toLowerCase().includes(q) || (u.username ?? "").toLowerCase().includes(q));
                 return list.slice(0, 30);
             },
             initials(name) {

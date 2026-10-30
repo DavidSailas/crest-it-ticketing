@@ -7,6 +7,7 @@
     // How many supply items are low or out — a nudge for the people who restock them.
     $restock = $authUser->isStaff() ? ['total' => 0, 'severe' => 0] : \App\Models\Supply::restockAlert();
     $restockCount = $restock['total'];
+    $annUnread = \App\Models\Announcement::unreadCountFor($authUser);
     // Amber when items are merely low; red as soon as one is critical or out.
     $restockBadge = $restock['severe'] > 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700';
 
@@ -26,6 +27,8 @@
 
     // Admin-only setup pages, grouped so the bar stays short.
     $orgLinks = $isAdmin ? [
+        ['label' => 'Announcements', 'hint' => 'Post updates to everyone', 'href' => route('admin.announcements.index'), 'active' => ['admin.announcements.*'],
+         'icon' => 'M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46'],
         ['label' => 'Departments', 'hint' => 'Teams and asset codes', 'href' => route('admin.departments.index'), 'active' => ['admin.departments.*'],
          'icon' => 'M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21'],
         ['label' => 'Branches', 'hint' => 'Office locations', 'href' => route('admin.branches.index'), 'active' => ['admin.branches.*'],
@@ -96,6 +99,13 @@
 
             {{-- Right: notifications, account (laptops and up), menu button (phones and tablets) --}}
             <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+
+                {{-- Announcements — everyone can read; the dot shows when something is unread --}}
+                <a href="{{ route('announcements.index') }}" data-ann-bell aria-label="Announcements{{ $annUnread ? ' ('.$annUnread.' unread)' : '' }}" title="Announcements"
+                   class="relative inline-flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 {{ request()->routeIs('announcements.*') ? 'bg-green-50 text-green-800' : 'text-gray-500 hover:text-gray-700' }}">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" /></svg>
+                    <span data-ann-badge="cap" class="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white" style="background:#1a6b3c;{{ $annUnread > 0 ? '' : 'display:none' }}">{{ $annUnread > 9 ? '9+' : $annUnread }}</span>
+                </a>
 
                 {{-- Notifications bell — visible on every screen size --}}
                 <div x-data="notificationBell('{{ route('notifications.poll') }}', '{{ route('notifications.read-all') }}')" x-init="init()">
@@ -234,6 +244,13 @@
                     </span>
                 </x-responsive-nav-link>
             @endforeach
+
+            <x-responsive-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">
+                <span class="flex items-center justify-between gap-3">
+                    <span>{{ __('Announcements') }}</span>
+                    <span data-ann-badge="full" class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold text-white" style="background:#1a6b3c;{{ $annUnread > 0 ? '' : 'display:none' }}">{{ $annUnread }}</span>
+                </span>
+            </x-responsive-nav-link>
 
             @if($orgLinks)
                 <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{{ __('Organization') }}</p>

@@ -31,7 +31,9 @@
             .filter-active { border-color: #1a6b3c !important; background-color: #f0f9f3 !important; }
             .filter-field:has(.filter-active) > label { color: #15803d; }
         </style>
+        @include('announcements._styles')
         <script src="{{ asset('js/live-list.js') }}?v={{ @filemtime(public_path('js/live-list.js')) }}" defer></script>
+        <script src="{{ asset('js/announcements-live.js') }}?v={{ @filemtime(public_path('js/announcements-live.js')) }}" defer></script>
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
@@ -50,6 +52,12 @@
             <main>
                 {{ $slot }}
             </main>
+
+            {{-- "What's new" pop-up + the live poll that feeds it new announcements --}}
+            @auth
+                @include('announcements._popup')
+                @include('announcements._live')
+            @endauth
         </div>
     </body>
 </html>

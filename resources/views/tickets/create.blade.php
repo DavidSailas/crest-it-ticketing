@@ -5,6 +5,8 @@
 
     <div class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
+        <div class="mb-6">@include('announcements._banner')</div>
+
         {{-- Masthead --}}
         <div class="relative overflow-hidden rounded-xl mb-6" style="background-color:#123f24;">
             <svg class="absolute -right-6 -top-10 w-48 h-48 opacity-[0.07] pointer-events-none" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="1.5">

@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\AssetController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ItPolicyController;
@@ -86,6 +88,12 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
         Route::get('/it-policy', [ItPolicyController::class, 'show'])->name('it-policy.show');
         Route::get('/it-policy/download', [ItPolicyController::class, 'download'])->name('it-policy.download');
     });
+
+    // Announcements — every signed-in role can read them (the pop-up and the
+    // dashboard banner come from here); only Admin posts them (see below).
+    Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
+    Route::get('/announcements/poll', [AnnouncementController::class, 'poll'])->name('announcements.poll');
+    Route::post('/announcements/read', [AnnouncementController::class, 'markRead'])->name('announcements.read');
 
     // Notifications bell — available to every role
     Route::get('/notifications/poll', [NotificationController::class, 'poll'])->name('notifications.poll');
@@ -192,6 +200,15 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
         Route::get('/tickets/export/excel', [TicketController::class, 'exportExcel'])->name('tickets.export.excel');
         Route::get('/assets/export/pdf', [AssetController::class, 'exportPdf'])->name('assets.export.pdf');
         Route::get('/assets/export/excel', [AssetController::class, 'exportExcel'])->name('assets.export.excel');
+
+        // Announcements — post / schedule / edit what staff see on sign-in.
+        Route::get('/announcements', [AdminAnnouncementController::class, 'index'])->name('announcements.index');
+        Route::get('/announcements/create', [AdminAnnouncementController::class, 'create'])->name('announcements.create');
+        Route::post('/announcements', [AdminAnnouncementController::class, 'store'])->name('announcements.store');
+        Route::get('/announcements/{announcement}/edit', [AdminAnnouncementController::class, 'edit'])->name('announcements.edit');
+        Route::put('/announcements/{announcement}', [AdminAnnouncementController::class, 'update'])->name('announcements.update');
+        Route::patch('/announcements/{announcement}/publish', [AdminAnnouncementController::class, 'toggle'])->name('announcements.toggle');
+        Route::delete('/announcements/{announcement}', [AdminAnnouncementController::class, 'destroy'])->name('announcements.destroy');
 
         Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
         Route::post('/branches', [BranchController::class, 'store'])->name('branches.store');
