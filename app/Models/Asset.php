@@ -15,7 +15,6 @@ class Asset extends Model
      */
     public const COMPANIES = [
         'CFI' => 'CFI',
-        'C5' => 'C5',
     ];
 
     /**
