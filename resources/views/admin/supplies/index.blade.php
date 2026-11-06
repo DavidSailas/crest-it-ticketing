@@ -116,12 +116,12 @@
 
             $totalForPct = max($summary['total'], 1);
             $pct = fn (int $n) => (int) round($n / $totalForPct * 100);
-            $scoped = request()->filled('search') || request()->filled('location');
+            $scoped = request()->filled('search') || $location !== '';
 
             $statCards = [
                 ['tone' => 'hero',  'label' => 'Total items',  'value' => $summary['total'], 'href' => $resetFacets,
                  'on' => ! request()->hasAny(['category', 'status']),
-                 'sub' => $scoped ? 'In current search' : 'Across all branches', 'pct' => null,
+                 'sub' => $scoped ? 'In this view' : 'Across all branches', 'pct' => null,
                  'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />'],
                 ['tone' => 'green', 'label' => 'In stock',     'value' => $summary['ok'],  'href' => $toggle('status', 'ok'),  'on' => request('status') === 'ok',
                  'sub' => 'Comfortably stocked · '.$pct($summary['ok']).'%', 'pct' => $pct($summary['ok']),
@@ -218,7 +218,7 @@
         @php
             $filterFields = [
                 ['name' => 'category', 'label' => 'Category', 'all' => 'All categories', 'options' => \App\Models\Supply::CATEGORIES],
-                ['name' => 'location', 'label' => 'Branch',   'all' => 'All branches',   'options' => $branches],
+                ['name' => 'location', 'label' => 'Branch',   'all' => 'All branches',   'options' => $branches, 'allValue' => 'all'],
                 ['name' => 'status',   'label' => 'Stock',    'all' => 'All stock levels', 'options' => \App\Models\Supply::STOCK_STATUSES],
             ];
 
@@ -227,10 +227,19 @@
             if (filled(request('search'))) {
                 $chips[] = ['key' => 'search', 'label' => 'Search: "'.request('search').'"'];
             }
+            // The branch shown may be the default (nothing in the URL), so read it from the controller.
+            $fieldValue = fn (array $f) => $f['name'] === 'location' ? $location : (string) request($f['name'], '');
+            $allBranchesUrl = route('supplies.index', array_merge(array_filter(request()->except('page', 'location')), ['location' => 'all']));
+
             foreach ($filterFields as $f) {
-                $current = (string) request($f['name'], '');
+                $current = $fieldValue($f);
                 if ($current !== '' && array_key_exists($current, $f['options'])) {
-                    $chips[] = ['key' => $f['name'], 'label' => $f['label'].': '.$f['options'][$current]];
+                    $chips[] = [
+                        'key' => $f['name'],
+                        'label' => $f['label'].': '.$f['options'][$current],
+                        // Removing the branch chip means "show every branch" (an empty URL would bring the default back).
+                        'href' => $f['name'] === 'location' ? $allBranchesUrl : null,
+                    ];
                 }
             }
         @endphp
@@ -240,8 +249,15 @@
             <div class="flex items-center gap-2">
             <div class="relative min-w-0 flex-1">
                 <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by item name, brand, or model / part number..." autocomplete="off"
-                       class="block w-full pl-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ filled(request('search')) ? 'filter-active' : '' }}">
+                <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by name, model or both — e.g. HP 680" autocomplete="off" aria-label="Search supplies by name, brand, model or item code"
+                       class="block w-full pl-9 pr-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ filled(request('search')) ? 'filter-active' : '' }}">
+                @if(filled(request('search')))
+                    <a href="{{ $toggle('search', null) }}" title="Clear search" aria-label="Clear search"
+                       class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </a>
+                @endif
+                <p class="mt-1.5 hidden text-[11px] text-gray-400 sm:block">Type any mix of name, brand, model or item code (SUP-0042). Every word you type must match, so more words = a narrower result.</p>
             </div>
                 {{-- Phones: the dropdowns tuck away behind this button so the list stays in view. --}}
                 @php $activeFilters = count($chips) - (filled(request('search')) ? 1 : 0); @endphp
@@ -255,14 +271,16 @@
 
             <div id="supply-filter-fields" class="hidden grid-cols-1 gap-3 sm:grid sm:grid-cols-3" :class="filters && '!grid'">
                 @foreach($filterFields as $f)
-                    @php $isOn = (string) request($f['name'], '') !== '' && array_key_exists((string) request($f['name']), $f['options']); @endphp
+                    @php $isOn = $fieldValue($f) !== '' && array_key_exists($fieldValue($f), $f['options']); @endphp
                     <div class="min-w-0 filter-field">
                         <label for="filter-{{ $f['name'] }}" class="block text-[11px] font-semibold uppercase tracking-wider mb-1 text-gray-400">{{ $f['label'] }}</label>
                         <select id="filter-{{ $f['name'] }}" name="{{ $f['name'] }}"
                                 class="block w-full rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ $isOn ? 'filter-active font-medium' : '' }}">
-                            <option value="">{{ $f['all'] }}</option>
+                            <option value="{{ $f['allValue'] ?? '' }}" @selected($fieldValue($f) === '')>{{ $f['all'] }}</option>
                             @foreach($f['options'] as $value => $label)
-                                <option value="{{ $value }}" @selected((string) request($f['name'], '') === (string) $value)>{{ $label }}</option>
+                                <option value="{{ $value }}" @selected($fieldValue($f) === (string) $value)>
+                                    {{ $label }}@if($f['name'] === 'location' && (string) $value === (string) auth()->user()->location) — your branch @elseif($f['name'] === 'location' && (string) $value === (string) config('supplies.main_branch')) — main stock @endif
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -270,13 +288,20 @@
             </div>
 
             <div id="supply-chips" data-live-list style="margin-top:0">
+                @if($locationIsDefault)
+                    <p class="pt-3 text-xs text-gray-500" style="margin-top:.75rem">
+                        Showing items kept in <span class="font-semibold text-gray-700">{{ $branches[$location] ?? $location }}</span>
+                        @if($location === (string) auth()->user()->location) — your branch @else — the main stock you can request from @endif.
+                        <a href="{{ $allBranchesUrl }}" class="font-medium text-green-700 hover:underline">Show all branches</a>
+                    </p>
+                @endif
                 @if($hasFilters)
                     <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100" style="margin-top:1rem">
                         <span class="text-xs text-gray-500 mr-1">
                             <span class="font-semibold text-gray-700">{{ number_format($supplies->total()) }}</span> matching item{{ $supplies->total() === 1 ? '' : 's' }}
                         </span>
                         @foreach($chips as $chip)
-                            <a href="{{ $toggle($chip['key'], null) }}" class="filter-chip" title="Remove this filter">
+                            <a href="{{ $chip['href'] ?? $toggle($chip['key'], null) }}" class="filter-chip" title="Remove this filter">
                                 <span>{{ $chip['label'] }}</span>
                                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                             </a>
@@ -293,9 +318,14 @@
                 @if($supplies->isEmpty())
                     <div class="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white px-6 py-14 text-center shadow-sm md:rounded-none md:border-0 md:shadow-none">
                         @if($hasFilters)
-                            <p class="text-gray-700 font-medium">No supplies match your filters</p>
-                            <p class="text-gray-400 text-sm mt-1">Try a different term or clear the filters.</p>
-                            <a href="{{ route('supplies.index') }}" class="mt-4 inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-white" style="background-color:#1a6b3c;">Clear all filters</a>
+                            @if(filled(request('search')))
+                                <p class="text-gray-700 font-medium">No supplies match “{{ request('search') }}”</p>
+                                <p class="text-gray-400 text-sm mt-1 max-w-sm">Try fewer words, only the model number, or check the spelling. Active filters may also be hiding items.</p>
+                            @else
+                                <p class="text-gray-700 font-medium">No supplies match your filters</p>
+                                <p class="text-gray-400 text-sm mt-1">Try a different filter, or look at every branch.</p>
+                            @endif
+                            <a href="{{ $allBranchesUrl }}" class="mt-4 inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-white" style="background-color:#1a6b3c;">Show all branches</a>
                         @else
                             <p class="text-gray-700 font-medium">No supplies yet</p>
                             <p class="text-gray-400 text-sm mt-1">{{ $canManage ? 'Add your first item to start tracking stock.' : 'Nothing has been logged yet.' }}</p>
@@ -311,14 +341,14 @@
                             @php
                                 $qtyColor = ['ok' => 'text-gray-900', 'low' => 'text-amber-700', 'critical' => 'text-orange-600', 'out' => 'text-rose-600'][$supply->stock_status];
                                 $reserved = $supply->reserved_quantity;
-                                $canRequest = ! $canManage && $supply->available_quantity > 0 && $supply->location === $user->location;
+                                $canRequest = ! $canManage && $supply->available_quantity > 0 && $supply->canBeRequestedBy($user);
                                 $detail = collect([$supply->brand, $supply->model_no])->filter()->implode(' · ');
                             @endphp
                             <x-m-card :href="route('supplies.show', $supply)" :label="'View '.$supply->name">
                                 <x-slot name="lead"><x-supply-image :supply="$supply" size="md" /></x-slot>
-                                <x-slot name="title">{{ $supply->name }}</x-slot>
+                                <x-slot name="title">{!! \App\Support\SearchHighlight::apply($supply->name, request('search')) !!}</x-slot>
                                 <x-slot name="sub">
-                                    <span class="font-mono">{{ $supply->code }}</span>@if($detail) · {{ $detail }}@endif
+                                    <span class="font-mono">{{ $supply->code }}</span>@if($detail) · {!! \App\Support\SearchHighlight::apply($detail, request('search')) !!}@endif
                                     <span class="mt-1.5 block"><x-supply-status-badge :status="$supply->stock_status" /></span>
                                 </x-slot>
 
@@ -375,7 +405,7 @@
                                     $qtyColor = ['ok' => 'text-gray-900', 'low' => 'text-amber-700', 'critical' => 'text-orange-600', 'out' => 'text-rose-600'][$supply->stock_status];
                                     $reserved = $supply->reserved_quantity;
                                     // Staff can ask for it when some is free and it's kept at their own branch.
-                                    $canRequest = ! $canManage && $supply->available_quantity > 0 && $supply->location === $user->location;
+                                    $canRequest = ! $canManage && $supply->available_quantity > 0 && $supply->canBeRequestedBy($user);
                                     $detail = collect([$supply->brand, $supply->model_no])->filter()->implode(' · ');
                                 @endphp
                                 <tr class="asset-row">
@@ -386,9 +416,9 @@
                                                 <x-supply-image :supply="$supply" size="sm" />
                                             </a>
                                             <div class="min-w-0">
-                                                <a href="{{ route('supplies.show', $supply) }}" class="font-medium text-gray-800 hover:text-green-800 truncate block">{{ $supply->name }}</a>
+                                                <a href="{{ route('supplies.show', $supply) }}" class="font-medium text-gray-800 hover:text-green-800 truncate block">{!! \App\Support\SearchHighlight::apply($supply->name, request('search')) !!}</a>
                                                 <p class="text-xs text-gray-400 mt-0.5 truncate">
-                                                    <span class="font-mono">{{ $supply->code }}</span>@if($detail) · {{ $detail }}@endif
+                                                    <span class="font-mono">{{ $supply->code }}</span>@if($detail) · {!! \App\Support\SearchHighlight::apply($detail, request('search')) !!}@endif
                                                 </p>
                                                 {{-- Folds in whatever's hidden at this breakpoint --}}
                                                 <div class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-500 mt-1 lg:hidden">

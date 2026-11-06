@@ -4,33 +4,34 @@ namespace App\Notifications;
 
 use App\Models\Ticket;
 use App\Models\User;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-class TicketAcceptedNotification extends Notification
+/**
+ * Tells the requester that someone from IT Support picked up their ticket.
+ */
+class TicketAcceptedNotification extends AppNotification
 {
-    use Queueable;
-
     public function __construct(
         public Ticket $ticket,
         public User $acceptedBy,
     ) {}
 
-    public function via(object $notifiable): array
+    public function emailType(): string
     {
-        return ['mail', 'database'];
+        return 'ticket_updates';
     }
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->subject("Your ticket {$this->ticket->ticket_number} is being worked on")
-            ->greeting("Hi {$notifiable->name},")
-            ->line("Good news — {$this->acceptedBy->name} from IT Support has picked up your ticket.")
-            ->line("**{$this->ticket->ticket_number}: {$this->ticket->title}**")
-            ->action('View Ticket', route('tickets.show', $this->ticket))
-            ->line('You can message them directly from the ticket page if you have more details to share.');
+        return $this->brandedMail($notifiable, "{$this->ticket->ticket_number} is being worked on", [
+            'heading' => 'Your ticket is being worked on',
+            'preheader' => "{$this->acceptedBy->name} picked up {$this->ticket->ticket_number}.",
+            'paragraphs' => ["Good news — **{$this->acceptedBy->name}** from IT Support has picked up your ticket."],
+            'ticket' => $this->ticketCard($this->ticket),
+            'ctaLabel' => 'View my ticket',
+            'ctaUrl' => route('tickets.show', $this->ticket),
+            'outro' => 'Have more details? Message them directly from the ticket page.',
+        ]);
     }
 
     public function toArray(object $notifiable): array

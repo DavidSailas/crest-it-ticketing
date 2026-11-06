@@ -4,35 +4,34 @@ namespace App\Notifications;
 
 use App\Models\Ticket;
 use App\Models\User;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-class TicketAssignedNotification extends Notification
+/**
+ * Tells an IT agent that a ticket was assigned to them.
+ */
+class TicketAssignedNotification extends AppNotification
 {
-    use Queueable;
-
     public function __construct(
         public Ticket $ticket,
         public User $assignedBy,
     ) {}
 
-    public function via(object $notifiable): array
+    public function emailType(): string
     {
-        return ['mail', 'database'];
+        return 'work_alerts';
     }
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->subject("Ticket {$this->ticket->ticket_number} assigned to you")
-            ->greeting("Hi {$notifiable->name},")
-            ->line("{$this->assignedBy->name} assigned you a support ticket.")
-            ->line("**{$this->ticket->ticket_number}: {$this->ticket->title}**")
-            ->line("Priority: ".ucfirst($this->ticket->priority))
-            ->line("Department: {$this->ticket->department}")
-            ->action('View Ticket', route('tickets.show', $this->ticket))
-            ->line('Please take a look at your earliest convenience.');
+        return $this->brandedMail($notifiable, "{$this->ticket->ticket_number} was assigned to you", [
+            'heading' => 'A ticket was assigned to you',
+            'preheader' => "{$this->assignedBy->name} assigned you {$this->ticket->ticket_number}.",
+            'paragraphs' => ["**{$this->assignedBy->name}** assigned you a support ticket."],
+            'ticket' => $this->ticketCard($this->ticket),
+            'ctaLabel' => 'Open the ticket',
+            'ctaUrl' => route('tickets.show', $this->ticket),
+            'outro' => 'Please take a look at your earliest convenience.',
+        ]);
     }
 
     public function toArray(object $notifiable): array

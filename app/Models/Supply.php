@@ -172,6 +172,86 @@ class Supply extends Model
         return self::STOCK_HINTS[$this->stock_status];
     }
 
+    /**
+     * The words someone typed in the search box (at most 6, so a pasted paragraph can't make a huge query).
+     * "HP 680 ink" -> ["HP", "680", "ink"].
+     */
+    public static function searchTokens(?string $term): array
+    {
+        $words = preg_split('/\s+/u', trim((string) $term), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return array_slice(array_values(array_unique($words)), 0, 6);
+    }
+
+    /**
+     * Friendly search. Every word typed must match something about the item — its name, brand, model /
+     * part number, category or item code (SUP-0042) — so "canon ink", "hp 680" or "680 black" all work, and
+     * a model typed as "GI 790" still finds "GI-790". % and _ typed by the user are plain characters.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        foreach (static::searchTokens($term) as $token) {
+            $like = '%'.addcslashes($token, '%_\\').'%';
+            $compact = preg_replace('/[\s\-_\/.]+/u', '', $token);
+            $categoryKeys = collect(self::CATEGORIES)
+                ->filter(fn ($label) => mb_stripos($label, $token) !== false)
+                ->keys()
+                ->all();
+
+            $query->where(function (Builder $q) use ($like, $compact, $token, $categoryKeys) {
+                $q->where('name', 'like', $like)
+                    ->orWhere('brand', 'like', $like)
+                    ->orWhere('model_no', 'like', $like);
+
+                // Model numbers are written many ways (GI-790, GI 790, GI790): compare them without the separators.
+                if (mb_strlen($compact) >= 2) {
+                    $q->orWhereRaw(
+                        "REPLACE(REPLACE(REPLACE(REPLACE(model_no, '-', ''), ' ', ''), '/', ''), '.', '') LIKE ?",
+                        ['%'.addcslashes($compact, '%_\\').'%']
+                    );
+                }
+
+                if ($categoryKeys) {
+                    $q->orWhereIn('category', $categoryKeys);
+                }
+
+                // The item code shown in the list, e.g. SUP-0042 or just SUP42.
+                if (preg_match('/^sup-?0*(\d+)$/i', $token, $m)) {
+                    $q->orWhere('id', (int) $m[1]);
+                }
+            });
+        }
+
+        return $query;
+    }
+
+    /** Best matches first: exact model, model starting with the search, name starting with it, then the rest. */
+    public function scopeSearchRelevance(Builder $query, ?string $term): Builder
+    {
+        $term = mb_strtolower(trim((string) $term));
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $starts = addcslashes($term, '%_\\').'%';
+
+        return $query->orderByRaw(
+            'CASE WHEN LOWER(model_no) = ? THEN 0 WHEN LOWER(model_no) LIKE ? THEN 1 WHEN LOWER(name) LIKE ? THEN 2 WHEN LOWER(brand) LIKE ? THEN 3 ELSE 4 END',
+            [$term, $starts, $starts, $starts]
+        );
+    }
+
+    /**
+     * Staff can request items kept at their own branch, plus anything in the main
+     * branch's stock (Cebu) — that is how CDO, Davao and Manila get supplies.
+     */
+    public function canBeRequestedBy(User $user): bool
+    {
+        return filled($user->location)
+            && ($this->location === $user->location || $this->location === config('supplies.main_branch'));
+    }
+
     /** Units promised to pending requests (their tickets aren't resolved or cancelled yet). */
     public function getReservedQuantityAttribute(): int
     {

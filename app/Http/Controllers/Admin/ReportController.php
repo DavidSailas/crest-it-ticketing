@@ -139,7 +139,7 @@ class ReportController extends Controller
 
         // Every ticket assigned to an engineer that was created in the period,
         // split by where it stands now — so "Tickets" is exactly the sum of the
-        // six status columns next to it.
+        // seven status columns next to it.
         $tickets = Ticket::whereNotNull('assigned_to')
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
@@ -161,6 +161,7 @@ class ReportController extends Controller
                 'in_progress' => $mine->where('status', 'in_progress')->count(),
                 'pending' => $mine->where('status', 'pending')->count(),
                 'pending_backend' => $mine->where('status', 'pending_backend')->count(),
+                'pending_vendor' => $mine->where('status', 'pending_vendor')->count(),
                 'resolved' => $mine->where('status', 'resolved')->count(),
                 'closed' => $mine->where('status', 'closed')->count(),
                 'avg' => $avg === null ? '—' : ($avg < 24 ? round($avg, 1).' h' : round($avg / 24, 1).' d'),
@@ -170,9 +171,9 @@ class ReportController extends Controller
         return [
             'key' => 'engineers',
             'title' => 'IT Engineer report',
-            'headers' => ['IT Engineer', 'Department', 'Tickets', 'Open', 'In progress', 'Pending User', 'Pending Backend', 'Resolved', 'Closed', 'Avg. resolution'],
-            'numeric' => [2, 3, 4, 5, 6, 7, 8, 9],
-            'totalCols' => [2, 3, 4, 5, 6, 7, 8],
+            'headers' => ['IT Engineer', 'Department', 'Tickets', 'Open', 'In progress', 'Pending User', 'Pending Backend', 'Awaiting Vendor', 'Resolved', 'Closed', 'Avg. resolution'],
+            'numeric' => [2, 3, 4, 5, 6, 7, 8, 9, 10],
+            'totalCols' => [2, 3, 4, 5, 6, 7, 8, 9],
             'rows' => $rows->map(fn ($r) => array_values($r))->all(),
             'note' => 'Tickets = everything assigned to the engineer that was created in the period, shown by its current status · Avg. resolution = created to resolved',
         ];
@@ -196,7 +197,7 @@ class ReportController extends Controller
                 'department' => $u->department->name ?? '—',
                 'branch' => $u->branch_name ?: '—',
                 'submitted' => $mine->count(),
-                'open' => $mine->whereIn('status', ['open', 'in_progress', 'pending', 'pending_backend'])->count(),
+                'open' => $mine->whereIn('status', ['open', 'in_progress', 'pending', 'pending_backend', 'pending_vendor'])->count(),
                 'resolved' => $mine->whereIn('status', ['resolved', 'closed'])->count(),
                 'last' => $mine->isNotEmpty() ? $mine->max('created_at')->format('M j, Y') : '—',
             ];
@@ -209,7 +210,7 @@ class ReportController extends Controller
             'numeric' => [3, 4, 5],
             'totalCols' => [3, 4, 5],
             'rows' => $rows->map(fn ($r) => array_values($r))->all(),
-            'note' => 'Tickets submitted by each staff member in the period · Still open = Open, In Progress, Pending User or Pending Backend',
+            'note' => 'Tickets submitted by each staff member in the period · Still open = Open, In Progress, Pending User, Pending Backend or Awaiting Vendor',
         ];
     }
 
@@ -356,7 +357,7 @@ class ReportController extends Controller
             ->pluck('total', 'assigned_to');
 
         $working = Ticket::whereNotNull('assigned_to')
-            ->whereIn('status', ['in_progress', 'pending', 'pending_backend'])
+            ->whereIn('status', ['in_progress', 'pending', 'pending_backend', 'pending_vendor'])
             ->toBase()
             ->selectRaw('assigned_to, COUNT(*) as total')
             ->groupBy('assigned_to')
@@ -646,9 +647,9 @@ class ReportController extends Controller
             'totalTickets' => $totalTickets,
             'byStatus' => $this->labelPieData($byStatus, [
                 'open' => 'Open', 'in_progress' => 'In Progress', 'pending' => 'Pending User',
-                'pending_backend' => 'Pending Backend', 'resolved' => 'Resolved', 'closed' => 'Closed', 'cancelled' => 'Cancelled',
+                'pending_backend' => 'Pending Backend', 'pending_vendor' => 'Awaiting Vendor', 'resolved' => 'Resolved', 'closed' => 'Closed', 'cancelled' => 'Cancelled',
             ], [
-                'open' => '#3b82f6', 'in_progress' => '#6366f1', 'pending' => '#f59e0b', 'pending_backend' => '#14b8a6',
+                'open' => '#3b82f6', 'in_progress' => '#6366f1', 'pending' => '#f59e0b', 'pending_backend' => '#14b8a6', 'pending_vendor' => '#f97316',
                 'resolved' => '#10b981', 'closed' => '#9ca3af', 'cancelled' => '#f87171',
             ]),
             'byPriority' => $this->labelPieData($byPriority, [

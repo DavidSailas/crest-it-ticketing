@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Notifications\ConfirmEmailNotification;
+use App\Support\Notifier;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -20,6 +22,9 @@ class User extends Authenticatable
         'username',
         'password',
         'role',
+        'is_department_head',
+        'approver_id',
+        'email_preferences',
         'department_id',
         'position_id',
         'location',
@@ -35,6 +40,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_department_head' => 'boolean',
+            'email_preferences' => 'array',
             'suspended_at' => 'datetime',
             'last_seen_at' => 'datetime',
         ];
@@ -53,6 +60,41 @@ class User extends Authenticatable
                 $user->name = trim("{$user->first_name} {$middlePart}{$user->last_name}");
             }
         });
+
+        // A new or changed address is unconfirmed until the person clicks the link we email them.
+        static::saving(function (User $user) {
+            if ($user->exists && $user->isDirty('email') && ! $user->isDirty('email_verified_at')) {
+                $user->email_verified_at = null;
+            }
+        });
+
+        static::saved(function (User $user) {
+            // Seeders, tinker and tests shouldn't send real emails.
+            if (app()->runningInConsole() || blank($user->email) || $user->hasVerifiedEmail()) {
+                return;
+            }
+
+            if ($user->wasRecentlyCreated || $user->wasChanged('email')) {
+                Notifier::send($user, new ConfirmEmailNotification($user));
+            }
+        });
+    }
+
+    /** Has an address on the account AND the person confirmed it (clicked the link we emailed). */
+    public function hasVerifiedEmail(): bool
+    {
+        return filled($this->email) && $this->email_verified_at !== null;
+    }
+
+    /** A guess for the Email addresses admin page: username@company-domain. Never used automatically. */
+    public function suggestedEmail(): ?string
+    {
+        $local = strtolower(trim((string) $this->username));
+        $domain = config('company.email_domain');
+
+        return ($local !== '' && filled($domain) && preg_match('/^[a-z0-9._-]+$/', $local))
+            ? "{$local}@{$domain}"
+            : null;
     }
 
     /**
@@ -103,6 +145,172 @@ class User extends Authenticatable
     public function isItSupport(): bool
     {
         return $this->role === 'it_support';
+    }
+
+    /**
+     * Heads, managers and junior managers — whoever an admin gave the "can approve" right —
+     * approve supply requests, and so can admins. The right is stored in is_department_head.
+     */
+    public function canApproveSupplyRequests(): bool
+    {
+        return $this->isAdmin() || ($this->is_department_head && ! $this->isSuspended());
+    }
+
+    /**
+     * The emails a person can switch on or off (Profile → Email notifications). The bell inside the
+     * system always works; these only control email. `for` limits a switch to the roles that get that kind of email.
+     */
+    public const EMAIL_TYPES = [
+        'ticket_updates' => [
+            'label' => 'Updates on my tickets',
+            'hint' => 'We received it, IT picked it up, status changes (resolved, closed…), edits and cancellations.',
+            'for' => ['staff', 'it_support', 'admin'],
+        ],
+        'comments' => [
+            'label' => 'New messages on a ticket',
+            'hint' => 'When someone replies on a ticket you are part of. Quick back-and-forth is combined into one email, and nothing is sent while you are online.',
+            'for' => ['staff', 'it_support', 'admin'],
+        ],
+        'supply_requests' => [
+            'label' => 'Supply requests',
+            'hint' => 'Requests that need your approval, and whether yours was approved or declined.',
+            'for' => ['staff', 'it_support', 'admin'],
+        ],
+        'work_alerts' => [
+            'label' => 'Work assigned to me',
+            'hint' => 'Tickets assigned to you, a teammate joining your ticket, and requesters confirming a fix.',
+            'for' => ['it_support', 'admin'],
+        ],
+        'new_tickets' => [
+            'label' => 'New tickets submitted',
+            'hint' => 'An alert whenever a new ticket arrives, so nothing waits unnoticed.',
+            'for' => ['it_support', 'admin'],
+        ],
+    ];
+
+    /** The email switches that apply to this person's role. */
+    public function emailTypes(): array
+    {
+        return array_filter(self::EMAIL_TYPES, fn ($type) => in_array($this->role, $type['for'], true));
+    }
+
+    /** Do they want this kind of notification at all? (Default on — except new-ticket alerts, which default on for IT Support only.) */
+    public function wantsAlert(string $type): bool
+    {
+        $preferences = $this->email_preferences ?? [];
+
+        if (array_key_exists($type, $preferences)) {
+            return (bool) $preferences[$type];
+        }
+
+        return $type !== 'new_tickets' || $this->isItSupport();
+    }
+
+    /** Should an email go out? Needs a CONFIRMED address on the account and the switch on. */
+    public function wantsEmail(string $type): bool
+    {
+        return $this->hasVerifiedEmail() && $this->wantsAlert($type);
+    }
+
+    /** IT Support and admins who are active — who hears about new tickets. */
+    public static function itTeam()
+    {
+        return static::query()->whereIn('role', ['it_support', 'admin'])->whereNull('suspended_at')->get();
+    }
+
+    /** How many supply requests are waiting for this person's decision (0 unless they can approve). */
+    public function supplyApprovalsWaiting(): int
+    {
+        // once(): the menu and the dashboard card both ask — count only one time per page load.
+        return once(fn () => $this->canApproveSupplyRequests()
+            ? SupplyRequest::awaitingFor($this)->count()
+            : 0);
+    }
+
+    /** The person an admin picked to approve this employee's supply requests. */
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approver_id');
+    }
+
+    /** People who can be chosen as someone's approver (for the Users form). */
+    public static function approverOptions()
+    {
+        return static::query()
+            ->where('is_department_head', true)
+            ->whereNull('suspended_at')
+            ->with('department:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'location', 'department_id']);
+    }
+
+    /**
+     * Who gets this person's supply requests:
+     *   1. the approver an admin picked for them, if that person can still approve;
+     *   2. otherwise approvers in the same department and branch;
+     *   3. otherwise approvers in the same department at any branch;
+     *   4. otherwise the admins — so a request is never left without anyone to see it.
+     */
+    public static function approversFor(User $requester)
+    {
+        $heads = fn () => static::query()
+            ->where('is_department_head', true)
+            ->whereNull('suspended_at')
+            ->where('id', '!=', $requester->id);
+
+        if ($requester->approver_id) {
+            $assigned = $heads()->whereKey($requester->approver_id)->get();
+            if ($assigned->isNotEmpty()) {
+                return $assigned;
+            }
+        }
+
+        $sameBranch = $heads()
+            ->where('department_id', $requester->department_id)
+            ->where('location', $requester->location)
+            ->get();
+        if ($sameBranch->isNotEmpty()) {
+            return $sameBranch;
+        }
+
+        $sameDepartment = $heads()->where('department_id', $requester->department_id)->get();
+        if ($sameDepartment->isNotEmpty()) {
+            return $sameDepartment;
+        }
+
+        return static::query()->where('role', 'admin')->whereNull('suspended_at')->where('id', '!=', $requester->id)->get();
+    }
+
+    /** Is this person one of the people who may approve a request made by $requester? (Admins always may.) */
+    public function isApproverFor(User $requester): bool
+    {
+        if ($this->id === $requester->id) {
+            return false;
+        }
+
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->canApproveSupplyRequests()
+            && static::approversFor($requester)->contains('id', $this->id);
+    }
+
+    /**
+     * Does this person's own supply request need someone's approval? Admins, and heads who
+     * have no approver of their own, don't; everyone else does.
+     */
+    public function requiresSupplyApproval(): bool
+    {
+        if ($this->isAdmin()) {
+            return false;
+        }
+
+        if ($this->approver_id && $this->approver_id !== $this->id && $this->approver?->canApproveSupplyRequests()) {
+            return true;
+        }
+
+        return ! $this->canApproveSupplyRequests();
     }
 
     public function isStaff(): bool

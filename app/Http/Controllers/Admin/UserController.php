@@ -117,6 +117,7 @@ class UserController extends Controller
             'position_id' => ['required', 'exists:positions,id'],
             'role' => ['required', 'in:staff,it_support,admin'],
             'location' => ['required', 'in:'.implode(',', array_keys(Asset::locations()))],
+            'approver_id' => ['nullable', \Illuminate\Validation\Rule::exists('users', 'id')->where('is_department_head', true)],
             'is_vip' => ['nullable', 'boolean'],
         ], [
             'username.unique' => 'That username is already taken.',
@@ -142,6 +143,9 @@ class UserController extends Controller
             'role' => $validated['role'],
             'location' => $validated['location'],
             'is_vip' => $request->boolean('is_vip'),
+            // Only staff accounts can be department heads (admins can approve anyway).
+            'is_department_head' => $validated['role'] === 'staff' && $request->boolean('is_department_head'),
+            'approver_id' => $validated['role'] === 'staff' ? ($validated['approver_id'] ?? null) : null,
         ])->save();
 
         return redirect()->route('admin.users.index', ['tab' => $validated['role'] === 'it_support' ? 'it_support' : 'staff'])
@@ -217,6 +221,7 @@ class UserController extends Controller
             'position_id' => ['required', 'exists:positions,id'],
             'role' => ['required', 'in:staff,it_support,admin'],
             'location' => ['required', 'in:'.implode(',', array_keys(Asset::locations()))],
+            'approver_id' => ['nullable', \Illuminate\Validation\Rule::exists('users', 'id')->where('is_department_head', true)],
             'is_vip' => ['nullable', 'boolean'],
         ], [
             'username.unique' => 'That username is already taken.',
@@ -240,6 +245,9 @@ class UserController extends Controller
             'role' => $validated['role'],
             'location' => $validated['location'],
             'is_vip' => $request->boolean('is_vip'),
+            // Only staff accounts can be department heads (admins can approve anyway).
+            'is_department_head' => $validated['role'] === 'staff' && $request->boolean('is_department_head'),
+            'approver_id' => $validated['role'] === 'staff' && (int) ($validated['approver_id'] ?? 0) !== $user->id ? ($validated['approver_id'] ?? null) : null,
         ];
 
         if (!empty($validated['password'])) {

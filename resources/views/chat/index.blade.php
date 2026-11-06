@@ -76,6 +76,7 @@
                                   'bg-blue-100 text-blue-700': thread.status === 'in_progress',
                                   'bg-purple-100 text-purple-700': thread.status === 'pending',
                                   'bg-teal-100 text-teal-700': thread.status === 'pending_backend',
+                                  'bg-orange-100 text-orange-700': thread.status === 'pending_vendor',
                                   'bg-green-100 text-green-700': thread.status === 'resolved',
                                   'bg-gray-200 text-gray-600': thread.status === 'closed',
                                   'bg-red-50 text-red-600': thread.status === 'cancelled',
@@ -86,6 +87,7 @@
                                       'bg-blue-500': thread.status === 'in_progress',
                                       'bg-purple-500': thread.status === 'pending',
                                       'bg-teal-500': thread.status === 'pending_backend',
+                                      'bg-orange-500': thread.status === 'pending_vendor',
                                       'bg-green-600': thread.status === 'resolved',
                                       'bg-gray-400': thread.status === 'closed',
                                       'bg-red-400': thread.status === 'cancelled',
@@ -104,7 +106,7 @@
 
     <script>
         function chatInbox() {
-            const statusLabels = { open: 'Open', in_progress: 'In Progress', pending: 'Pending User', pending_backend: 'Pending Backend', resolved: 'Resolved', closed: 'Closed', cancelled: 'Cancelled' };
+            const statusLabels = { open: 'Open', in_progress: 'In Progress', pending: 'Pending User', pending_backend: 'Pending Backend', pending_vendor: 'Awaiting Vendor', resolved: 'Resolved', closed: 'Closed', cancelled: 'Cancelled' };
             const decorate = (list) => (list || []).map(t => ({ ...t, status_label: statusLabels[t.status] || t.status }));
 
             let initialThreads = [];

@@ -11,7 +11,9 @@
     $reserved = $supply->reserved_quantity;
     $available = $supply->available_quantity;
     $mine = ! $canManage;
-    $sameBranch = $supply->location === $user->location;
+    $sameBranch = $supply->canBeRequestedBy($user);
+    $mainBranchName = \App\Models\Branch::nameForCode(config('supplies.main_branch'));
+    $needsApproval = $user->requiresSupplyApproval();
 
     // Level meter: the halfway mark is the reorder level, so "low" is visibly in the left half.
     $barPct = $supply->reorder_level > 0
@@ -129,12 +131,17 @@
                         @if($myPending)
                             <div class="rounded-lg border border-sky-200 bg-sky-50 px-3.5 py-3 text-sm text-sky-900">
                                 <p class="font-semibold">You've requested {{ number_format($myPending->quantity) }} {{ $supply->unit }}</p>
-                                <p class="text-xs text-sky-800/80 mt-0.5">Ticket {{ $myPending->ticket->ticket_number }} is waiting for IT Support.</p>
-                                <a href="{{ route('tickets.show', $myPending->ticket) }}" class="mt-2 inline-block text-xs font-semibold text-sky-700 hover:underline">Follow your request →</a>
+                                @if($myPending->ticket)
+                                    <p class="text-xs text-sky-800/80 mt-0.5">Approved — ticket {{ $myPending->ticket->ticket_number }} is waiting for IT Support.</p>
+                                    <a href="{{ route('tickets.show', $myPending->ticket) }}" class="mt-2 inline-block text-xs font-semibold text-sky-700 hover:underline">Follow your request →</a>
+                                @else
+                                    <p class="text-xs text-sky-800/80 mt-0.5">Waiting for your head to approve it. You'll be notified.</p>
+                                    <a href="{{ route('supplies.requests', ['show' => 'open']) }}" class="mt-2 inline-block text-xs font-semibold text-sky-700 hover:underline">See my requests →</a>
+                                @endif
                             </div>
                         @elseif(! $sameBranch)
                             <div class="rounded-lg bg-gray-50 border border-gray-100 px-3.5 py-3 text-xs text-gray-500">
-                                This item is kept at <span class="font-medium text-gray-700">{{ $supply->branch_name }}</span>. You can request items stocked at your own branch.
+                                This item is kept at <span class="font-medium text-gray-700">{{ $supply->branch_name }}</span>. You can request items from your own branch or from the main stock in {{ $mainBranchName }}.
                             </div>
                         @elseif($available <= 0)
                             <div class="rounded-lg bg-gray-50 border border-gray-100 px-3.5 py-3 text-xs text-gray-500">
@@ -148,7 +155,13 @@
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
                                 Request this item
                             </button>
-                            <p class="mt-2.5 text-center text-[11px] text-gray-400">It becomes a ticket for IT Support — you can follow it there.</p>
+                            <p class="mt-2.5 text-center text-[11px] text-gray-400">
+                                @if($needsApproval)
+                                    Your head approves it first, then it becomes a ticket for IT Support.
+                                @else
+                                    It becomes a ticket for IT Support right away — you can follow it there.
+                                @endif
+                            </p>
                         @endif
                     </div>
                 @endif
@@ -398,6 +411,17 @@
                 </div>
 
                 <div class="px-6 py-4 space-y-5">
+                    <div class="rounded-lg border border-sky-100 bg-sky-50 px-3.5 py-2.5 text-xs text-sky-900 space-y-1">
+                        @if($needsApproval)
+                            <p><span class="font-semibold">How it works:</span> your head (approver) gets this request first. Once approved it becomes a ticket for IT Support.</p>
+                        @else
+                            <p><span class="font-semibold">How it works:</span> your request goes straight to IT Support as a ticket — it needs no approval.</p>
+                        @endif
+                        @if($supply->location !== $user->location)
+                            <p>This item is kept at {{ $supply->branch_name }}; IT will arrange delivery to your branch.</p>
+                        @endif
+                    </div>
+
                     @if($errors->request->any())
                         <div class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-3" role="alert">
                             <ul class="text-sm text-red-700 space-y-0.5">
@@ -442,7 +466,7 @@
                     <button type="button" x-on:click="$dispatch('close')"
                             class="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:py-2">Cancel</button>
                     <button type="submit" class="inline-flex justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm sm:py-2" style="background-color:#1a6b3c;">
-                        Send request
+                        {{ $needsApproval ? 'Send for approval' : 'Send request' }}
                     </button>
                 </div>
             </form>

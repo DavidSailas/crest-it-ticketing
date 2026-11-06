@@ -98,7 +98,9 @@ class StoreTicketRequest extends FormRequest
             ],
             'on_behalf_of_user_id' => 'nullable|exists:users,id',
             'on_behalf_of_name' => 'nullable|string|max:255',
-            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,zip',
+            // Up to 5 files per ticket, each up to 10 MB (screenshots, PDF, Word, Excel or ZIP).
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*' => 'file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,zip',
         ];
     }
 
@@ -107,6 +109,10 @@ class StoreTicketRequest extends FormRequest
         $forColleague = filled($this->input('on_behalf_of_user_id'));
 
         return [
+            'attachments.max' => 'You can attach up to 5 files to one ticket.',
+            'attachments.*.max' => 'Each file must be 10 MB or smaller.',
+            'attachments.*.mimes' => 'Only JPG, PNG, GIF, WebP, PDF, Word, Excel or ZIP files can be attached.',
+            'attachments.*.uploaded' => 'A file could not be uploaded — it may be larger than this server allows. Try fewer or smaller files.',
             'department.required' => $forColleague
                 ? "That colleague's department isn't set on their profile yet, so this ticket can't be routed automatically. Pick someone else, or ask an administrator to update their profile."
                 : "Your account doesn't have a department set yet. Please ask an administrator to update your profile before submitting a ticket.",

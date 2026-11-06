@@ -15,7 +15,11 @@
             <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
         @endif
 
-        @include('announcements._banner')
+        @if(config('features.announcements'))
+            @include('announcements._banner')
+        @endif
+
+        @include('admin.supplies._approval-banner')
 
         {{-- Masthead --}}
         <div class="relative overflow-hidden rounded-xl" style="background-color:#123f24;">
@@ -82,6 +86,9 @@
                 @endforeach
             </div>
         </div>
+
+        {{-- Awaiting vendor — tickets with a supplier / service provider --}}
+        @include('dashboard.partials.vendor-queue')
 
         {{-- Recent Tickets --}}
         <div>

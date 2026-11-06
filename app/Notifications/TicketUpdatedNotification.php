@@ -3,20 +3,14 @@
 namespace App\Notifications;
 
 use App\Models\Ticket;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 /**
- * Sent when IT Support / an Admin corrects a ticket's details (category, priority
- * or status) — e.g. the requester picked the wrong category by mistake.
- *
- * $changes looks like: ['Category' => ['Printer', 'Other'], 'Priority' => ['P2 · High', 'P4 · Low']]
+ * Tells the requester / agent that someone corrected the details of a ticket.
  */
-class TicketUpdatedNotification extends Notification
+class TicketUpdatedNotification extends AppNotification
 {
-    use Queueable;
-
+    /** @param  array<string, array{0: mixed, 1: mixed}>  $changes  field => [old, new] */
     public function __construct(
         public Ticket $ticket,
         public array $changes,
@@ -24,9 +18,9 @@ class TicketUpdatedNotification extends Notification
         public ?string $reason = null,
     ) {}
 
-    public function via(object $notifiable): array
+    public function emailType(): string
     {
-        return ['mail', 'database'];
+        return 'ticket_updates';
     }
 
     private function summary(): string
@@ -38,22 +32,24 @@ class TicketUpdatedNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = (new MailMessage)
-            ->subject("Ticket {$this->ticket->ticket_number} was updated")
-            ->greeting("Hi {$notifiable->name},")
-            ->line("{$this->editedBy} corrected the details of **{$this->ticket->ticket_number}: {$this->ticket->title}**.");
-
-        foreach ($this->changes as $field => $pair) {
-            $mail->line("**{$field}:** {$pair[0]} → {$pair[1]}");
-        }
+        $details = collect($this->changes)
+            ->mapWithKeys(fn ($pair, $field) => [(string) $field => "{$pair[0]} → {$pair[1]}"])
+            ->all();
 
         if ($this->reason) {
-            $mail->line("**Reason:** {$this->reason}");
+            $details['Reason'] = $this->reason;
         }
 
-        return $mail
-            ->action('View Ticket', route('tickets.show', $this->ticket))
-            ->line('If something looks wrong, reply on the ticket and IT will take a look.');
+        return $this->brandedMail($notifiable, "{$this->ticket->ticket_number} was updated", [
+            'heading' => 'Ticket details were updated',
+            'preheader' => "{$this->editedBy} corrected {$this->ticket->ticket_number}.",
+            'paragraphs' => ["**{$this->editedBy}** corrected the details of this ticket."],
+            'ticket' => $this->ticketCard($this->ticket),
+            'details' => $details,
+            'ctaLabel' => 'View the ticket',
+            'ctaUrl' => route('tickets.show', $this->ticket),
+            'outro' => 'If something looks wrong, reply on the ticket and IT will take a look.',
+        ]);
     }
 
     public function toArray(object $notifiable): array

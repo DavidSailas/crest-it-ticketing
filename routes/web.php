@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\UserEmailController;
+use App\Http\Controllers\EmailConfirmationController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\DashboardController;
@@ -25,6 +27,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
+
+// The "Confirm my email" button in the email. Signed, so it can't be forged, and it works even when the
+// person isn't logged in on that device.
+Route::get('/email/confirm/{user}/{hash}', [EmailConfirmationController::class, 'confirm'])
+    ->middleware(['signed', 'throttle:20,1'])
+    ->name('email.confirm');
 
 // Activity log hooks — these fire on every login/logout regardless of which
 // controller handles auth (works out of the box with Breeze's default auth).
@@ -52,6 +60,8 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
     // Profile (from Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
+    Route::post('/profile/email/resend', [ProfileController::class, 'resendEmailConfirmation'])->middleware('throttle:5,1')->name('profile.email.resend');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Profile picture
@@ -89,11 +99,14 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
         Route::get('/it-policy/download', [ItPolicyController::class, 'download'])->name('it-policy.download');
     });
 
-    // Announcements — every signed-in role can read them (the pop-up and the
-    // dashboard banner come from here); only Admin posts them (see below).
-    Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
-    Route::get('/announcements/poll', [AnnouncementController::class, 'poll'])->name('announcements.poll');
-    Route::post('/announcements/read', [AnnouncementController::class, 'markRead'])->name('announcements.read');
+    // Announcements — currently SWITCHED OFF (config/features.php, FEATURE_ANNOUNCEMENTS). All the code is kept
+    // so it can be turned back on later. Every signed-in role can read them (the pop-up and the dashboard banner
+    // come from here); only Admin posts them (see below).
+    if (config('features.announcements')) {
+        Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
+        Route::get('/announcements/poll', [AnnouncementController::class, 'poll'])->name('announcements.poll');
+        Route::post('/announcements/read', [AnnouncementController::class, 'markRead'])->name('announcements.read');
+    }
 
     // Notifications bell — available to every role
     Route::get('/notifications/poll', [NotificationController::class, 'poll'])->name('notifications.poll');
@@ -104,6 +117,7 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
     Route::middleware('role:it_support,admin')->group(function () {
         Route::post('/tickets/{ticket}/accept', [TicketController::class, 'accept'])->name('tickets.accept');
         Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
+        Route::patch('/tickets/{ticket}/vendor-returned', [TicketController::class, 'vendorReturned'])->name('tickets.vendor-returned');
         // Correct a ticket's category / priority / status (IT Support + Admin).
         Route::get('/tickets/{ticket}/edit', [TicketController::class, 'edit'])->name('tickets.edit');
         Route::put('/tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
@@ -170,6 +184,9 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::get('/users/emails', [UserEmailController::class, 'index'])->name('users.emails');
+        Route::post('/users/emails', [UserEmailController::class, 'update'])->name('users.emails.update');
+        Route::post('/users/{user}/email/resend', [UserEmailController::class, 'resend'])->middleware('throttle:10,1')->name('users.emails.resend');
         Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
         Route::get('/users/export/pdf', [UserController::class, 'exportPdf'])->name('users.export.pdf');
         Route::get('/users/export/excel', [UserController::class, 'exportExcel'])->name('users.export.excel');
@@ -201,14 +218,16 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
         Route::get('/assets/export/pdf', [AssetController::class, 'exportPdf'])->name('assets.export.pdf');
         Route::get('/assets/export/excel', [AssetController::class, 'exportExcel'])->name('assets.export.excel');
 
-        // Announcements — post / schedule / edit what staff see on sign-in.
-        Route::get('/announcements', [AdminAnnouncementController::class, 'index'])->name('announcements.index');
-        Route::get('/announcements/create', [AdminAnnouncementController::class, 'create'])->name('announcements.create');
-        Route::post('/announcements', [AdminAnnouncementController::class, 'store'])->name('announcements.store');
-        Route::get('/announcements/{announcement}/edit', [AdminAnnouncementController::class, 'edit'])->name('announcements.edit');
-        Route::put('/announcements/{announcement}', [AdminAnnouncementController::class, 'update'])->name('announcements.update');
-        Route::patch('/announcements/{announcement}/publish', [AdminAnnouncementController::class, 'toggle'])->name('announcements.toggle');
-        Route::delete('/announcements/{announcement}', [AdminAnnouncementController::class, 'destroy'])->name('announcements.destroy');
+        // Announcements — post / schedule / edit what staff see on sign-in. SWITCHED OFF for now (see above).
+        if (config('features.announcements')) {
+            Route::get('/announcements', [AdminAnnouncementController::class, 'index'])->name('announcements.index');
+            Route::get('/announcements/create', [AdminAnnouncementController::class, 'create'])->name('announcements.create');
+            Route::post('/announcements', [AdminAnnouncementController::class, 'store'])->name('announcements.store');
+            Route::get('/announcements/{announcement}/edit', [AdminAnnouncementController::class, 'edit'])->name('announcements.edit');
+            Route::put('/announcements/{announcement}', [AdminAnnouncementController::class, 'update'])->name('announcements.update');
+            Route::patch('/announcements/{announcement}/publish', [AdminAnnouncementController::class, 'toggle'])->name('announcements.toggle');
+            Route::delete('/announcements/{announcement}', [AdminAnnouncementController::class, 'destroy'])->name('announcements.destroy');
+        }
 
         Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
         Route::post('/branches', [BranchController::class, 'store'])->name('branches.store');

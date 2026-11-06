@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | IT Supplies
 |--------------------------------------------------------------------------
-| Staff       — view, and request items (each request becomes a ticket)
+| Staff       — view, and request items (a department head approves it, then it becomes a ticket)
+| Dept. heads — staff accounts flagged as head; approve or decline every request
 | IT Support  — view, add, edit, adjust stock
 | Admin       — everything, including delete
 |
@@ -30,6 +31,14 @@ Route::middleware(['auth', 'account.active', 'track.seen'])->group(function () {
     // taken out automatically when that ticket is Resolved.
     Route::middleware('role:staff')->post('/supplies/{supply}/request', [SupplyRequestController::class, 'store'])
         ->name('supplies.request');
+
+    // Department heads approve or decline requests; the requester can withdraw one that is still waiting.
+    // (Heads are staff accounts; admins can approve too. The controller double-checks who may approve.)
+    Route::middleware('role:staff,admin')->group(function () {
+        Route::post('/supplies/requests/{supplyRequest}/approve', [SupplyRequestController::class, 'approve'])->name('supplies.requests.approve');
+        Route::post('/supplies/requests/{supplyRequest}/decline', [SupplyRequestController::class, 'decline'])->name('supplies.requests.decline');
+        Route::post('/supplies/requests/{supplyRequest}/cancel', [SupplyRequestController::class, 'cancel'])->name('supplies.requests.cancel');
+    });
 
     // View — everyone who can sign in.
     Route::middleware('role:staff,it_support,admin')->group(function () {

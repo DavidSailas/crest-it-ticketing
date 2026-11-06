@@ -3,7 +3,7 @@
     Included from tickets/partials/live-ticket.blade.php; renders nothing for any other ticket.
 --}}
 @php
-    $supplyRequest = \App\Models\SupplyRequest::with(['supply', 'issuer:id,name'])->where('ticket_id', $ticket->id)->first();
+    $supplyRequest = \App\Models\SupplyRequest::with(['supply', 'issuer:id,name', 'approver:id,name'])->where('ticket_id', $ticket->id)->first();
 @endphp
 
 @if($supplyRequest && $supplyRequest->supply)
@@ -29,6 +29,9 @@
                 <a href="{{ route('supplies.show', $supply) }}" class="underline decoration-dotted underline-offset-2 hover:decoration-solid">{{ $supply->name }}</a>
             </p>
             <p class="text-xs text-gray-500 mt-0.5">Needed for: {{ $supplyRequest->purpose }}</p>
+            @if($supplyRequest->approver)
+                <p class="text-xs text-gray-500 mt-0.5">Approved by {{ $supplyRequest->approver->name }}@if($supplyRequest->approved_at) on {{ $supplyRequest->approved_at->format('M j, Y g:i A') }}@endif</p>
+            @endif
 
             <p class="mt-2 text-xs {{ $tone[3] }}">
                 @if($state === 'pending')

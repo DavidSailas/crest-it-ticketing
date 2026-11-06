@@ -32,6 +32,13 @@
                         <input type="file" name="file" accept=".csv,.xlsx,.xls" class="hidden" onchange="if (this.files.length) this.form.submit()">
                     </label>
                 </form>
+                @php $noEmailCount = \App\Models\User::whereNull('suspended_at')->where(fn ($q) => $q->whereNull('email')->orWhere('email', ''))->count(); @endphp
+                <a href="{{ route('admin.users.emails') }}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50">
+                    Email addresses
+                    @if($noEmailCount > 0)
+                        <span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white" title="{{ $noEmailCount }} without an email">{{ $noEmailCount }}</span>
+                    @endif
+                </a>
                 <a href="{{ route('admin.users.create') }}" class="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-semibold shadow-sm" style="background-color:#1a6b3c;">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.25"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     Add User

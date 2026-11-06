@@ -89,6 +89,10 @@
             @include('profile.partials.update-profile-information-form')
         </div>
 
+        <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 sm:p-8">
+            @include('profile.partials.update-notification-preferences-form')
+        </div>
+
 
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6 sm:p-8">
             <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Recent Activity</p>

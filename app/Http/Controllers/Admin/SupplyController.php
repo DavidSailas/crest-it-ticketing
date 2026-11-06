@@ -25,10 +25,13 @@ use Illuminate\Validation\Rule;
  */
 class SupplyController extends Controller
 {
+    private ?string $shownLocation = null;
+
     public function index(Request $request)
     {
         $supplies = $this->supplyQuery($request)
             ->withReserved()
+            ->searchRelevance($request->query('search'))
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
@@ -37,22 +40,33 @@ class SupplyController extends Controller
         // and category tiles always show the full breakdown and stay clickable.
         $summary = $this->summarize($this->supplyQuery($request, false));
 
+        $branches = Branch::options();
+
+        // Which branch's items are on screen. Without a choice it is the person's own branch (or the main
+        // branch's stock if theirs keeps none); "all" shows everything.
+        $location = $this->effectiveLocation($request);
+        $locationIsDefault = ! $request->has('location') && $location !== '';
+
         $hasFilters = $request->filled('search')
-            || $request->filled('location')
+            || $location !== ''
             || $request->filled('category')
             || $request->filled('status');
 
-        $branches = Branch::options();
-
         // For the "Requests" button: IT sees everyone's open requests, staff only their own.
         $user = $request->user();
-        $openRequests = SupplyRequest::query()->active()
-            ->when(! ($user->isAdmin() || $user->isItSupport()), fn ($q) => $q->where('user_id', $user->id))
+        $isStaffUser = ! ($user->isAdmin() || $user->isItSupport());
+        $openRequests = SupplyRequest::query()->{$isStaffUser ? 'inProgress' : 'active'}()
+            ->when($isStaffUser, fn ($q) => $q->where('user_id', $user->id))
             ->count();
+
+        // Approvers also see how many requests are waiting for their decision.
+        if ($user->canApproveSupplyRequests()) {
+            $openRequests += SupplyRequest::awaitingFor($user)->count();
+        }
 
         $this->rememberList($request, 'supplies');
 
-        return view('admin.supplies.index', compact('supplies', 'summary', 'hasFilters', 'branches', 'openRequests'));
+        return view('admin.supplies.index', compact('supplies', 'summary', 'hasFilters', 'branches', 'openRequests', 'location', 'locationIsDefault'));
     }
 
     public function show(Supply $supply)
@@ -64,7 +78,7 @@ class SupplyController extends Controller
             ->paginate(10);
 
         $user = request()->user();
-        $myPending = $supply->requests()->active()->where('user_id', $user->id)->with('ticket')->first();
+        $myPending = $supply->requests()->inProgress()->where('user_id', $user->id)->with('ticket')->first();
 
         return view('admin.supplies.show', compact('supply', 'movements', 'myPending'));
     }
@@ -328,23 +342,51 @@ class SupplyController extends Controller
             ->first();
     }
 
+    /**
+     * The branch code to show ('' = every branch).
+     *   - the person picked one in the filter -> that branch ("all" = every branch);
+     *   - nothing picked -> their own branch, so a Cebu user sees Cebu's items first and can open
+     *     the other branches from the Branch filter.
+     */
+    private function effectiveLocation(Request $request): string
+    {
+        // Worked out once per request (it is asked for several times while building the page).
+        return $this->shownLocation ??= (function () use ($request): string {
+            $picked = $request->query('location');
+
+            if ($picked !== null) {
+                return array_key_exists((string) $picked, Branch::options()) ? (string) $picked : '';
+            }
+
+            return $this->defaultLocation($request->user());
+        })();
+    }
+
+    /**
+     * Their own branch if it keeps any supplies; otherwise the main branch's stock (CDO and Davao keep none and
+     * order from Cebu); otherwise everything.
+     */
+    private function defaultLocation($user): string
+    {
+        foreach ([(string) $user?->location, (string) config('supplies.main_branch')] as $code) {
+            if ($code !== '' && array_key_exists($code, Branch::options()) && Supply::where('location', $code)->exists()) {
+                return $code;
+            }
+        }
+
+        return '';
+    }
+
     private function supplyQuery(Request $request, bool $withFacets = true)
     {
         $category = (string) $request->query('category', '');
         $status = (string) $request->query('status', '');
 
         return Supply::query()
-            // Name, brand, or model/part number. % and _ typed by the user are plain characters.
-            ->when(trim((string) $request->query('search', '')) !== '', function ($query) use ($request) {
-                $like = '%'.addcslashes(trim((string) $request->query('search')), '%_\\').'%';
-                $query->where(function ($q) use ($like) {
-                    $q->where('name', 'like', $like)
-                        ->orWhere('brand', 'like', $like)
-                        ->orWhere('model_no', 'like', $like);
-                });
-            })
-            ->when(array_key_exists((string) $request->query('location'), Branch::options()), function ($query) use ($request) {
-                $query->where('location', (string) $request->query('location'));
+            // Any mix of name, brand, model / part number, category or item code — see Supply::scopeSearch().
+            ->search($request->query('search'))
+            ->when($this->effectiveLocation($request) !== '', function ($query) use ($request) {
+                $query->where('location', $this->effectiveLocation($request));
             })
             ->when($withFacets && array_key_exists($category, Supply::CATEGORIES), fn ($q) => $q->where('category', $category))
             ->when($withFacets && array_key_exists($status, Supply::STOCK_STATUSES), fn ($q) => $q->stockStatus($status));

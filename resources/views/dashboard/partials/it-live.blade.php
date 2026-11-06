@@ -61,6 +61,9 @@
         @endforeach
     </div>
 
+    {{-- Awaiting vendor — tickets with a supplier / service provider, nearest due date first --}}
+    @include('dashboard.partials.vendor-queue')
+
     {{-- Open Queue — every unassigned open ticket, critical priority first --}}
     <div>
         <div class="flex flex-wrap justify-between items-baseline gap-x-3 gap-y-1 mb-3">

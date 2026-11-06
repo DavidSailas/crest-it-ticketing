@@ -5,7 +5,13 @@
 
     <div class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div class="mb-6">@include('announcements._banner')</div>
+        @if(config('features.announcements'))
+            <div class="mb-6">@include('announcements._banner')</div>
+        @endif
+
+        @if(auth()->user()->supplyApprovalsWaiting() > 0)
+            <div class="mb-6">@include('admin.supplies._approval-banner')</div>
+        @endif
 
         {{-- Masthead --}}
         <div class="relative overflow-hidden rounded-xl mb-6" style="background-color:#123f24;">
@@ -269,46 +275,120 @@
                         </div>
                     </div>
 
-                    {{-- Section: Attachment --}}
-                    <div class="pt-6 border-t border-gray-100">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Attachment <span class="normal-case font-normal text-gray-400">(optional)</span></p>
-                        <p class="text-xs text-gray-400 mb-3">A screenshot or file that helps explain the issue. JPG, PNG, PDF, Word, Excel, or ZIP — up to 10 MB.</p>
+                    {{-- Section: Attachments (several files, with previews) --}}
+                    <script>
+                        // Keeps the list of chosen files, shows previews and lets people remove one before sending.
+                        function attachmentPicker() {
+                            const MAX_FILES = 5;
+                            const MAX_BYTES = 10 * 1024 * 1024;
+                            const ALLOWED = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'];
+                            // The real File objects live out here, away from Alpine's reactivity: the browser only
+                            // accepts genuine File objects when rebuilding the upload field.
+                            const store = [];
 
-                        <div x-data="{ fileName: null, fileSize: null }">
-                            <label for="attachment"
-                                   x-show="!fileName"
-                                   class="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 hover:border-green-600 hover:bg-green-50/40 transition cursor-pointer px-4 py-8 text-center">
+                            const label = (bytes) => bytes >= 1048576
+                                ? (bytes / 1048576).toFixed(1) + ' MB'
+                                : Math.max(1, Math.round(bytes / 1024)) + ' KB';
+
+                            return {
+                                items: [],
+                                notice: '',
+                                dragging: false,
+                                max: MAX_FILES,
+
+                                pick(list) {
+                                    this.notice = '';
+                                    for (const file of Array.from(list)) {
+                                        const ext = file.name.split('.').pop().toLowerCase();
+                                        if (!ALLOWED.includes(ext)) { this.notice = '“' + file.name + '” was skipped — only images, PDF, Word, Excel or ZIP files can be attached.'; continue; }
+                                        if (file.size > MAX_BYTES) { this.notice = '“' + file.name + '” was skipped — each file must be 10 MB or smaller.'; continue; }
+                                        if (store.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) continue;
+                                        if (store.length >= MAX_FILES) { this.notice = 'You can attach up to ' + MAX_FILES + ' files. Remove one to add another.'; break; }
+
+                                        store.push(file);
+                                        this.items.push({
+                                            key: file.name + '|' + file.size + '|' + file.lastModified,
+                                            name: file.name,
+                                            ext: ext,
+                                            sizeLabel: label(file.size),
+                                            url: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+                                        });
+                                    }
+                                    this.sync();
+                                },
+
+                                remove(index) {
+                                    const [gone] = this.items.splice(index, 1);
+                                    store.splice(index, 1);
+                                    if (gone && gone.url) URL.revokeObjectURL(gone.url);
+                                    this.notice = '';
+                                    this.sync();
+                                },
+
+                                // The real <input> is what gets submitted, so keep it in step with the list.
+                                sync() {
+                                    const transfer = new DataTransfer();
+                                    store.forEach(f => transfer.items.add(f));
+                                    this.$refs.input.files = transfer.files;
+                                },
+                            };
+                        }
+                    </script>
+
+                    <div class="pt-6 border-t border-gray-100">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Attachments <span class="normal-case font-normal text-gray-400">(optional)</span></p>
+                        <p class="text-xs text-gray-400 mb-3">Screenshots or files that help explain the issue. Add up to 5 — JPG, PNG, PDF, Word, Excel or ZIP, each up to 10 MB.</p>
+
+                        <div x-data="attachmentPicker()">
+                            <label for="attachments"
+                                   x-show="items.length < max"
+                                   @dragover.prevent="dragging = true"
+                                   @dragleave.prevent="dragging = false"
+                                   @drop.prevent="dragging = false; pick($event.dataTransfer.files)"
+                                   :class="dragging ? 'border-green-600 bg-green-50/60' : 'border-gray-200'"
+                                   class="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed hover:border-green-600 hover:bg-green-50/40 transition cursor-pointer px-4 py-7 text-center">
                                 <svg class="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-                                <span class="text-sm text-gray-500"><span class="font-medium text-green-700">Click to upload</span> or drag and drop</span>
+                                <span class="text-sm text-gray-500">
+                                    <span class="font-medium text-green-700" x-text="items.length ? 'Add more files' : 'Click to upload'"></span> or drag and drop — you can choose several at once
+                                </span>
                             </label>
 
-                            <div x-show="fileName" x-cloak
-                                 class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <svg class="w-5 h-5 text-green-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.5c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124V6.75A2.25 2.25 0 0110.5 4.5h.375a1.125 1.125 0 011.125 1.125v.375m0 0a2.25 2.25 0 002.25 2.25h.375a1.125 1.125 0 011.125 1.125v2.25a2.25 2.25 0 01-2.25 2.25h-6a2.25 2.25 0 01-2.25-2.25v-.75" /></svg>
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate" x-text="fileName"></p>
-                                        <p class="text-xs text-gray-400" x-text="fileSize"></p>
-                                    </div>
-                                </div>
-                                <button type="button" @click="fileName = null; fileSize = null; document.getElementById('attachment').value = '';"
-                                        class="text-gray-400 hover:text-red-600 shrink-0">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                            </div>
-
-                            <input type="file" name="attachment" id="attachment" class="hidden"
+                            <input type="file" name="attachments[]" id="attachments" x-ref="input" class="hidden" multiple
                                    accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.zip"
-                                   @change="
-                                       if ($event.target.files.length) {
-                                           fileName = $event.target.files[0].name;
-                                           fileSize = ($event.target.files[0].size / 1024 / 1024).toFixed(2) + ' MB';
-                                       } else {
-                                           fileName = null; fileSize = null;
-                                       }
-                                   ">
+                                   @change="pick($event.target.files)">
+
+                            <p x-show="notice" x-cloak x-text="notice" class="mt-2 text-xs text-amber-700" role="alert"></p>
+
+                            <ul x-show="items.length" x-cloak class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <template x-for="(file, index) in items" :key="file.key">
+                                    <li class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-2">
+                                        <template x-if="file.url">
+                                            <img :src="file.url" alt="" class="h-12 w-12 shrink-0 rounded object-cover">
+                                        </template>
+                                        <template x-if="!file.url">
+                                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-white text-[10px] font-bold uppercase text-gray-400 ring-1 ring-gray-200" x-text="file.ext"></span>
+                                        </template>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="truncate text-sm font-medium text-gray-700" x-text="file.name"></p>
+                                            <p class="text-xs text-gray-400" x-text="file.sizeLabel"></p>
+                                        </div>
+                                        <button type="button" @click="remove(index)" aria-label="Remove this file" class="shrink-0 rounded-full p-1 text-gray-400 hover:bg-white hover:text-red-600">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </li>
+                                </template>
+                            </ul>
+                            <p x-show="items.length" x-cloak class="mt-2 text-xs text-gray-400" x-text="items.length + ' of ' + max + ' files added'"></p>
                         </div>
-                        @error('attachment') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
+
+                        @foreach($errors->get('attachments') as $message)
+                            <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p>
+                        @endforeach
+                        @foreach($errors->get('attachments.*') as $messages)
+                            @foreach(array_unique($messages) as $message)
+                                <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p>
+                            @endforeach
+                        @endforeach
                     </div>
 
                     <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">

@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -30,6 +31,57 @@ class ProfileController extends Controller
             'user' => $user,
             'activityLogs' => $activityLogs,
         ]);
+    }
+
+    /**
+     * Where (and which) notification emails the person wants.
+     */
+    public function updateNotifications(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $request->validateWithBag('notifications', [
+            'email' => ['nullable', 'email:rfc', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+        ], [
+            'email.email' => 'Please enter a valid email address, for example name@company.com.',
+            'email.max' => 'That email address is too long.',
+            'email.unique' => 'That email address is already used by another account.',
+        ]);
+
+        // Only the switches this person's role can see are touched; unchecked boxes are simply absent from the form.
+        $preferences = $user->email_preferences ?? [];
+        foreach (array_keys($user->emailTypes()) as $type) {
+            $preferences[$type] = $request->boolean("email_types.{$type}");
+        }
+
+        $user->forceFill([
+            'email' => $request->filled('email') ? mb_strtolower(trim((string) $request->input('email'))) : null,
+            'email_preferences' => $preferences,
+        ])->save();
+
+        ActivityLog::record('profile_updated', 'Updated email notification settings');
+
+        // A new or changed address was just emailed a confirmation link (see User::booted).
+        $needsConfirmation = $user->wasChanged('email') && filled($user->email) && ! $user->hasVerifiedEmail();
+
+        return Redirect::to(route('profile.edit').'#email-notifications')
+            ->with('status', $needsConfirmation ? 'email-confirmation-sent' : 'notifications-updated');
+    }
+
+    /**
+     * Send the confirmation link again.
+     */
+    public function resendEmailConfirmation(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (blank($user->email) || $user->hasVerifiedEmail()) {
+            return back();
+        }
+
+        \App\Support\Notifier::send($user, new \App\Notifications\ConfirmEmailNotification($user));
+
+        return Redirect::to(route('profile.edit').'#email-notifications')->with('status', 'email-confirmation-sent');
     }
 
     /**

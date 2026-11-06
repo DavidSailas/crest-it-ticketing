@@ -9,7 +9,9 @@
             <div class="p-3 bg-green-50 text-green-800 text-sm rounded-lg border border-green-100">{{ session('status') }}</div>
         @endif
 
-        @include('announcements._banner')
+        @if(config('features.announcements'))
+            @include('announcements._banner')
+        @endif
 
         {{-- Live region: the whole dashboard body (headline, stats, open queue, assigned tickets) refreshes
              automatically, so approvals, new tickets, and hand-offs show up without a reload. --}}

@@ -31,9 +31,13 @@
             .filter-active { border-color: #1a6b3c !important; background-color: #f0f9f3 !important; }
             .filter-field:has(.filter-active) > label { color: #15803d; }
         </style>
-        @include('announcements._styles')
+        @if(config('features.announcements'))
+            @include('announcements._styles')
+        @endif
         <script src="{{ asset('js/live-list.js') }}?v={{ @filemtime(public_path('js/live-list.js')) }}" defer></script>
-        <script src="{{ asset('js/announcements-live.js') }}?v={{ @filemtime(public_path('js/announcements-live.js')) }}" defer></script>
+        @if(config('features.announcements'))
+            <script src="{{ asset('js/announcements-live.js') }}?v={{ @filemtime(public_path('js/announcements-live.js')) }}" defer></script>
+        @endif
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
@@ -48,16 +52,35 @@
                 </header>
             @endisset
 
+            {{-- People without an email can't receive ticket updates — nudge them once, everywhere except Profile. --}}
+            @auth
+                @if(! request()->routeIs('profile.*') && ! auth()->user()->hasVerifiedEmail())
+                    <div class="border-b border-amber-100 bg-amber-50">
+                        <div class="mx-auto flex max-w-[96rem] items-center justify-between gap-3 px-4 py-2.5 text-sm text-amber-900 sm:px-6 lg:px-8">
+                            @if(blank(auth()->user()->email))
+                                <span>Add your email address to get updates when your tickets are resolved or someone replies.</span>
+                                <a href="{{ route('profile.edit') }}#email-notifications" class="shrink-0 font-semibold underline">Add email</a>
+                            @else
+                                <span>Please confirm your email — we sent a link to <span class="font-medium">{{ auth()->user()->email }}</span>. Updates start once you press it.</span>
+                                <a href="{{ route('profile.edit') }}#email-notifications" class="shrink-0 font-semibold underline">Resend or change</a>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            @endauth
+
             <!-- Page Content -->
             <main>
                 {{ $slot }}
             </main>
 
             {{-- "What's new" pop-up + the live poll that feeds it new announcements --}}
-            @auth
-                @include('announcements._popup')
-                @include('announcements._live')
-            @endauth
+            @if(config('features.announcements'))
+                @auth
+                    @include('announcements._popup')
+                    @include('announcements._live')
+                @endauth
+            @endif
         </div>
     </body>
 </html>

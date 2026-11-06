@@ -21,6 +21,7 @@ class Ticket extends Model
         'in_progress' => 'In Progress',
         'pending' => 'Pending User',
         'pending_backend' => 'Pending Backend',
+        'pending_vendor' => 'Awaiting Vendor',
         'resolved' => 'Resolved',
         'closed' => 'Closed',
         'cancelled' => 'Cancelled',
@@ -42,6 +43,11 @@ class Ticket extends Model
         'description',
         'attachment_path',
         'attachment_name',
+        'vendor_name',
+        'vendor_reference',
+        'vendor_expected_at',
+        'vendor_sent_at',
+        'vendor_returned_at',
         'category',
         'subcategory',
         'priority',
@@ -60,6 +66,9 @@ class Ticket extends Model
         'approved_at' => 'datetime',
         'closed_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'vendor_expected_at' => 'date',
+        'vendor_sent_at' => 'datetime',
+        'vendor_returned_at' => 'datetime',
     ];
 
     /**
@@ -208,6 +217,11 @@ class Ticket extends Model
     public function comments()
     {
         return $this->hasMany(TicketComment::class)->latest();
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(TicketAttachment::class)->orderBy('id');
     }
 
     public function getAttachmentUrlAttribute(): ?string

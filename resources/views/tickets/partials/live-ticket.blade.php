@@ -45,14 +45,9 @@
     <div class="px-4 sm:px-6 py-6">
         <p class="text-gray-800 leading-relaxed break-words whitespace-pre-line">{{ $ticket->description }}</p>
 
-        @if($ticket->attachment_path)
-            <a href="{{ $ticket->attachment_url }}" target="_blank"
-               class="mt-4 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 transition px-3.5 py-2.5 text-sm text-gray-700">
-                <svg class="w-4 h-4 text-green-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.5c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124V6.75A2.25 2.25 0 0110.5 4.5h.375a1.125 1.125 0 011.125 1.125v.375m0 0a2.25 2.25 0 002.25 2.25h.375a1.125 1.125 0 011.125 1.125v2.25a2.25 2.25 0 01-2.25 2.25h-6a2.25 2.25 0 01-2.25-2.25v-.75" /></svg>
-                <span class="truncate max-w-[240px] font-medium">{{ $ticket->attachment_name }}</span>
-                <span class="text-xs text-gray-400">Download</span>
-            </a>
-        @endif
+        @include('tickets.partials.vendor-info', ['ticket' => $ticket])
+
+        @include('tickets.partials.attachments', ['ticket' => $ticket])
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-5 mt-6 pt-6 border-t border-gray-100 text-sm">
             <div>
@@ -165,7 +160,7 @@
                                     class="flex-1 min-w-0 rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                                     {{ !$ticket->assigned_to ? 'disabled' : '' }}
                                     title="{{ !$ticket->assigned_to ? 'Assign this ticket to an IT agent first' : '' }}">
-                                    @foreach(['open','in_progress','pending','pending_backend','resolved','closed'] as $status)
+                                    @foreach(['open','in_progress','pending','pending_backend','pending_vendor','resolved','closed'] as $status)
                                         @php $locked = $status === 'closed' && ! $ticket->canBeClosed(); @endphp
                                         <option value="{{ $status }}" @selected($ticket->status === $status) @disabled($locked)>{{ \App\Models\Ticket::statusLabel($status) }}{{ $locked ? ' (mark as Resolved first)' : '' }}</option>
                                     @endforeach
@@ -176,6 +171,36 @@
                                     title="{{ !$ticket->assigned_to ? 'Assign this ticket to an IT agent first' : '' }}">
                                     Update
                                 </button>
+                            </div>
+
+                            {{-- Awaiting Vendor: who has it, their case number and when it is due back --}}
+                            <div x-show="status === 'pending_vendor'" x-cloak class="mt-3 space-y-2.5 rounded-lg border border-orange-100 bg-orange-50/60 p-3">
+                                <div>
+                                    <label for="vendor-name" class="block text-xs font-medium text-gray-700 mb-1">Vendor / supplier <span class="text-red-500">*</span></label>
+                                    <input id="vendor-name" type="text" name="vendor_name" list="vendor-names" autocomplete="off" value="{{ old('vendor_name', $ticket->vendor_name) }}" maxlength="120" placeholder="e.g. Dell service center"
+                                           class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                                    {{-- Vendors typed on earlier tickets are suggested, so names stay consistent without any setup. --}}
+                                    <datalist id="vendor-names">
+                                        @foreach(\App\Models\Ticket::whereNotNull('vendor_name')->selectRaw('vendor_name, COUNT(*) as uses')->groupBy('vendor_name')->orderByDesc('uses')->limit(30)->pluck('vendor_name') as $knownVendor)
+                                            <option value="{{ $knownVendor }}"></option>
+                                        @endforeach
+                                    </datalist>
+                                    @error('vendor_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                                </div>
+                                <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                                    <div>
+                                        <label for="vendor-ref" class="block text-xs font-medium text-gray-700 mb-1">Case / RMA no. <span class="font-normal text-gray-400">(optional)</span></label>
+                                        <input id="vendor-ref" type="text" name="vendor_reference" value="{{ old('vendor_reference', $ticket->vendor_reference) }}" maxlength="80"
+                                               class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                                    </div>
+                                    <div>
+                                        <label for="vendor-due" class="block text-xs font-medium text-gray-700 mb-1">Expected back <span class="font-normal text-gray-400">(optional)</span></label>
+                                        <input id="vendor-due" type="date" name="vendor_expected_at" value="{{ old('vendor_expected_at', $ticket->vendor_expected_at?->format('Y-m-d')) }}"
+                                               class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700">
+                                        @error('vendor_expected_at') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500">The requester is told their ticket is with the vendor, with these details.</p>
                             </div>
                         </form>
 

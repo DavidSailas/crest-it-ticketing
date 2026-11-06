@@ -55,13 +55,9 @@
                         <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Description</p>
                         <p class="text-gray-800 whitespace-pre-line">{{ $ticket->description }}</p>
                     </div>
-                    @if($ticket->attachment_path)
+                    @if($ticket->attachments->isNotEmpty())
                         <div class="col-span-2">
-                            <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Attachment</p>
-                            <p class="text-gray-800 font-medium flex items-center gap-1.5">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.5c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124V6.75A2.25 2.25 0 0110.5 4.5h.375a1.125 1.125 0 011.125 1.125v.375m0 0a2.25 2.25 0 002.25 2.25h.375a1.125 1.125 0 011.125 1.125v2.25a2.25 2.25 0 01-2.25 2.25h-6a2.25 2.25 0 01-2.25-2.25v-.75" /></svg>
-                                {{ $ticket->attachment_name }}
-                            </p>
+                            @include('tickets.partials.attachments', ['ticket' => $ticket, 'flush' => true])
                         </div>
                     @endif
                 </div>

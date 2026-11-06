@@ -122,6 +122,31 @@
                                 </select>
                                 @error('location') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
                             </div>
+
+                            <div class="sm:col-span-2" x-data="{ role: '{{ old('role', 'staff') }}' }" x-init="$el.closest('form').querySelector('select[name=role]').addEventListener('change', e => role = e.target.value)" x-show="role === 'staff'" x-cloak>
+                                <label class="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50/60 px-3.5 py-3 cursor-pointer">
+                                    <input type="checkbox" name="is_department_head" value="1" @checked(old('is_department_head')) class="mt-0.5 rounded border-gray-300 text-green-700 focus:ring-green-700">
+                                    <span>
+                                        <span class="block text-sm font-medium text-gray-800">Can approve supply requests</span>
+                                        <span class="block text-xs text-gray-500 mt-0.5">For heads, managers and junior managers. They approve the IT supply requests of the employees who have them as approver.</span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="sm:col-span-2" x-data="{ role: '{{ old('role', 'staff') }}' }" x-init="$el.closest('form').querySelector('select[name=role]').addEventListener('change', e => role = e.target.value)" x-show="role === 'staff'" x-cloak>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Approver (their head)</label>
+                                <select name="approver_id" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white">
+                                    <option value="">Automatic — a head in the same department and branch</option>
+                                    @foreach(\App\Models\User::approverOptions() as $approverOption)
+                                        @continue(false)
+                                        <option value="{{ $approverOption->id }}" @selected((int) old('approver_id', null) === $approverOption->id)>
+                                            {{ $approverOption->name }} — {{ $approverOption->department?->name ?? 'No department' }}, {{ \App\Models\Branch::nameForCode($approverOption->location) ?? $approverOption->location }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1.5">Supply requests from this person go to the approver you pick. Only people marked "Can approve supply requests" appear here.</p>
+                                @error('approver_id') <p class="text-red-500 text-xs mt-1.5">{{ $message }}</p> @enderror
+                            </div>
                         </div>
                     </div>
 

@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\Ticket;
 use App\Models\TicketRead;
 use App\Models\User;
+use App\Support\Notifier;
 use App\Notifications\TicketAcceptedNotification;
 use App\Notifications\TicketApprovedNotification;
 use App\Notifications\TicketAssignedNotification;
@@ -33,7 +34,7 @@ class TicketController extends Controller
         $dateFrom = trim((string) $request->query('date_from', ''));
         $dateTo = trim((string) $request->query('date_to', ''));
 
-        $allStatuses = ['open', 'in_progress', 'pending', 'pending_backend', 'resolved', 'closed', 'cancelled'];
+        $allStatuses = ['open', 'in_progress', 'pending', 'pending_backend', 'pending_vendor', 'resolved', 'closed', 'cancelled'];
 
         if ($user->isStaff()) {
             $query = Ticket::where('user_id', $user->id);
@@ -42,7 +43,7 @@ class TicketController extends Controller
             // The Open Queue of unclaimed tickets lives on the dashboard — this
             // page is the agent's own ticket history: what they're actively
             // working on, plus what they've already resolved or closed.
-            $statusOptions = ['in_progress', 'pending', 'pending_backend', 'resolved', 'closed'];
+            $statusOptions = ['in_progress', 'pending', 'pending_backend', 'pending_vendor', 'resolved', 'closed'];
             $query = Ticket::where('assigned_to', $user->id)
                 ->whereIn('status', $statusOptions);
         } else { // admin
@@ -137,7 +138,7 @@ class TicketController extends Controller
             });
         }
 
-        if (in_array($status, ['open', 'in_progress', 'pending', 'pending_backend', 'resolved', 'closed', 'cancelled'], true)) {
+        if (in_array($status, ['open', 'in_progress', 'pending', 'pending_backend', 'pending_vendor', 'resolved', 'closed', 'cancelled'], true)) {
             $query->where('status', $status);
         }
 
@@ -304,10 +305,21 @@ class TicketController extends Controller
         // title everywhere else in the app (lists, chat, notifications).
         $data['title'] = $data['category'];
 
-        if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-            $data['attachment_path'] = $file->store('ticket-attachments', 'public');
-            $data['attachment_name'] = $file->getClientOriginalName();
+        // Several files can be attached. Each is stored once and listed in ticket_attachments;
+        // the first also fills the old single-file columns so the paperclip in the ticket list keeps working.
+        unset($data['attachments']);
+        $storedFiles = [];
+        foreach ((array) $request->file('attachments', []) as $file) {
+            $storedFiles[] = [
+                'path' => $file->store('ticket-attachments', 'public'),
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getMimeType(),
+                'size' => $file->getSize(),
+            ];
+        }
+        if ($storedFiles) {
+            $data['attachment_path'] = $storedFiles[0]['path'];
+            $data['attachment_name'] = $storedFiles[0]['original_name'];
         }
 
         // VIP accounts (owner, CEO, president, etc.) always get bumped to critical,
@@ -320,6 +332,10 @@ class TicketController extends Controller
 
         $ticket = Ticket::create($data);
 
+        if ($storedFiles) {
+            $ticket->attachments()->createMany($storedFiles);
+        }
+
         ActivityLog::record(
             'ticket_created',
             $wasAutoEscalated
@@ -327,6 +343,9 @@ class TicketController extends Controller
                 : "Submitted ticket {$ticket->ticket_number}: {$ticket->title}",
             ['ticket_id' => $ticket->id, 'auto_escalated' => $wasAutoEscalated]
         );
+
+        // "We received it" to the requester, and a new-ticket alert to the IT team.
+        Notifier::ticketCreated($ticket);
 
         return redirect()->route('tickets.confirmation', $ticket);
     }
@@ -395,7 +414,7 @@ class TicketController extends Controller
             ['ticket_id' => $ticket->id]
         );
 
-        $ticket->creator?->notify(new TicketAcceptedNotification($ticket, $request->user()));
+        Notifier::send($ticket->creator, new TicketAcceptedNotification($ticket, $request->user()));
 
         return back()->with('status', 'Ticket accepted.');
     }
@@ -442,15 +461,10 @@ class TicketController extends Controller
             ['ticket_id' => $ticket->id, 'assigned_to' => $agent->id]
         );
 
-        // Notification delivery (email) can fail independently of the actual
-        // assignment — e.g. a mail provider's rate limit — and shouldn't turn
-        // a successful save into a 500 for whoever is reassigning it.
-        try {
-            $agent->notify(new TicketAssignedNotification($ticket, $user));
-            $ticket->creator?->notify(new TicketAcceptedNotification($ticket, $agent));
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        // Emails go out after the page is sent, and a delivery problem never turns a
+        // successful assignment into an error (see App\Support\Notifier).
+        Notifier::send($agent, new TicketAssignedNotification($ticket, $user));
+        Notifier::send($ticket->creator, new TicketAcceptedNotification($ticket, $agent));
 
         return back()->with('status', "Assigned to {$agent->name}.");
     }
@@ -524,12 +538,7 @@ class TicketController extends Controller
             ['ticket_id' => $ticket->id]
         );
 
-        // A failed email shouldn't undo a successful approval.
-        try {
-            $ticket->assignee?->notify(new TicketApprovedNotification($ticket, $request->user()));
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        Notifier::send($ticket->assignee, new TicketApprovedNotification($ticket, $request->user()));
 
         return back()->with('status', 'Thanks! IT Support can now close this ticket.');
     }
@@ -590,7 +599,7 @@ class TicketController extends Controller
             'category' => 'required|in:'.implode(',', StoreTicketRequest::CATEGORIES),
             'priority' => 'required|in:low,medium,high,critical',
             // Closing needs a solution, so it stays on the ticket page's status form.
-            'status' => 'nullable|in:open,in_progress,pending,pending_backend,resolved',
+            'status' => 'nullable|in:open,in_progress,pending,pending_backend,pending_vendor,resolved',
             // Optional note on why it was corrected — shown in the ticket thread.
             'reason' => 'nullable|string|max:500',
         ], [
@@ -651,6 +660,8 @@ class TicketController extends Controller
             if ($newStatus !== 'resolved') {
                 $updates['approved_at'] = null;
             }
+
+            $updates += $this->vendorTimestamps($ticket, $oldStatus, $newStatus);
         }
 
         $ticket->update($updates);
@@ -679,17 +690,10 @@ class TicketController extends Controller
         }
 
         // Let the requester and the assigned agent know, without pinging the editor.
-        collect([$ticket->creator, $ticket->assignee])
-            ->filter()
-            ->unique('id')
-            ->reject(fn ($user) => $user->id === $editor->id)
-            ->each(function ($user) use ($ticket, $changes, $editor, $reason) {
-                try {
-                    $user->notify(new TicketUpdatedNotification($ticket, $changes, $editor->name, $reason ?: null));
-                } catch (\Throwable $e) {
-                    report($e);
-                }
-            });
+        Notifier::send(
+            collect([$ticket->creator, $ticket->assignee])->filter()->reject(fn ($user) => $user->id === $editor->id),
+            new TicketUpdatedNotification($ticket, $changes, $editor->name, $reason ?: null)
+        );
 
         return redirect()->route('tickets.show', $ticket)->with('status', 'Ticket details updated.');
     }
@@ -755,15 +759,55 @@ class TicketController extends Controller
 
         // Only tell the requester when somebody else cancelled it for them.
         if ($ticket->user_id !== $user->id) {
-            try {
-                $ticket->creator?->notify(new TicketCancelledNotification($ticket, $user->name, $reason ?: null));
-            } catch (\Throwable $e) {
-                report($e);
-            }
+            Notifier::send($ticket->creator, new TicketCancelledNotification($ticket, $user->name, $reason ?: null));
         }
 
         return redirect()->route('tickets.show', $ticket)
             ->with('status', "Ticket {$ticket->ticket_number} has been cancelled.");
+    }
+
+    /**
+     * When did the ticket go to a vendor, and when did it come back? Stamped automatically whenever the
+     * status moves into or out of Awaiting Vendor, however it was changed.
+     */
+    private function vendorTimestamps(Ticket $ticket, string $oldStatus, string $newStatus): array
+    {
+        if ($newStatus === 'pending_vendor' && $oldStatus !== 'pending_vendor') {
+            return ['vendor_sent_at' => now(), 'vendor_returned_at' => null];
+        }
+
+        if ($oldStatus === 'pending_vendor' && $newStatus !== 'pending_vendor' && ! $ticket->vendor_returned_at) {
+            return ['vendor_returned_at' => now()];
+        }
+
+        return [];
+    }
+
+    /** "The vendor sent it back": one click moves the ticket to In Progress and records the return date. */
+    public function vendorReturned(Request $request, Ticket $ticket)
+    {
+        abort_unless($request->user()->isItSupport() || $request->user()->isAdmin(), 403);
+
+        if ($ticket->status !== 'pending_vendor') {
+            return back()->with('error', 'This ticket is not awaiting a vendor.');
+        }
+
+        $ticket->update([
+            'status' => 'in_progress',
+            'vendor_returned_at' => now(),
+            'resolved_at' => null,
+            'approved_at' => null,
+        ]);
+
+        ActivityLog::record(
+            'ticket_status_updated',
+            "Vendor returned ticket {$ticket->ticket_number}".($ticket->vendor_name ? " ({$ticket->vendor_name})" : '').' — moved back to In Progress',
+            ['ticket_id' => $ticket->id, 'from' => 'pending_vendor', 'to' => 'in_progress']
+        );
+
+        Notifier::send($ticket->creator, new TicketStatusUpdatedNotification($ticket, 'pending_vendor', 'in_progress'));
+
+        return back()->with('status', 'Marked as returned by the vendor — the ticket is back In Progress.');
     }
 
     public function updateStatus(Request $request, Ticket $ticket)
@@ -790,10 +834,16 @@ class TicketController extends Controller
         }
 
         $request->validate([
-            'status' => 'required|in:open,in_progress,pending,pending_backend,resolved,closed',
+            'status' => 'required|in:open,in_progress,pending,pending_backend,pending_vendor,resolved,closed',
             'solution' => ['required_if:status,closed', 'nullable', 'string', 'max:5000'],
+            // Awaiting Vendor (stored as pending_vendor) = waiting on a supplier / service provider (e.g. a device under warranty).
+            'vendor_name' => ['required_if:status,pending_vendor', 'nullable', 'string', 'max:120'],
+            'vendor_reference' => ['nullable', 'string', 'max:80'],
+            'vendor_expected_at' => ['nullable', 'date'],
         ], [
             'solution.required_if' => 'Describe how this was resolved before closing the ticket.',
+            'vendor_name.required_if' => 'Tell us which vendor or supplier the ticket is with.',
+            'vendor_expected_at.date' => 'Enter the expected date as a valid date.',
         ]);
 
         $oldStatus = $ticket->status;
@@ -815,6 +865,14 @@ class TicketController extends Controller
             $updates['approved_at'] = null;
         }
 
+        // Record who has it. The details stay on the ticket afterwards as history.
+        if ($request->status === 'pending_vendor') {
+            $updates['vendor_name'] = trim((string) $request->vendor_name);
+            $updates['vendor_reference'] = filled($request->vendor_reference) ? trim((string) $request->vendor_reference) : null;
+            $updates['vendor_expected_at'] = $request->vendor_expected_at ?: null;
+        }
+        $updates += $this->vendorTimestamps($ticket, $oldStatus, $request->status);
+
         if ($request->status === 'closed') {
             $updates['solution'] = $request->solution;
             $updates['closed_at'] = now();
@@ -832,7 +890,7 @@ class TicketController extends Controller
         );
 
         if ($oldStatus !== $request->status) {
-            $ticket->creator?->notify(new TicketStatusUpdatedNotification($ticket, $oldStatus, $request->status));
+            Notifier::send($ticket->creator, new TicketStatusUpdatedNotification($ticket, $oldStatus, $request->status));
         }
 
         return back()->with('status', 'Ticket status updated.');
@@ -1000,6 +1058,9 @@ class TicketController extends Controller
         ]);
 
         $comment->load('author');
+
+        // Email the other side (combined if it is a quick back-and-forth).
+        Notifier::commentPosted($ticket, $comment, $user);
 
         ActivityLog::record(
             'ticket_comment_added',
