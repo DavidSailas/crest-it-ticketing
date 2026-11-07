@@ -51,9 +51,16 @@ abstract class AppNotification extends Notification
             'accent' => '#1a6b3c',
         ], $content);
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject("[{$appName}] {$subject}")
             ->view(['emails.notification', 'emails.notification-text'], $data);
+
+        // Replies to a system email go to the shared IT team inbox, if there is one.
+        if (filled(config('company.team_inbox'))) {
+            $mail->replyTo(config('company.team_inbox'));
+        }
+
+        return $mail;
     }
 
     /** The "ticket card" shown in emails: number, title, status and a few key facts. */

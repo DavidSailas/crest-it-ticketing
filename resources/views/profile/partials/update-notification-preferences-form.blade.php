@@ -65,7 +65,7 @@
             <div class="divide-y divide-gray-100 rounded-lg border border-gray-200">
                 @foreach($notifyUser->emailTypes() as $type => $info)
                     <label class="flex cursor-pointer items-start gap-3 px-4 py-3.5 hover:bg-gray-50/60">
-                        <input type="checkbox" name="email_types[{{ $type }}]" value="1" @checked(old("email_types.{$type}", $notifyUser->wantsAlert($type)))
+                        <input type="checkbox" name="email_types[{{ $type }}]" value="1" @checked(old("email_types.{$type}", $notifyUser->emailSwitchOn($type)))
                                class="mt-0.5 h-4 w-4 rounded border-gray-300 text-green-700 focus:ring-green-700">
                         <span class="min-w-0">
                             <span class="block text-sm font-medium text-gray-800">{{ $info['label'] }}</span>

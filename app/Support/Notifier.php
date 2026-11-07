@@ -42,6 +42,22 @@ class Notifier
         });
     }
 
+    /** Send to a plain email address that is not a user account (e.g. the shared IT team inbox). */
+    public static function sendToAddress(?string $email, Notification $notification): void
+    {
+        if (blank($email)) {
+            return;
+        }
+
+        app()->terminating(function () use ($email, $notification) {
+            try {
+                \Illuminate\Support\Facades\Notification::route('mail', $email)->notifyNow($notification);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        });
+    }
+
     /** A new ticket: confirm to the requester (optional) and alert the IT team. */
     public static function ticketCreated(Ticket $ticket, bool $confirmRequester = true): void
     {
@@ -55,6 +71,9 @@ class Notifier
             User::itTeam()->where('id', '!=', $ticket->user_id),
             new NewTicketNotification($ticket)
         );
+
+        // The shared team inbox gets every new ticket too (one place for the whole team to watch).
+        static::sendToAddress(config('company.team_inbox'), new NewTicketNotification($ticket));
     }
 
     /**

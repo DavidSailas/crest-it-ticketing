@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Ticket;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Str;
 
@@ -21,6 +22,11 @@ class NewTicketNotification extends AppNotification
     // Admins don't get these unless they switched them on, so the bell stays quiet for them too.
     public function via(object $notifiable): array
     {
+        // The shared team inbox is a plain address, not a user: email only.
+        if ($notifiable instanceof AnonymousNotifiable) {
+            return ['mail'];
+        }
+
         if (! $notifiable->wantsAlert('new_tickets')) {
             return [];
         }

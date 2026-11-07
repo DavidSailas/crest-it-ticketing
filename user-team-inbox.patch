@@ -1,0 +1,34 @@
+--- a/app/Models/User.php
++++ b/app/Models/User.php
+@@ -206,10 +206,30 @@
+         return $type !== 'new_tickets' || $this->isItSupport();
+     }
+ 
++    /**
++     * Is the EMAIL switch on for this kind of notification? What they chose, or the default.
++     * New-ticket emails default on for IT Support — unless the team has a shared inbox
++     * (config company.team_inbox) that already gets them, to avoid duplicates.
++     */
++    public function emailSwitchOn(string $type): bool
++    {
++        $preferences = $this->email_preferences ?? [];
++
++        if (array_key_exists($type, $preferences)) {
++            return (bool) $preferences[$type];
++        }
++
++        if ($type === 'new_tickets') {
++            return $this->isItSupport() && blank(config('company.team_inbox'));
++        }
++
++        return true;
++    }
++
+     /** Should an email go out? Needs a CONFIRMED address on the account and the switch on. */
+     public function wantsEmail(string $type): bool
+     {
+-        return $this->hasVerifiedEmail() && $this->wantsAlert($type);
++        return $this->hasVerifiedEmail() && $this->emailSwitchOn($type);
+     }
+ 
+     /** IT Support and admins who are active — who hears about new tickets. */
