@@ -13,15 +13,26 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tickets', function (Blueprint $table) {
-            $table->timestamp('vendor_sent_at')->nullable();
-            $table->timestamp('vendor_returned_at')->nullable();
+            if (! Schema::hasColumn('tickets', 'vendor_sent_at')) {
+                $table->timestamp('vendor_sent_at')->nullable();
+            }
+            if (! Schema::hasColumn('tickets', 'vendor_returned_at')) {
+                $table->timestamp('vendor_returned_at')->nullable();
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('tickets', function (Blueprint $table) {
-            $table->dropColumn(['vendor_sent_at', 'vendor_returned_at']);
+            $drop = array_values(array_filter(
+                ['vendor_sent_at', 'vendor_returned_at'],
+                fn ($column) => Schema::hasColumn('tickets', $column)
+            ));
+
+            if ($drop) {
+                $table->dropColumn($drop);
+            }
         });
     }
 };

@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('users', 'approver_id')) {
+            return; // already done (safe to run again)
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('approver_id')->nullable()->after('is_department_head')
                 ->constrained('users')->nullOnDelete();
@@ -21,6 +25,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasColumn('users', 'approver_id')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropForeign(['approver_id']);
             $table->dropColumn('approver_id');

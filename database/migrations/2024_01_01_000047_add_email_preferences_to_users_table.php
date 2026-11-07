@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('users', 'email_preferences')) {
+            return; // already done (safe to run again)
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->json('email_preferences')->nullable()->after('email');
         });
@@ -18,6 +22,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasColumn('users', 'email_preferences')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('email_preferences');
         });

@@ -19,9 +19,15 @@ return new class extends Migration
         }
 
         Schema::table('tickets', function (Blueprint $table) {
-            $table->string('vendor_name', 120)->nullable();
-            $table->string('vendor_reference', 80)->nullable();
-            $table->date('vendor_expected_at')->nullable();
+            if (! Schema::hasColumn('tickets', 'vendor_name')) {
+                $table->string('vendor_name', 120)->nullable();
+            }
+            if (! Schema::hasColumn('tickets', 'vendor_reference')) {
+                $table->string('vendor_reference', 80)->nullable();
+            }
+            if (! Schema::hasColumn('tickets', 'vendor_expected_at')) {
+                $table->date('vendor_expected_at')->nullable();
+            }
         });
     }
 
@@ -31,7 +37,14 @@ return new class extends Migration
         DB::table('tickets')->where('status', 'pending_vendor')->update(['status' => 'in_progress']);
 
         Schema::table('tickets', function (Blueprint $table) {
-            $table->dropColumn(['vendor_name', 'vendor_reference', 'vendor_expected_at']);
+            $drop = array_values(array_filter(
+                ['vendor_name', 'vendor_reference', 'vendor_expected_at'],
+                fn ($column) => Schema::hasColumn('tickets', $column)
+            ));
+
+            if ($drop) {
+                $table->dropColumn($drop);
+            }
         });
 
         if (DB::getDriverName() === 'mysql') {
