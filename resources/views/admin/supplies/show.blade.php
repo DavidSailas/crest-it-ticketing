@@ -49,7 +49,10 @@
             </div>
             @if($canManage)
                 <div class="flex items-center gap-2 shrink-0">
-                    <a href="{{ route('supplies.edit', $supply) }}" class="btn btn-secondary">Edit</a>
+                    <a href="{{ route('supplies.edit', $supply) }}" class="btn btn-secondary">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+                        Edit
+                    </a>
                     @if($isAdmin)
                         <x-confirm-action-modal
                             id="delete-supply"
@@ -65,6 +68,44 @@
             @endif
         </div>
     </x-slot>
+
+    <style>
+        /* Small floating buttons over the photo (Enlarge, Close) */
+        .photo-pill {
+            display: inline-flex; align-items: center; gap: .375rem;
+            padding: .375rem .75rem; border-radius: 9999px;
+            font-size: .75rem; font-weight: 600; line-height: 1;
+            color: #374151; background: rgba(255, 255, 255, .94);
+            border: 1px solid rgba(17, 24, 39, .12);
+            box-shadow: 0 2px 8px -2px rgba(17, 24, 39, .25);
+            transition: background-color .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
+        }
+        .photo-pill svg { width: 1rem; height: 1rem; }
+        .photo-pill-icon { padding: 0; width: 2.25rem; height: 2.25rem; justify-content: center; }
+        .group:hover .photo-pill, .photo-pill:hover { background: #fff; color: #14532d; border-color: #1a6b3c; }
+        .photo-pill:focus-visible { outline: 2px solid #1a6b3c; outline-offset: 2px; }
+        html.dark .photo-pill {
+            color: #e4e8ee; background: rgba(17, 22, 28, .82);
+            border-color: rgba(255, 255, 255, .18);
+            box-shadow: 0 4px 14px -4px rgba(0, 0, 0, .7);
+            -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+        }
+        html.dark .group:hover .photo-pill, html.dark .photo-pill:hover { background: #1f8148; color: #fff; border-color: #3fb97a; }
+        html.dark .photo-pill:focus-visible { outline-color: #5fd39a; }
+
+        /* Quiet text button under Stock In / Stock Out */
+        .btn-quiet {
+            display: inline-flex; width: 100%; align-items: center; justify-content: center; gap: .375rem;
+            margin-top: .625rem; padding: .5rem; border-radius: .5rem;
+            font-size: .75rem; font-weight: 500; color: #6b7280;
+            transition: background-color .15s ease, color .15s ease;
+        }
+        .btn-quiet svg { width: .875rem; height: .875rem; }
+        .btn-quiet:hover { background: #f3f4f6; color: #14532d; }
+        .btn-quiet:focus-visible { outline: 2px solid #1a6b3c; outline-offset: 1px; }
+        html.dark .btn-quiet { color: #94a0ae; }
+        html.dark .btn-quiet:hover { background: rgb(52 199 130 / .12); color: #7fe0b0; }
+    </style>
 
     <div class="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
@@ -123,7 +164,8 @@
                     </div>
                     <button type="button" x-data
                             @click="$dispatch('set-adjust-type', 'count'); $dispatch('open-modal', 'adjust-stock')"
-                            class="mt-2.5 w-full text-center text-xs font-medium text-gray-500 hover:text-green-800 hover:underline">
+                            class="btn-quiet">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
                         Fix the count after a stock-take
                     </button>
                 @else
@@ -182,7 +224,7 @@
                     <button type="button" x-data @click="$dispatch('open-modal', 'supply-photo')" aria-label="View a larger photo of {{ $supply->name }}"
                             class="group relative block w-full cursor-zoom-in border-b border-gray-100 bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-700">
                         <img src="{{ $supply->image_url }}" alt="{{ $supply->name }}" class="mx-auto max-h-72 w-full object-contain p-4">
-                        <span class="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium text-gray-600 shadow-sm ring-1 ring-gray-200 transition group-hover:text-green-800">
+                        <span class="photo-pill absolute bottom-3 right-3">
                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" /></svg>
                             Enlarge
                         </span>
@@ -385,7 +427,7 @@
             <div class="relative bg-white">
                 <img src="{{ $supply->image_url }}" alt="{{ $supply->name }}" class="mx-auto max-h-[80vh] w-full object-contain">
                 <button type="button" x-on:click="$dispatch('close')" aria-label="Close photo"
-                        class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-gray-600 shadow ring-1 ring-gray-200 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
+                        class="photo-pill photo-pill-icon absolute right-3 top-3">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
