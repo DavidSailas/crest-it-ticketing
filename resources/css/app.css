@@ -189,7 +189,7 @@ html.dark .btn-primary { background-color: #1f8148; }
 html.dark .btn-primary:hover { background-color: #1a6b3c; }
 
 /* Live-list "this filter is on" highlight (set with !important in the layout) */
-html.dark .filter-active { background-color: rgb(52 199 130 / .12) !important; border-color: #2f9e5c !important; }
+html.dark .filter-active { background-color: #162a22 !important; border-color: #2f9e5c !important; }
 html.dark .filter-field:has(.filter-active) > label { color: #5fd39a; }
 
 /* Inline styles with hard-coded light colours that Tailwind classes can't reach */
@@ -487,3 +487,44 @@ html.dark .asset-row button.bg-rose-50:hover { background: rgb(239 68 68 / .18);
 
 /* Pagination box */
 html.dark nav[role="navigation"] a, html.dark nav[role="navigation"] span[aria-current] > span { border-color: #2a3542; }
+
+
+/* ===========================================================================
+   Dark mode: selected / focused states that were turning light
+   1) Native dropdown lists (<select>): the list takes its colours from the <option>s.
+      Translucent field backgrounds (filter-active, bg-gray-50/60) left the list pale, so
+      options get solid dark colours and the active row a brand-green highlight.
+   2) Tile pickers built with peer-checked:* (category, priority, etc.): Tailwind's
+      peer-checked:bg-green-50 is a different class name from bg-green-50, so it was never remapped.
+   3) focus:bg-white on search boxes / selects turned them white while typing or choosing.
+   =========================================================================== */
+
+/* 1) Dropdown lists */
+html.dark select option, html.dark select optgroup { background-color: #1d2630; color: #e4e8ee; }
+html.dark select option:checked,
+html.dark select option:hover { background: #1f8148 linear-gradient(#1f8148, #1f8148); color: #fff; }
+html.dark select option:disabled { color: #667386; }
+html.dark select.filter-active { background-color: #162a22 !important; }
+html.dark select[class*="bg-gray-50/"], html.dark input[class*="bg-gray-50/"], html.dark textarea[class*="bg-gray-50/"] { background-color: #11161c; }
+
+/* 3) Focus no longer flips fields to white */
+html.dark .focus\:bg-white:focus { background-color: #11161c; }
+html.dark .group:focus-within .group-focus-within\:text-green-700 { color: #5fd39a; }
+
+/* 2) Selected tiles (peer-checked) */
+html.dark .peer:checked ~ .peer-checked\:bg-green-50 { background-color: rgb(52 199 130 / .16); }
+html.dark .peer:checked ~ .peer-checked\:text-green-800 { color: #7fe0b0; }
+html.dark .peer:checked ~ .peer-checked\:border-green-700 { border-color: #3fb97a; }
+html.dark .peer:checked ~ .peer-checked\:ring-green-700\/20 { --tw-ring-color: rgb(52 199 130 / .30); }
+html.dark .peer:checked ~ .peer-checked\:bg-indigo-50 { background-color: rgb(129 140 248 / .16); }
+html.dark .peer:checked ~ .peer-checked\:text-indigo-900 { color: #c7d2fe; }
+html.dark .peer:checked ~ .peer-checked\:border-indigo-500 { border-color: #818cf8; }
+html.dark .peer:checked ~ .peer-checked\:ring-indigo-500\/20 { --tw-ring-color: rgb(129 140 248 / .30); }
+html.dark .peer:focus-visible ~ .peer-focus-visible\:ring-green-700 { --tw-ring-color: #5fd39a; }
+
+/* Other responsive / hover variants that had no dark version */
+html.dark .md\:divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #222c37; }
+html.dark .sm\:ring-gray-200 { --tw-ring-color: #2a3542; }
+html.dark .sm\:bg-white\/90 { background-color: rgb(23 30 38 / .9); }
+html.dark .hover\:bg-orange-50:hover { background-color: rgb(249 115 22 / .18); }
+html.dark [class*="hover:bg-white/"]:hover { background-color: rgb(255 255 255 / .06); }
