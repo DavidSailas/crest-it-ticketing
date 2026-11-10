@@ -195,14 +195,14 @@
                 {{-- Tablets and up: the table --}}
                 <table class="hidden w-full text-sm md:table">
                     <thead>
-                        <tr class="asset-thead border-b border-gray-200" style="background: linear-gradient(90deg, #e6f3eb 0%, #f4faf6 100%);">
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Item</th>
+                        <tr class="asset-thead border-b border-gray-200">
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Item</th>
                             @unless($isStaff)
-                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Requested by</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500">Requested by</th>
                             @endunless
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Qty</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
-                            <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Requested</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">Qty</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Status</th>
+                            <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500">Requested</th>
                             <th class="px-3 sm:px-4 py-3"></th>
                         </tr>
                     </thead>

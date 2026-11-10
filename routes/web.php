@@ -28,6 +28,39 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
+// Makes the system installable on phones and laptops (Add to Home Screen / Install app).
+// Built here, not as a static file, so the URLs are always right for wherever the site is hosted.
+Route::get('/manifest.webmanifest', function () {
+    $icon = fn (string $file, string $size, string $purpose = 'any') => [
+        'src' => asset('icons/'.$file), 'sizes' => $size, 'type' => 'image/png', 'purpose' => $purpose,
+    ];
+
+    return response()->json([
+        'id' => url('/'),
+        'name' => 'IT Service Management System',
+        'short_name' => 'ITSM',
+        'description' => 'Submit and track IT tickets, assets and supplies.',
+        'start_url' => url('/'),
+        'scope' => url('/').'/',
+        'display' => 'standalone',
+        'orientation' => 'portrait-primary',
+        'background_color' => '#ffffff',
+        'theme_color' => '#0b3d27',
+        'icons' => [
+            $icon('icon-192.png', '192x192'),
+            $icon('icon-512.png', '512x512'),
+            $icon('icon-maskable-512.png', '512x512', 'maskable'),
+        ],
+        'shortcuts' => [
+            ['name' => 'New ticket', 'url' => route('tickets.create'), 'icons' => [$icon('icon-192.png', '192x192')]],
+            ['name' => 'Tickets', 'url' => route('tickets.index'), 'icons' => [$icon('icon-192.png', '192x192')]],
+        ],
+    ], 200, [
+        'Content-Type' => 'application/manifest+json',
+        'Cache-Control' => 'public, max-age=3600',
+    ], JSON_UNESCAPED_SLASHES);
+})->name('pwa.manifest');
+
 // The "Confirm my email" button in the email. Signed, so it can't be forged, and it works even when the
 // person isn't logged in on that device.
 Route::get('/email/confirm/{user}/{hash}', [EmailConfirmationController::class, 'confirm'])

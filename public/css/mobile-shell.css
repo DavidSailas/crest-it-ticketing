@@ -1,0 +1,267 @@
+/* ===========================================================================
+   Mobile app shell + install banner.
+   Plain CSS on purpose (no Tailwind build needed). Dark mode follows the
+   existing  html.dark  switch.
+   Phones and tablets (< 1024px): bottom tab bar + "More" sheet, no hamburger.
+   =========================================================================== */
+
+:root { --mnav-h: 3.75rem; }
+
+[hidden] { display: none !important; }
+
+/* Touch polish, all screens */
+a, button, [role="button"], label, select, summary { touch-action: manipulation; }
+html { -webkit-tap-highlight-color: rgba(26, 107, 60, .12); }
+
+/* ---------- Install banner ---------- */
+.pwa-install {
+    position: fixed; z-index: 80;
+    left: .75rem; right: .75rem; bottom: calc(.75rem + env(safe-area-inset-bottom, 0px));
+    max-width: 26rem; margin-inline: auto;
+    display: flex; align-items: center; gap: .75rem;
+    padding: .75rem .75rem .75rem .75rem;
+    background: #fff; color: #1d2b27;
+    border-radius: 1rem;
+    box-shadow: 0 18px 40px -12px rgba(5, 35, 30, .45), 0 0 0 1px rgba(15, 95, 58, .12);
+    font-family: inherit;
+    transform: translateY(1.5rem); opacity: 0; transition: transform .25s cubic-bezier(.2, .8, .2, 1), opacity .2s ease;
+}
+.pwa-install.is-in { transform: none; opacity: 1; }
+.pwa-install__icon { flex: none; width: 2.75rem; height: 2.75rem; border-radius: .75rem; box-shadow: 0 0 0 1px #e5e7eb; background: #fff; object-fit: contain; }
+.pwa-install__text { min-width: 0; flex: 1 1 auto; }
+.pwa-install__title { margin: 0; font-size: .9375rem; font-weight: 700; line-height: 1.25; color: #0d4a2e; }
+.pwa-install__sub { margin: .125rem 0 0; font-size: .8125rem; line-height: 1.35; color: #5d6b66; }
+.pwa-install__sub svg { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -.2em; color: #1a6b3c; }
+.pwa-install__btn {
+    flex: none; min-height: 44px; padding: 0 1.1rem; border: 0; border-radius: .75rem;
+    background: #1a6b3c; color: #fff; font-family: inherit; font-weight: 600; font-size: .875rem; line-height: 1; cursor: pointer;
+}
+.pwa-install__btn:active { background: #14532d; }
+.pwa-install__close {
+    flex: none; width: 2.75rem; height: 2.75rem; margin: -.25rem -.25rem -.25rem 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; border-radius: 9999px; background: transparent; color: #6b7280; cursor: pointer;
+}
+.pwa-install__close:active { background: #f3f4f6; }
+.pwa-install__close svg { width: 1.25rem; height: 1.25rem; }
+.pwa-install :focus-visible { outline: 2px solid #1a6b3c; outline-offset: 2px; }
+
+/* Inside the app on phones the banner floats above the tab bar */
+@media (max-width: 1023px) {
+    .has-mnav .pwa-install { bottom: calc(var(--mnav-h) + env(safe-area-inset-bottom, 0px) + .75rem); }
+}
+/* Laptops: a compact card in the corner */
+@media (min-width: 1024px) {
+    .pwa-install { left: auto; right: 1.5rem; bottom: 1.5rem; margin: 0; width: 24rem; }
+}
+
+html.dark .pwa-install { background: #171e26; color: #e4e8ee; box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .6), 0 0 0 1px #2a3542; }
+html.dark .pwa-install__title { color: #5fd39a; }
+html.dark .pwa-install__sub { color: #94a0ae; }
+html.dark .pwa-install__sub svg { color: #5fd39a; }
+html.dark .pwa-install__close { color: #94a0ae; }
+html.dark .pwa-install__close:active { background: #202a35; }
+html.dark .pwa-install__icon { box-shadow: 0 0 0 1px #2a3542; }
+
+/* ---------- Phones & tablets ---------- */
+.mnav, .msheet, .msheet-backdrop { display: none; }
+
+@media (max-width: 1023px) {
+
+    /* iOS zooms into any field under 16px when it gets focus — keep them at 16px */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+    select, textarea { font-size: 16px; }
+
+    /* Top bar stays put while the page scrolls */
+    .app-topbar { position: sticky; top: 0; z-index: 40; padding-top: env(safe-area-inset-top, 0px); }
+
+    /* Keep the last bit of every page clear of the tab bar */
+    .has-mnav main { padding-bottom: calc(var(--mnav-h) + env(safe-area-inset-bottom, 0px) + .5rem); }
+
+    html.mnav-lock, html.mnav-lock body { overflow: hidden; }
+
+    /* ----- Bottom tab bar ----- */
+    .mnav {
+        display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+        height: calc(var(--mnav-h) + env(safe-area-inset-bottom, 0px));
+        padding: .25rem max(.25rem, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(.25rem, env(safe-area-inset-left, 0px));
+        background: #fff; border-top: 1px solid #e5e7eb;
+        -webkit-user-select: none; user-select: none;
+    }
+    .mnav__item {
+        position: relative; min-width: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1875rem;
+        padding: 0; border: 0; background: none; cursor: pointer; text-decoration: none;
+        font-family: inherit; font-weight: 600; font-size: .6875rem; line-height: 1; color: #6b7280;
+    }
+    .mnav__ico {
+        position: relative; display: flex; align-items: center; justify-content: center;
+        width: 3.5rem; height: 1.75rem; border-radius: 9999px;
+        transition: background-color .18s ease, color .18s ease;
+    }
+    .mnav__ico svg { width: 1.5rem; height: 1.5rem; }
+    .mnav__label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mnav__item:active .mnav__ico { background: #eef0f2; }
+    .mnav__item.is-active { color: #0f5f3a; font-weight: 700; }
+    .mnav__item.is-active .mnav__ico { background: #e3f3ea; }
+    .mnav__item:focus-visible { outline: 2px solid #1a6b3c; outline-offset: -3px; border-radius: .75rem; }
+    .mnav__badge {
+        position: absolute; top: -.25rem; right: .125rem; min-width: 1.0625rem; height: 1.0625rem; padding: 0 .25rem;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 9999px; background: #f59e0b; color: #fff; font-family: inherit; font-weight: 700; font-size: .625rem; line-height: 1;
+        box-shadow: 0 0 0 2px #fff;
+    }
+    .mnav__badge--red { background: #e11d48; }
+
+    /* ----- "More" sheet ----- */
+    .msheet-backdrop { display: block; position: fixed; inset: 0; z-index: 44; background: rgba(10, 24, 17, .5); }
+    .msheet {
+        display: flex; flex-direction: column;
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+        max-height: min(88vh, 42rem); max-height: min(88dvh, 42rem);
+        margin-inline: auto; max-width: 36rem;
+        background: #fff; border-radius: 1.25rem 1.25rem 0 0;
+        box-shadow: 0 -14px 40px -14px rgba(5, 35, 30, .4);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .msheet__grab { flex: none; width: 2.5rem; height: .3125rem; margin: .5rem auto .125rem; border-radius: 9999px; background: #d1d5db; }
+    .msheet__body { overflow-y: auto; overscroll-behavior: contain; padding: .25rem .75rem 1rem; }
+    .msheet__me { display: flex; align-items: center; gap: .75rem; padding: .5rem .5rem .75rem; }
+    .msheet__me-name { display: flex; align-items: center; gap: .375rem; margin: 0; font-size: 1rem; font-weight: 700; color: #1f2937; }
+    .msheet__me-name span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .msheet__me-sub { margin: .125rem 0 0; font-size: .8125rem; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .msheet__vip { flex: none; padding: .125rem .375rem; border-radius: 9999px; background: #fffbeb; color: #b45309; font-size: .625rem; font-weight: 700; box-shadow: inset 0 0 0 1px #fde68a; }
+    .msheet__group { margin: .5rem 0 0; padding: 0 .5rem; font-size: .8125rem; font-weight: 600; color: #6b7280; }
+    .msheet__list { margin: .25rem 0 0; padding: 0; list-style: none; }
+    .msheet__row {
+        display: flex; align-items: center; gap: .75rem; width: 100%; min-height: 3.25rem;
+        padding: .375rem .5rem; border: 0; border-radius: .875rem; background: none; text-align: left;
+        font-family: inherit; font-weight: 500; font-size: .9375rem; line-height: 1.25; color: #1f2937; text-decoration: none; cursor: pointer;
+    }
+    .msheet__row:active { background: #f3f4f6; }
+    .msheet__row:focus-visible { outline: 2px solid #1a6b3c; outline-offset: -2px; }
+    .msheet__tile { flex: none; display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: .75rem; background: #f3f4f6; color: #4b5563; }
+    .msheet__tile svg { width: 1.375rem; height: 1.375rem; }
+    .msheet__text { min-width: 0; flex: 1 1 auto; }
+    .msheet__text small { display: block; margin-top: .125rem; font-size: .75rem; font-weight: 400; color: #9ca3af; }
+    .msheet__chev { flex: none; width: 1.125rem; height: 1.125rem; color: #cbd5d1; }
+    .msheet__row.is-active { background: #ecf7f0; }
+    .msheet__row.is-active .msheet__tile { background: #cfeadb; color: #0f5f3a; }
+    .msheet__row.is-active .msheet__text { color: #0d4a2e; font-weight: 600; }
+    .msheet__row--install .msheet__tile { background: #1a6b3c; color: #fff; }
+    .msheet__row--danger { color: #be123c; }
+    .msheet__row--danger .msheet__tile { background: #fff1f2; color: #e11d48; }
+    .msheet__hr { height: 1px; margin: .5rem .5rem; background: #f0f1f3; border: 0; }
+
+    /* sheet slide + fade (Alpine x-transition class names) */
+    .msheet-in    { transition: transform .24s cubic-bezier(.2, .8, .2, 1); }
+    .msheet-from  { transform: translateY(100%); }
+    .msheet-to    { transform: translateY(0); }
+    .msheet-out   { transition: transform .16s ease-in; }
+    .mfade-in     { transition: opacity .2s ease; }
+    .mfade-out    { transition: opacity .15s ease; }
+    .mfade-from   { opacity: 0; }
+    .mfade-to     { opacity: 1; }
+
+    /* ----- dark mode ----- */
+    html.dark .mnav { background: #171e26; border-top-color: #2a3542; }
+    html.dark .mnav__item { color: #94a0ae; }
+    html.dark .mnav__item:active .mnav__ico { background: #202a35; }
+    html.dark .mnav__item.is-active { color: #5fd39a; }
+    html.dark .mnav__item.is-active .mnav__ico { background: rgb(52 199 130 / .16); }
+    html.dark .mnav__badge { box-shadow: 0 0 0 2px #171e26; }
+    html.dark .msheet-backdrop { background: rgba(0, 0, 0, .62); }
+    html.dark .msheet { background: #171e26; box-shadow: 0 -14px 40px -14px rgba(0, 0, 0, .7), 0 -1px 0 #2a3542; }
+    html.dark .msheet__grab { background: #364252; }
+    html.dark .msheet__me-name { color: #f1f4f8; }
+    html.dark .msheet__me-sub, html.dark .msheet__group { color: #94a0ae; }
+    html.dark .msheet__vip { background: rgb(245 158 11 / .14); color: #fbbf24; box-shadow: inset 0 0 0 1px rgb(245 158 11 / .35); }
+    html.dark .msheet__row { color: #e4e8ee; }
+    html.dark .msheet__row:active { background: #202a35; }
+    html.dark .msheet__tile { background: #202a35; color: #aeb8c4; }
+    html.dark .msheet__text small { color: #7b8795; }
+    html.dark .msheet__chev { color: #364252; }
+    html.dark .msheet__row.is-active { background: rgb(52 199 130 / .12); }
+    html.dark .msheet__row.is-active .msheet__tile { background: rgb(52 199 130 / .22); color: #5fd39a; }
+    html.dark .msheet__row.is-active .msheet__text { color: #5fd39a; }
+    html.dark .msheet__row--danger { color: #fda4af; }
+    html.dark .msheet__row--danger .msheet__tile { background: rgb(239 68 68 / .16); color: #fb7185; }
+    html.dark .msheet__hr { background: #202a35; }
+}
+
+/* A little more breathing room on tablets */
+@media (min-width: 640px) and (max-width: 1023px) {
+    :root { --mnav-h: 4rem; }
+    .mnav__item { font-size: .75rem; }
+}
+
+/* Installed app: no accidental text selection on chrome, no rubber-band flash on the top bar */
+html.pwa-standalone body { overscroll-behavior-y: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .pwa-install, .msheet-in, .msheet-out, .mfade-in, .mfade-out, .mnav__ico { transition: none !important; }
+}
+
+/* ===========================================================================
+   "Devices by type" (Assets) and "Supplies by category" — phones only.
+   The big tiles become one row of compact chips: icon, name, count.
+   Everything is visible at a glance, the selected one is solid green, and a
+   small amber dot marks supply categories that need restocking.
+   (body .tile-strip … is deliberately more specific than the compiled app.css.)
+   =========================================================================== */
+.tile-flag { display: none; }
+
+@media (max-width: 639px) {
+    body .tile-strip {
+        gap: .5rem; padding-top: .125rem; padding-bottom: .5rem; scroll-padding-inline: 1rem;
+        -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 .75rem, #000 calc(100% - 1.25rem), transparent 100%);
+                mask-image: linear-gradient(90deg, transparent 0, #000 .75rem, #000 calc(100% - 1.25rem), transparent 100%);
+    }
+
+    body .tile-strip > .type-card {
+        position: relative; flex: 0 0 auto; display: flex; align-items: center;
+        min-height: 2.875rem; padding: .25rem .9rem .25rem .3125rem;
+        border-radius: 9999px; background: #f6f8f7; border: 1px solid #e2e8e4;
+        box-shadow: none; transform: none; white-space: nowrap; scroll-snap-align: center;
+    }
+    body .tile-strip > .type-card:active { background: #e8f3ed; }
+    body .tile-strip > .type-card > div { display: flex; align-items: center; gap: .5rem; }
+    body .tile-strip .type-chip { width: 2.125rem; height: 2.125rem; border-radius: 9999px; transform: none; }
+    body .tile-strip .type-chip svg { width: 1.125rem !important; height: 1.125rem !important; }
+
+    /* name first, then the count */
+    body .tile-strip > .type-card > div > div { display: flex; flex-direction: row-reverse; align-items: baseline; gap: .4rem; }
+    body .tile-strip > .type-card p { margin: 0; line-height: 1.2; }
+    body .tile-strip > .type-card > div > div > p:first-child { font-size: .8125rem; font-weight: 700; }
+    body .tile-strip > .type-card > div > div > p:last-child { font-size: .875rem; font-weight: 600; max-width: none; overflow: visible; }
+
+    /* the status sentence stays for screen readers, but no longer takes up room */
+    body .tile-strip > .type-card > p {
+        position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+        clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+
+    /* needs restocking */
+    body .tile-strip .tile-flag {
+        display: block; position: absolute; top: .125rem; right: .125rem; width: .6875rem; height: .6875rem;
+        border-radius: 9999px; background: #f59e0b; box-shadow: 0 0 0 2px #fff;
+    }
+
+    /* selected */
+    body .tile-strip > .type-card.is-on { background: #1a6b3c; border-color: #1a6b3c; box-shadow: 0 6px 14px -6px rgba(26, 107, 60, .6); }
+    body .tile-strip > .type-card.is-on .type-chip { background: rgba(255, 255, 255, .2); color: #fff; box-shadow: none; }
+    body .tile-strip > .type-card.is-on p { color: #fff; }
+    body .tile-strip > .type-card.is-on .tile-flag { box-shadow: 0 0 0 2px #1a6b3c; }
+
+    /* nothing of this type yet */
+    body .tile-strip > .type-card:has(.type-chip.is-empty):not(.is-on) { background: transparent; border-style: dashed; }
+
+    /* dark mode */
+    html.dark body .tile-strip > .type-card { background: #1b232c; border-color: #2a3542; }
+    html.dark body .tile-strip > .type-card:active { background: #202a35; }
+    html.dark body .tile-strip > .type-card:has(.type-chip.is-empty):not(.is-on) { background: transparent; }
+    html.dark body .tile-strip > .type-card.is-on { background: #1a6b3c; border-color: #2f9e5f; }
+    html.dark body .tile-strip .tile-flag { box-shadow: 0 0 0 2px #1b232c; }
+    html.dark body .tile-strip > .type-card.is-on .tile-flag { box-shadow: 0 0 0 2px #1a6b3c; }
+}

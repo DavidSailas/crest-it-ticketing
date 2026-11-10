@@ -189,6 +189,7 @@
                             $attention = $row['low'] + $row['critical'] + $row['out'];
                         @endphp
                         <a href="{{ $toggle('category', $code) }}" class="type-card {{ $active ? 'is-on' : '' }}">
+                            @if($attention > 0)<span class="tile-flag" aria-hidden="true"></span>@endif
                             <div class="flex items-center gap-3">
                                 <span class="type-chip {{ $row['total'] > 0 || $active ? '' : 'is-empty' }}">
                                     <x-supply-icon :category="$code" />
@@ -391,11 +392,11 @@
                     <table class="hidden w-full text-sm md:table">
                         <thead>
                             <tr class="asset-thead border-b border-gray-200">
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Item</th>
-                                <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Category</th>
-                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Branch</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">In Stock</th>
-                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Item</th>
+                                <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500">Category</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500">Branch</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">In Stock</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500">Status</th>
                                 <th class="w-28 sm:w-48 px-3 sm:px-4 py-3"></th>
                             </tr>
                         </thead>

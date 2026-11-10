@@ -27,7 +27,7 @@ class AssetController extends Controller
     public function index(Request $request)
     {
         $assets = $this->assetQuery($request)
-            ->with(['user', 'department'])
+            ->with(['user.department', 'department'])
             ->orderBy('asset_tag')
             ->paginate(20)
             ->withQueryString();
@@ -39,6 +39,7 @@ class AssetController extends Controller
 
         $hasFilters = $request->filled('search')
             || $request->filled('department_id')
+            || $request->filled('used_in')
             || $request->filled('location')
             || $request->filled('type')
             || $request->filled('assignment')
@@ -337,7 +338,7 @@ class AssetController extends Controller
         }
 
         $tag = Asset::formatTag($company, $location, $department->code, $type, (int) $sequence);
-        $existing = Asset::with(['user', 'department'])->where('asset_tag', $tag)
+        $existing = Asset::with(['user.department', 'department'])->where('asset_tag', $tag)
             ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
             ->first();
 
@@ -417,6 +418,10 @@ class AssetController extends Controller
             ->when($request->filled('department_id'), function ($query) use ($request) {
                 $query->where('department_id', $request->integer('department_id'));
             })
+            // The department of the person who has it (not the tag's department above).
+            ->when($request->filled('used_in'), function ($query) use ($request) {
+                $query->whereHas('user', fn ($u) => $u->where('department_id', $request->integer('used_in')));
+            })
             // Branch office / location (stored as the branch code, e.g. CEB).
             ->when(array_key_exists((string) $request->query('location'), Asset::locations()), function ($query) use ($request) {
                 $query->where('location', (string) $request->query('location'));
@@ -484,7 +489,7 @@ class AssetController extends Controller
     private function filteredAssetsForExport(Request $request)
     {
         return $this->assetQuery($request)
-            ->with(['user', 'department'])
+            ->with(['user.department', 'department'])
             ->orderBy('asset_tag')
             ->get();
     }

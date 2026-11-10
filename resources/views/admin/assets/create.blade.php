@@ -236,13 +236,14 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Department</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5">Managed by (tag department)</label>
                                 <select name="department_id" x-model="deptId" x-ref="tagDept" class="block w-full rounded-lg border-gray-300 text-sm focus:border-green-700 focus:ring-green-700 bg-white" required>
                                     <option value="" disabled @selected(old('department_id') === null)>Select department</option>
                                     @foreach($departments as $department)
                                         <option value="{{ $department->id }}" @selected((string) old('department_id') === (string) $department->id)>{{ $department->name }}</option>
                                     @endforeach
                                 </select>
+                                <p class="text-xs text-gray-400 mt-1.5">The department that owns and looks after the device, written into the tag (e.g. <strong>IT</strong>). It stays the same when the device is given to someone from another department.</p>
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Tag Number</label>

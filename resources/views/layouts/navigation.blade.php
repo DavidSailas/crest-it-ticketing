@@ -11,19 +11,23 @@
     // Amber when items are merely low; red as soon as one is critical or out.
     $restockBadge = $restock['severe'] > 0 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700';
 
-    // One list drives both the desktop bar and the phone menu, so they can never drift apart.
+    // One list drives the desktop bar and the phone tab bar / More sheet, so they can never drift apart.
     // Same order for every role: the pages used all day first, reference pages after.
     $navLinks = [
-        ['label' => 'Dashboard', 'href' => route('dashboard'), 'active' => ['dashboard']],
-        ['label' => 'Tickets', 'href' => route('tickets.index'), 'active' => ['tickets.*']],
-        ['label' => 'Assets', 'href' => route('assets.index'), 'active' => ['assets.*']],
-        ['label' => 'Supplies', 'href' => route('supplies.index'), 'active' => ['supplies.*', 'admin.supplies.*'], 'badge' => true],
+        ['label' => 'Dashboard', 'icon' => 'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25', 'href' => route('dashboard'), 'active' => ['dashboard']],
+        ['label' => 'Tickets', 'icon' => 'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z', 'href' => route('tickets.index'), 'active' => ['tickets.*']],
+        ['label' => 'Assets', 'icon' => 'M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25', 'href' => route('assets.index'), 'active' => ['assets.*']],
+        ['label' => 'Supplies', 'icon' => 'M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9', 'href' => route('supplies.index'), 'active' => ['supplies.*', 'admin.supplies.*'], 'badge' => true],
         $isAdmin
-            ? ['label' => 'Users', 'href' => route('admin.users.index'), 'active' => ['admin.users.*']]
-            : ['label' => 'Users', 'href' => route('users.directory'), 'active' => ['users.directory*']],
-        ['label' => 'Reports', 'href' => route('admin.reports.index'), 'active' => ['admin.reports.*']],
-        ['label' => 'IT Policy', 'href' => route('it-policy.show'), 'active' => ['it-policy.*']],
+            ? ['label' => 'Users', 'icon' => 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', 'href' => route('admin.users.index'), 'active' => ['admin.users.*']]
+            : ['label' => 'Users', 'icon' => 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z', 'href' => route('users.directory'), 'active' => ['users.directory*']],
+        ['label' => 'Reports', 'icon' => 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z', 'href' => route('admin.reports.index'), 'active' => ['admin.reports.*']],
+        ['label' => 'IT Policy', 'icon' => 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z', 'href' => route('it-policy.show'), 'active' => ['it-policy.*']],
     ];
+
+    // Phones and tablets: the four pages used all day get tabs along the bottom; the rest live in the "More" sheet.
+    $tabLinks = array_slice($navLinks, 0, 4);
+    $moreLinks = array_slice($navLinks, 4);
 
     // Admin-only setup pages, grouped so the bar stays short.
     $orgLinks = $isAdmin ? [
@@ -43,11 +47,17 @@
         ->values()
         ->all();
     $orgActive = collect($orgLinks)->contains(fn ($l) => request()->routeIs(...$l['active']));
+    // The "More" tab is lit whenever the current page is one that lives inside it.
+    $moreActive = $orgActive
+        || request()->routeIs('profile.*', 'announcements.*')
+        || collect($moreLinks)->contains(fn ($l) => request()->routeIs(...$l['active']));
 
     $roleLabel = ['admin' => 'Administrator', 'it_support' => 'IT Support', 'staff' => 'Staff'][$authUser->role] ?? ucfirst(str_replace('_', ' ', $authUser->role));
 
     // Approvers (heads, managers, admins) see a solid amber badge for requests waiting on them.
     $approvalCount = $authUser->supplyApprovalsWaiting();
+    // One count for the Supplies tab on phones: requests waiting on me + items low or out (red once one is critical).
+    $supplyTabCount = $approvalCount + $restockCount;
 
     $supplyBadge = fn (string $extra = '') => ($approvalCount > 0
             ? '<span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white '.$extra.'" title="'.$approvalCount.' supply request(s) waiting for your approval">'.$approvalCount.'</span>'
@@ -57,14 +67,21 @@
             : '');
 @endphp
 
-<nav x-data="{ open: false }" @keydown.escape.window="open = false" class="bg-white border-b border-gray-200 print:hidden" aria-label="Main navigation">
+<nav x-data="{ more: false, canInstall: false }"
+     x-init="canInstall = !!(window.PWA && window.PWA.canInstall())"
+     x-effect="document.documentElement.classList.toggle('mnav-lock', more)"
+     @pwa-state.window="canInstall = $event.detail.canInstall"
+     @keydown.escape.window="more = false"
+     class="app-topbar bg-white border-b border-gray-200 print:hidden" aria-label="Main navigation">
     <div class="max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between gap-3">
 
             {{-- Left: logo + links. min-w-0 lets this side shrink instead of pushing the right side over it. --}}
             <div class="flex h-full min-w-0 items-center gap-3 lg:gap-4 xl:gap-6">
                 <a href="{{ route('dashboard') }}" class="flex shrink-0 items-center gap-2.5 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
-                    <img src="{{ asset('images/logo.png') }}" alt="Crest Forwarder Inc." class="h-9 w-9 object-contain">
+                    <img src="{{ asset('images/logo-light.png') }}" alt="Crest Forwarder Inc." class="logo-light h-9 w-9 object-contain">
+                    {{-- Dark mode: same logo on a transparent background with the dark greens lightened --}}
+                    <img src="{{ asset('images/logo-dark.png') }}" alt="" aria-hidden="true" class="logo-dark h-9 w-9 object-contain">
                     {{-- Hidden on phones and on narrow laptops, where the links need the room. --}}
                     <span class="hidden sm:inline lg:hidden xl:inline whitespace-nowrap font-semibold text-gray-800">IT Service Ticketing</span>
                 </a>
@@ -109,7 +126,7 @@
                 </div>
             </div>
 
-            {{-- Right: notifications, account (laptops and up), menu button (phones and tablets) --}}
+            {{-- Right: notifications and theme everywhere; the account menu on laptops (phones use the More tab) --}}
             <div class="flex shrink-0 items-center gap-1 sm:gap-2">
 
                 @if(config('features.announcements'))
@@ -120,6 +137,13 @@
                     <span data-ann-badge="cap" class="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white" style="background:#1a6b3c;{{ $annUnread > 0 ? '' : 'display:none' }}">{{ $annUnread > 9 ? '9+' : $annUnread }}</span>
                 </a>
                 @endif
+
+                {{-- Light / dark theme --}}
+                <button type="button" onclick="Theme.toggle()" aria-label="Toggle dark mode" title="Light / dark mode"
+                        class="theme-toggle relative inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
+                    <svg class="icon-moon h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg>
+                    <svg class="icon-sun h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/></svg>
+                </button>
 
                 {{-- Notifications bell — visible on every screen size --}}
                 <div x-data="notificationBell('{{ route('notifications.poll') }}', '{{ route('notifications.read-all') }}')" x-init="init()">
@@ -203,15 +227,6 @@
                         </x-slot>
                     </x-dropdown>
                 </div>
-
-                {{-- Menu button (phones and tablets) --}}
-                <button type="button" @click="open = ! open" class="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 lg:hidden"
-                        aria-label="Menu" :aria-expanded="open" aria-controls="mobile-menu">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path x-show="! open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path x-show="open" x-cloak stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
             </div>
         </div>
     </div>
@@ -245,66 +260,122 @@
     </script>
     <div id="ticket-toast-container" class="fixed top-20 right-4 z-[100] space-y-2 pointer-events-none"></div>
 
-    {{-- Phone / tablet menu --}}
-    <div id="mobile-menu" x-show="open" x-cloak
-         x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
-         class="max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-gray-100 lg:hidden">
-        <div class="space-y-1 px-3 py-3">
-            @foreach($navLinks as $link)
-                <x-responsive-nav-link :href="$link['href']" :active="request()->routeIs(...$link['active'])">
-                    <span class="flex items-center justify-between gap-3">
-                        <span>{{ __($link['label']) }}</span>
-                        @if(! empty($link['badge'])) {!! $supplyBadge() !!} @endif
-                    </span>
-                </x-responsive-nav-link>
-            @endforeach
-
-            @if(config('features.announcements'))
-            <x-responsive-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">
-                <span class="flex items-center justify-between gap-3">
-                    <span>{{ __('Announcements') }}</span>
-                    <span data-ann-badge="full" class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold text-white" style="background:#1a6b3c;{{ $annUnread > 0 ? '' : 'display:none' }}">{{ $annUnread }}</span>
+    {{-- Phones & tablets: app-style tab bar along the bottom (no hamburger) --}}
+    <div class="mnav" role="navigation" aria-label="Main tabs">
+        @foreach($tabLinks as $link)
+            @php $tabActive = request()->routeIs(...$link['active']); @endphp
+            <a href="{{ $link['href'] }}" class="mnav__item {{ $tabActive ? 'is-active' : '' }}" @if($tabActive) aria-current="page" @endif>
+                <span class="mnav__ico">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $tabActive ? 2 : 1.7 }}" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $link['icon'] }}" /></svg>
+                    @if(! empty($link['badge']) && $supplyTabCount > 0)
+                        <span class="mnav__badge {{ $approvalCount === 0 && $restock['severe'] > 0 ? 'mnav__badge--red' : '' }}"
+                              title="{{ $approvalCount }} waiting for approval, {{ $restockCount }} to restock">{{ $supplyTabCount > 99 ? '99+' : $supplyTabCount }}</span>
+                    @endif
                 </span>
-            </x-responsive-nav-link>
-            @endif
+                <span class="mnav__label">{{ __($link['label']) }}</span>
+            </a>
+        @endforeach
 
-            @if($orgLinks)
-                <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{{ __('Organization') }}</p>
-                @foreach($orgLinks as $item)
-                    <x-responsive-nav-link :href="$item['href']" :active="request()->routeIs(...$item['active'])">
-                        {{ __($item['label']) }}
-                    </x-responsive-nav-link>
-                @endforeach
-            @endif
-        </div>
+        <button type="button" class="mnav__item {{ $moreActive ? 'is-active' : '' }}" @click="more = true" :aria-expanded="more" aria-haspopup="dialog" aria-controls="more-sheet">
+            <span class="mnav__ico">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $moreActive ? 2 : 1.7 }}" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z" /></svg>
+            </span>
+            <span class="mnav__label">{{ __('More') }}</span>
+        </button>
+    </div>
 
-        <div class="border-t border-gray-100 bg-gray-50/60 px-3 pb-4 pt-4">
-            <div class="flex items-center gap-3 px-3">
+    {{-- "More" sheet: everything that isn't a tab, plus account, install and log out --}}
+    <div x-show="more" x-cloak class="msheet-backdrop" @click="more = false" aria-hidden="true"
+         x-transition:enter="mfade-in" x-transition:enter-start="mfade-from" x-transition:enter-end="mfade-to"
+         x-transition:leave="mfade-out" x-transition:leave-start="mfade-to" x-transition:leave-end="mfade-from"></div>
+
+    <div id="more-sheet" x-show="more" x-cloak class="msheet" role="dialog" aria-modal="true" aria-label="{{ __('More') }}"
+         x-transition:enter="msheet-in" x-transition:enter-start="msheet-from" x-transition:enter-end="msheet-to"
+         x-transition:leave="msheet-out" x-transition:leave-start="msheet-to" x-transition:leave-end="msheet-from">
+        <div class="msheet__grab" aria-hidden="true"></div>
+
+        <div class="msheet__body">
+            <div class="msheet__me">
                 <x-avatar size="md" />
                 <div class="min-w-0">
-                    <p class="flex items-center gap-1.5 truncate text-base font-semibold text-gray-800">
-                        <span class="truncate">{{ $authUser->name }}</span>
-                        @if($authUser->is_vip)
-                            <span class="inline-flex shrink-0 items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">★ VIP</span>
-                        @endif
+                    <p class="msheet__me-name">
+                        <span>{{ $authUser->name }}</span>
+                        @if($authUser->is_vip)<span class="msheet__vip">★ VIP</span>@endif
                     </p>
-                    <p class="truncate text-sm text-gray-500">{{ $authUser->username }}</p>
-                    <p class="text-[11px] font-medium uppercase tracking-wide text-gray-400">{{ $roleLabel }}</p>
+                    <p class="msheet__me-sub">{{ $authUser->username }} · {{ $roleLabel }}</p>
                 </div>
             </div>
 
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
+            <ul class="msheet__list">
+                @foreach($moreLinks as $link)
+                    @php $rowActive = request()->routeIs(...$link['active']); @endphp
+                    <li>
+                        <a href="{{ $link['href'] }}" class="msheet__row {{ $rowActive ? 'is-active' : '' }}" @if($rowActive) aria-current="page" @endif>
+                            <span class="msheet__tile"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $link['icon'] }}" /></svg></span>
+                            <span class="msheet__text">{{ __($link['label']) }}</span>
+                            <svg class="msheet__chev" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                        </a>
+                    </li>
+                @endforeach
 
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
-            </div>
+                @if(config('features.announcements'))
+                    @php $annActive = request()->routeIs('announcements.*'); @endphp
+                    <li>
+                        <a href="{{ route('announcements.index') }}" class="msheet__row {{ $annActive ? 'is-active' : '' }}" @if($annActive) aria-current="page" @endif>
+                            <span class="msheet__tile"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" /></svg></span>
+                            <span class="msheet__text">{{ __('Announcements') }}</span>
+                            <span data-ann-badge="full" class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold text-white" style="background:#1a6b3c;{{ $annUnread > 0 ? '' : 'display:none' }}">{{ $annUnread }}</span>
+                        </a>
+                    </li>
+                @endif
+            </ul>
+
+            @if($orgLinks)
+                <p class="msheet__group">{{ __('Organization') }}</p>
+                <ul class="msheet__list">
+                    @foreach($orgLinks as $item)
+                        @php $itemActive = request()->routeIs(...$item['active']); @endphp
+                        <li>
+                            <a href="{{ $item['href'] }}" class="msheet__row {{ $itemActive ? 'is-active' : '' }}" @if($itemActive) aria-current="page" @endif>
+                                <span class="msheet__tile"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $item['icon'] }}" /></svg></span>
+                                <span class="msheet__text">{{ __($item['label']) }}<small>{{ $item['hint'] }}</small></span>
+                                <svg class="msheet__chev" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            <hr class="msheet__hr">
+
+            <ul class="msheet__list">
+                @php $profActive = request()->routeIs('profile.*'); @endphp
+                <li>
+                    <a href="{{ route('profile.edit') }}" class="msheet__row {{ $profActive ? 'is-active' : '' }}" @if($profActive) aria-current="page" @endif>
+                        <span class="msheet__tile"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg></span>
+                        <span class="msheet__text">{{ __('Profile') }}</span>
+                        <svg class="msheet__chev" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                    </a>
+                </li>
+
+                {{-- Only appears where the app can be installed and isn't yet (set by public/js/pwa.js) --}}
+                <li x-show="canInstall" x-cloak>
+                    <button type="button" class="msheet__row msheet__row--install" @click="more = false; window.PWA && window.PWA.install()">
+                        <span class="msheet__tile"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg></span>
+                        <span class="msheet__text">{{ __('Install app') }}<small>{{ __('Add ITSM to your home screen') }}</small></span>
+                    </button>
+                </li>
+
+                <li>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="msheet__row msheet__row--danger">
+                            <span class="msheet__tile"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg></span>
+                            <span class="msheet__text">{{ __('Log Out') }}</span>
+                        </button>
+                    </form>
+                </li>
+            </ul>
         </div>
     </div>
 </nav>

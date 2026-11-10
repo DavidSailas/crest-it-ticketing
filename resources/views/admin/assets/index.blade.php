@@ -163,7 +163,7 @@
                 }
                 return route('assets.index', array_filter($params, fn ($v) => $v !== null && $v !== ''));
             };
-            $resetFacets = route('assets.index', array_filter(request()->only('search', 'department_id', 'location')));
+            $resetFacets = route('assets.index', array_filter(request()->only('search', 'department_id', 'used_in', 'location')));
 
             $typeIcons = [
                 'DT' => 'M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z',
@@ -266,7 +266,8 @@
         @php
             $filterFields = [
                 ['name' => 'location',      'label' => 'Branch',      'all' => 'All branches',          'options' => \App\Models\Asset::locations()],
-                ['name' => 'department_id', 'label' => 'Department',  'all' => 'All departments',       'options' => $departments->pluck('name', 'id')->all()],
+                ['name' => 'department_id', 'label' => 'Managed by',  'all' => 'All departments',       'options' => $departments->pluck('name', 'id')->all()],
+                ['name' => 'used_in',       'label' => 'Used by',     'all' => 'All departments',       'options' => $departments->pluck('name', 'id')->all()],
                 ['name' => 'type',          'label' => 'Device type', 'all' => 'All types',             'options' => \App\Models\Asset::TYPES],
                 ['name' => 'assignment',    'label' => 'Assignment',  'all' => 'All assignments', 'options' => ['assigned' => 'Assigned to a person', 'department' => 'Assigned to a department', 'unassigned' => 'Unassigned (in stock)']],
                 ['name' => 'status',        'label' => 'Status',      'all' => 'All statuses',          'options' => \App\Models\Asset::STATUSES],
@@ -303,7 +304,7 @@
                 </button>
             </div>
 
-            <div id="asset-filter-fields" class="hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-3 lg:grid-cols-5" :class="filters && '!grid'">
+            <div id="asset-filter-fields" class="hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-3 lg:grid-cols-6" :class="filters && '!grid'">
                 @foreach($filterFields as $f)
                     @php $isOn = (string) request($f['name'], '') !== '' && array_key_exists((string) request($f['name']), $f['options']); @endphp
                     <div class="min-w-0 filter-field">
@@ -374,12 +375,12 @@
                             </x-slot>
 
                             <x-m-meta label="Type">{{ \App\Models\Asset::TYPES[$asset->type] ?? $asset->type }}</x-m-meta>
-                            <x-m-meta label="Department">{{ $asset->department->name ?? '—' }}</x-m-meta>
+                            <x-m-meta label="Managed by">{{ $asset->department->name ?? '—' }}</x-m-meta>
                             <x-m-meta label="Assigned to" wide>
                                 @if($asset->assignment === 'department')
                                     <span class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-200">Shared · {{ $asset->department?->name ?? 'Department' }}</span>
                                 @elseif($asset->user)
-                                    {{ $asset->user->name }}
+                                    {{ $asset->user->name }}@if($asset->user_department_name) <span class="text-xs text-gray-400">({{ $asset->user_department_name }})</span>@endif
                                     @if($asset->assigned_date)<span class="text-xs text-gray-400"> · since {{ $asset->assigned_date->format('M j, Y') }}</span>@endif
                                 @else
                                     <span class="text-gray-400">Unassigned</span>
@@ -414,12 +415,12 @@
                 <table class="hidden w-full text-sm md:table">
                     <thead>
                         <tr class="asset-thead border-b border-gray-200">
-                            <th class="px-3 sm:px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Asset Tag</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Device</th>
-                            <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Department</th>
-                            <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned To</th>
-                            <th class="hidden xl:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">Assigned Since</th>
-                            <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                            <th class="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">Asset Tag</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500">Device</th>
+                            <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap" title="The department in the asset tag — it owns and manages this device">Managed By</th>
+                            <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500">Assigned To</th>
+                            <th class="hidden xl:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">Assigned Since</th>
+                            <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500">Status</th>
                             <th class="w-20 sm:w-32 px-3 sm:px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -455,6 +456,9 @@
                                         </span>
                                     @else
                                         <p class="truncate max-w-[10rem]">{{ $asset->user->name ?? '—' }}</p>
+                                        @if($asset->user_department_name)
+                                            <p class="mt-0.5 truncate max-w-[10rem] text-xs text-gray-400" title="Department of the person using it">{{ $asset->user_department_name }}</p>
+                                        @endif
                                     @endif
                                 </td>
                                 <td class="hidden xl:table-cell px-4 py-3.5 text-gray-600 align-top whitespace-nowrap">
@@ -546,7 +550,10 @@
                                                             </div>
                                                             <div class="min-w-0 flex-1">
                                                                 <p class="text-sm font-semibold text-gray-800 truncate">{{ $asset->user->name }}</p>
-                                                                <p class="text-xs text-gray-500 truncate">{{ $asset->department->name ?? 'No department' }}</p>
+                                                                <p class="text-xs text-gray-500 truncate">{{ $asset->user_department_name ?? 'No department' }}</p>
+                                                                @if($asset->used_by_other_department)
+                                                                    <p class="mt-0.5 text-[11px] text-gray-400">Managed by {{ $asset->department->name ?? '—' }}</p>
+                                                                @endif
                                                             </div>
                                                             <div class="text-right shrink-0">
                                                                 @if($asset->assigned_date)
@@ -599,7 +606,7 @@
                                                             <dd class="text-gray-800 font-medium">{{ \App\Models\Asset::locations()[$asset->location] ?? $asset->location }}</dd>
                                                         </div>
                                                         <div class="rounded-lg border border-gray-100 px-3.5 py-2.5">
-                                                            <dt class="text-xs text-gray-400">Department</dt>
+                                                            <dt class="text-xs text-gray-400">Managed by</dt>
                                                             <dd class="text-gray-800 font-medium">{{ $asset->department->name ?? '—' }}</dd>
                                                         </div>
                                                     </dl>
@@ -642,7 +649,9 @@
             @endif
         </div>
 
+        @if($assets->hasPages())
         <div class="bg-white border border-gray-200 rounded-xl px-4 py-3.5">{{ $assets->links() }}</div>
+        @endif
         </div>
     </div>
 </x-app-layout>

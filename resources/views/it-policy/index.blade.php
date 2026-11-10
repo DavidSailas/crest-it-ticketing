@@ -101,7 +101,7 @@
                                        :aria-current="active === 'section-{{ $section['number'] }}' ? 'true' : null"
                                        :class="active === 'section-{{ $section['number'] }}' ? 'bg-green-50 text-green-800 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'"
                                        class="flex items-baseline gap-2 px-3 py-1.5 rounded-lg text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
-                                        <span class="w-5 shrink-0 text-xs font-semibold tabular-nums" style="color:{{ $tone($section['number'])['accent'] }};">{{ $section['number'] }}</span>
+                                        <span class="itp-accent w-5 shrink-0 text-xs font-semibold tabular-nums" style="--accent:{{ $tone($section['number'])['accent'] }}; color:{{ $tone($section['number'])['accent'] }};">{{ $section['number'] }}</span>
                                         <span class="truncate">{{ $section['title'] }}</span>
                                     </a>
                                 </li>
@@ -132,7 +132,7 @@
                 </div>
 
                 {{-- Document details --}}
-                <div class="rounded-xl border border-gray-100 shadow-sm p-6" style="border-top:4px solid #1a6b3c; background:linear-gradient(180deg,#f1faf4 0%,#fff 70%);" x-show="!query.trim()">
+                <div class="itp-surface rounded-xl border border-gray-100 shadow-sm p-6" style="border-top:4px solid #1a6b3c; background:linear-gradient(180deg,#f1faf4 0%,#fff 70%);" x-show="!query.trim()">
                     <dl class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
                         @foreach($policy['meta'] as $label => $value)
                             <div class="min-w-0">
@@ -158,15 +158,15 @@
                         @foreach($policy['highlights'] as $item)
                             @php $c = $tone($item['section']); @endphp
                             <a href="#section-{{ $item['section'] }}" @click.prevent="go('section-{{ $item['section'] }}')"
-                               style="border-left:4px solid {{ $c['accent'] }}; background:linear-gradient(120deg,{{ $c['tint'] }} 0%,#fff 45%);"
-                               class="group flex items-start gap-3 rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-lg hover:-translate-y-0.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
+                               style="--accent:{{ $c['accent'] }}; border-left:4px solid {{ $c['accent'] }}; background:linear-gradient(120deg,{{ $c['tint'] }} 0%,#fff 45%);"
+                               class="itp-tinted group flex items-start gap-3 rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-lg hover:-translate-y-0.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700">
                                 <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center" style="color:#fff; background:linear-gradient(135deg,{{ $c['accent'] }},{{ $c['dark'] }}); box-shadow:0 4px 10px -3px {{ $c['accent'] }}88;">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons[$item['icon']] }}"/></svg>
                                 </span>
                                 <span class="min-w-0">
                                     <span class="block text-sm font-semibold text-gray-800">{{ $item['title'] }}</span>
                                     <span class="block text-sm text-gray-500 mt-0.5">{{ $item['text'] }}</span>
-                                    <span class="block text-xs font-medium mt-1.5 group-hover:underline" style="color:{{ $c['accent'] }};">Section {{ $item['section'] }}</span>
+                                    <span class="itp-accent block text-xs font-medium mt-1.5 group-hover:underline" style="--accent:{{ $c['accent'] }}; color:{{ $c['accent'] }};">Section {{ $item['section'] }}</span>
                                 </span>
                             </a>
                         @endforeach
@@ -185,19 +185,19 @@
                     @php $c = $tone($section['number']); @endphp
                     <section id="section-{{ $section['number'] }}" data-policy-section
                              x-show="matches('section-{{ $section['number'] }}')"
-                             style="border-left:5px solid {{ $c['accent'] }}; background:linear-gradient(100deg,{{ $c['tint'] }} 0%,#fff 34%);"
-                             class="scroll-mt-6 rounded-xl border border-gray-100 shadow-sm p-6 print:shadow-none print:break-inside-avoid">
+                             style="--accent:{{ $c['accent'] }}; border-left:5px solid {{ $c['accent'] }}; background:linear-gradient(100deg,{{ $c['tint'] }} 0%,#fff 34%);"
+                             class="itp-tinted scroll-mt-6 rounded-xl border border-gray-100 shadow-sm p-6 print:shadow-none print:break-inside-avoid">
                         <div class="flex items-start gap-4">
                             <span class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-sm font-semibold text-white tabular-nums" style="background:linear-gradient(135deg,{{ $c['accent'] }},{{ $c['dark'] }}); box-shadow:0 4px 10px -3px {{ $c['accent'] }}88;">{{ $section['number'] }}</span>
 
                             <div class="min-w-0 flex-1">
-                                <h3 class="text-base font-semibold leading-9" style="color:{{ $c['accent'] }};">{{ $section['title'] }}</h3>
+                                <h3 class="itp-accent text-base font-semibold leading-9" style="--accent:{{ $c['accent'] }}; color:{{ $c['accent'] }};">{{ $section['title'] }}</h3>
 
                                 @if($section['type'] === 'list')
                                     <ul class="mt-2 space-y-2.5">
                                         @foreach($section['items'] as $item)
                                             <li class="flex items-start gap-3 text-sm leading-relaxed text-gray-600">
-                                                <svg class="w-4 h-4 mt-0.5 shrink-0" style="color:{{ $c['accent'] }};" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['check'] }}"/></svg>
+                                                <svg class="itp-accent w-4 h-4 mt-0.5 shrink-0" style="--accent:{{ $c['accent'] }}; color:{{ $c['accent'] }};" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['check'] }}"/></svg>
                                                 <span>{{ $item }}</span>
                                             </li>
                                         @endforeach
@@ -209,7 +209,7 @@
                                                 <p class="text-sm font-medium text-gray-600">{{ $group['label'] }}</p>
                                                 <ul class="mt-2 flex flex-wrap gap-2">
                                                     @foreach($group['items'] as $item)
-                                                        <li class="px-3 py-1 rounded-full text-sm" style="background-color:{{ $c['tint'] }}; color:{{ $c['accent'] }};">{{ $item }}</li>
+                                                        <li class="itp-pill px-3 py-1 rounded-full text-sm" style="--accent:{{ $c['accent'] }}; background-color:{{ $c['tint'] }}; color:{{ $c['accent'] }};">{{ $item }}</li>
                                                     @endforeach
                                                 </ul>
                                             </div>
@@ -243,7 +243,7 @@
 
                 <div x-show="!query.trim()" class="space-y-6">
                     {{-- Summary --}}
-                    <div class="rounded-xl border border-green-100 p-6" style="background-color:#eef6f1; border-left:5px solid #1a6b3c;">
+                    <div class="itp-summary rounded-xl border border-green-100 p-6" style="background-color:#eef6f1; border-left:5px solid #1a6b3c;">
                         <h3 class="text-base font-semibold text-gray-800">Summary</h3>
                         <p class="mt-2 text-sm leading-relaxed text-gray-700 max-w-prose">{{ $policy['summary'] }}</p>
                     </div>

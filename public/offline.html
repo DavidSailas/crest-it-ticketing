@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b3d27">
+<title>You're offline — ITSM</title>
+<style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+        padding: 1.5rem; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: #eef4f1; color: #1d2b27; }
+    .card { width: 100%; max-width: 24rem; text-align: center; background: #fff; border-radius: 1.5rem; padding: 2rem 1.5rem 1.75rem;
+        box-shadow: 0 30px 60px -28px rgba(5,35,30,.45), 0 0 0 1px rgba(15,95,58,.08); }
+    img { width: 5.5rem; height: auto; margin: 0 auto 1rem; display: block; }
+    h1 { margin: 0 0 .5rem; font-size: 1.25rem; color: #0d4a2e; }
+    p { margin: 0 0 1.5rem; font-size: .9375rem; line-height: 1.55; color: #5d6b66; }
+    button { min-height: 48px; width: 100%; border: 0; border-radius: .75rem; background: #1a6b3c; color: #fff;
+        font-family: inherit; font-weight: 600; font-size: 1rem; line-height: 1; cursor: pointer; }
+    button:active { background: #14532d; }
+    @media (prefers-color-scheme: dark) {
+        body { background: #0f1419; color: #e4e8ee; }
+        .card { background: #171e26; box-shadow: 0 0 0 1px #2a3542; }
+        h1 { color: #5fd39a; } p { color: #94a0ae; }
+    }
+</style>
+</head>
+<body>
+<main class="card">
+    <img src="icons/icon-192.png" alt="Crest Forwarder Inc.">
+    <h1>You're offline</h1>
+    <p>ITSM needs an internet connection to load your tickets. Check your Wi-Fi or mobile data, then try again.</p>
+    <button type="button" onclick="location.reload()">Try again</button>
+</main>
+<script>window.addEventListener('online', function () { location.reload(); });</script>
+</body>
+</html>

@@ -129,6 +129,23 @@ class Asset extends Model
     }
 
     /**
+     * The department of the person using it (e.g. Accounting). Not the same as $this->department,
+     * which is the department written into the asset tag (e.g. IT) — the one that owns and manages it.
+     */
+    public function getUserDepartmentNameAttribute(): ?string
+    {
+        return $this->user?->department?->name;
+    }
+
+    /** True when a person from a different department than the tag's has it (IT-tagged monitor used by Accounting). */
+    public function getUsedByOtherDepartmentAttribute(): bool
+    {
+        return $this->user_id
+            && $this->user?->department_id
+            && $this->user->department_id !== $this->department_id;
+    }
+
+    /**
      * Human-readable "how long has this person had it" string, e.g.
      * "8 months" or "3 days". Used in the inventory table and detail view
      * so IT/admin can see asset tenure at a glance without doing date math.

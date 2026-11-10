@@ -123,7 +123,7 @@
                 <th>Type</th>
                 <th>Company</th>
                 <th>Location</th>
-                <th>Department</th>
+                <th>Managed By</th>
                 <th>Assigned To</th>
                 <th>Serial Number</th>
                 <th>Status</th>
@@ -141,7 +141,7 @@
                     <td>{{ $asset->department->name ?? '—' }}</td>
                     <td>
                         @if($asset->user)
-                            {{ $asset->user->name }}
+                            {{ $asset->user->name }}@if($asset->user_department_name) <span style="color:#6b7280">({{ $asset->user_department_name }})</span>@endif
                         @elseif($asset->assignment === 'department')
                             {{ $asset->department?->name ?? 'Department' }} <span class="badge shared">Shared</span>
                         @else

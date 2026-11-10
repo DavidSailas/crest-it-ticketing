@@ -2,14 +2,32 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+
+        <meta name="theme-color" content="#ffffff">
+        <meta name="color-scheme" content="light dark">
+        {{-- Pick light/dark BEFORE the page paints, so a dark-mode user never sees a white flash. --}}
+        <script>
+            (function () {
+                try {
+                    var saved = localStorage.getItem('theme');
+                    var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    if (dark) {
+                        document.documentElement.classList.add('dark');
+                        document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f1419');
+                    }
+                } catch (e) {}
+            })();
+        </script>
 
         <title>{{ config('app.name', 'Laravel') }}</title>
         <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
         <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32.png') }}">
         <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16.png') }}">
         <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+
+        @include('partials.pwa-head')
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -34,12 +52,13 @@
         @if(config('features.announcements'))
             @include('announcements._styles')
         @endif
+        <script src="{{ asset('js/tile-strip.js') }}?v={{ @filemtime(public_path('js/tile-strip.js')) }}" defer></script>
         <script src="{{ asset('js/live-list.js') }}?v={{ @filemtime(public_path('js/live-list.js')) }}" defer></script>
         @if(config('features.announcements'))
             <script src="{{ asset('js/announcements-live.js') }}?v={{ @filemtime(public_path('js/announcements-live.js')) }}" defer></script>
         @endif
     </head>
-    <body class="font-sans antialiased">
+    <body class="font-sans antialiased has-mnav">
         <div class="min-h-screen bg-gray-100">
             @include('layouts.navigation')
 
@@ -82,5 +101,7 @@
                 @endauth
             @endif
         </div>
+
+        @include('partials.pwa-install')
     </body>
 </html>
