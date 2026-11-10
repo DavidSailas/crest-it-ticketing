@@ -65,14 +65,41 @@
         </div>
     </x-slot>
 
+    <style>
+        /* Sidebar: search stays on top, the contents list scrolls on its own */
+        .itp-side > * + * { margin-top: .75rem; }
+        @media (min-width: 1024px) {
+            /* The <aside> itself is what sticks: it is a direct child of the row, which is as tall as the
+               policy text, so it has room to travel. (Sticking an element inside a box that is only as
+               tall as itself, as before, never moves.) */
+            .itp-aside { position: sticky; top: 1rem; align-self: flex-start; }
+            .itp-side { display: flex; flex-direction: column; max-height: calc(100vh - 2rem); }
+            .itp-side > * { flex-shrink: 0; }
+            .itp-side > * + * { margin-top: .75rem; }
+            .itp-side > .itp-toc { flex: 1 1 auto; min-height: 0; flex-shrink: 1; }
+        }
+        .itp-toc {
+            overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth;
+            scrollbar-width: thin; scrollbar-color: #c7d2cc transparent;
+        }
+        .itp-toc::-webkit-scrollbar { width: 8px; }
+        .itp-toc::-webkit-scrollbar-track { background: transparent; margin: 6px 0; }
+        .itp-toc::-webkit-scrollbar-thumb { background-color: #c7d2cc; border-radius: 9999px; }
+        .itp-toc::-webkit-scrollbar-thumb:hover { background-color: #1a6b3c; }
+        html.dark .itp-toc { scrollbar-color: #364252 transparent; }
+        html.dark .itp-toc::-webkit-scrollbar-thumb { background-color: #364252; }
+        html.dark .itp-toc::-webkit-scrollbar-thumb:hover { background-color: #3fb97a; }
+        @media (prefers-reduced-motion: reduce) { .itp-toc { scroll-behavior: auto; } }
+    </style>
+
     <div class="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
          x-data="itPolicy({{ \Illuminate\Support\Js::from($searchIndex) }})" x-init="init()">
 
         <div class="lg:flex lg:items-start lg:gap-8">
 
             {{-- Sidebar: search + contents --}}
-            <aside class="lg:w-64 lg:shrink-0 mb-6 lg:mb-0 print:hidden">
-                <div class="lg:sticky lg:top-6 space-y-3">
+            <aside class="itp-aside lg:w-64 lg:shrink-0 mb-6 lg:mb-0 print:hidden">
+                <div class="itp-side">
                     <div class="relative">
                         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['search'] }}"/></svg>
                         <input type="search" x-model="query" @keydown.escape="query = ''" placeholder="Search the policy"
@@ -91,12 +118,12 @@
                     </select>
 
                     {{-- Large screens: contents list that follows your reading position --}}
-                    <nav class="hidden lg:block bg-white rounded-xl border border-gray-100 shadow-sm p-2 max-h-[75vh] overflow-y-auto" aria-label="Policy contents">
+                    <nav x-ref="toc" class="itp-toc hidden lg:block bg-white rounded-xl border border-gray-100 shadow-sm p-2" aria-label="Policy contents">
                         <p class="px-3 pt-2 pb-1 text-sm font-semibold text-gray-700">Contents</p>
                         <ul class="space-y-0.5">
                             @foreach($policy['sections'] as $section)
                                 <li x-show="matches('section-{{ $section['number'] }}')">
-                                    <a href="#section-{{ $section['number'] }}"
+                                    <a href="#section-{{ $section['number'] }}" data-toc="section-{{ $section['number'] }}"
                                        @click.prevent="go('section-{{ $section['number'] }}')"
                                        :aria-current="active === 'section-{{ $section['number'] }}' ? 'true' : null"
                                        :class="active === 'section-{{ $section['number'] }}' ? 'bg-green-50 text-green-800 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'"
@@ -304,6 +331,19 @@
                     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
                     el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
                     this.active = id;
+                    this.revealActive();
+                },
+
+                // Scrolls the contents list (not the page) so the entry being read stays in view.
+                revealActive() {
+                    const nav = this.$refs.toc;
+                    if (!nav || !nav.offsetParent) return;
+                    const link = nav.querySelector('[data-toc="' + this.active + '"]');
+                    if (!link) return;
+                    const n = nav.getBoundingClientRect(), l = link.getBoundingClientRect();
+                    if (l.top < n.top + 8 || l.bottom > n.bottom - 8) {
+                        nav.scrollTop += (l.top - n.top) - (nav.clientHeight / 2) + (l.height / 2);
+                    }
                 },
 
                 // Highlights the contents entry for the section being read.
@@ -311,7 +351,7 @@
                     if (!('IntersectionObserver' in window)) return;
                     const observer = new IntersectionObserver((entries) => {
                         entries.forEach(entry => {
-                            if (entry.isIntersecting) this.active = entry.target.id;
+                            if (entry.isIntersecting) { this.active = entry.target.id; this.revealActive(); }
                         });
                     }, { rootMargin: '-15% 0px -75% 0px' });
                     document.querySelectorAll('[data-policy-section]').forEach(el => observer.observe(el));
