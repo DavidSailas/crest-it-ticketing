@@ -265,3 +265,62 @@ html.pwa-standalone body { overscroll-behavior-y: none; }
     html.dark body .tile-strip .tile-flag { box-shadow: 0 0 0 2px #1b232c; }
     html.dark body .tile-strip > .type-card.is-on .tile-flag { box-shadow: 0 0 0 2px #1a6b3c; }
 }
+
+/* ===========================================================================
+   Buttons & touch targets on phones
+   ---------------------------------------------------------------------------
+   Of ~220 buttons in the views only ~30 use the shared .btn class (already 44px on phones). The rest are
+   hand-written Tailwind (px-3.5 py-2 text-sm ... = 36-40px tall), plus lots of 12px text-only links.
+   Rather than edit every page, these rules lift them to the 44px touch standard from the outside, without
+   changing colours, and without ever overriding display:none (so hidden / x-show elements stay hidden).
+   Opt a control out with the  no-touch  class.
+   (body ... is deliberately more specific than the compiled app.css.)
+   =========================================================================== */
+
+/* Phones and tablets: the round icon buttons in the top bar (theme, bell) 40 -> 44px */
+@media (max-width: 1023px) {
+    .app-topbar .h-10.w-10 { width: 2.75rem; height: 2.75rem; }
+}
+
+@media (max-width: 639px) {
+
+    /* 1. Hand-rolled buttons / link-buttons: rounded + padded. At least 44px tall; label centred vertically.
+          Elements that are not flex boxes yet (Cancel, Save, Clear ...) become inline-flex so the height applies.
+          Skipped: anything hidden at this size (class contains "hidden"), blocks and full rows (menu items). */
+    body :is(a, button)[class*="rounded-"][class*="px-"][class*="py-"]:not([class*="py-0"]):not([class*="hidden"]):not([class~="block"]):not([class~="flex"]):not(.btn):not(.no-touch):not(.filter-chip):not(.mnav__item):not(.msheet__row) {
+        display: inline-flex; align-items: center; min-height: 44px;
+    }
+    /* centre the label, except where the author deliberately spread it (justify-between: label + chevron) */
+    body :is(a, button)[class*="rounded-"][class*="px-"][class*="py-"]:not([class*="py-0"]):not([class*="hidden"]):not([class*="justify-"]):not([class~="block"]):not([class~="flex"]):not(.btn):not(.no-touch):not(.filter-chip):not(.mnav__item):not(.msheet__row) {
+        justify-content: center;
+    }
+    body :is(a, button)[class*="rounded-"][class*="px-"][class*="py-"]:active:not(.no-touch) { transform: translateY(1px); }
+
+    /* removable filter chips: a little taller than they are, still compact */
+    body .filter-chip { min-height: 40px; }
+
+    /* 2. Action footers (Cancel | Save): equal-width, thumb-sized, side by side */
+    body div[class~="justify-end"][class~="gap-3"]:has(> button[type="submit"]) { gap: .75rem; }
+    body div[class~="justify-end"][class~="gap-3"]:has(> button[type="submit"]) > :is(a, button) {
+        flex: 1 1 0; min-width: 0; min-height: 48px; padding-inline: 1rem;
+        display: inline-flex; align-items: center; justify-content: center; text-align: center;
+    }
+
+    /* 3. Text-only links and buttons (12px "Clear all", "Mark all read", "Change", "<- All supplies" ...):
+          the text stays small, but the tappable area grows by an invisible ~12px all round vertically. */
+    body :is(a, button)[class~="text-xs"]:not([class*="px-"]):not([class*="py-"]):not([class~="absolute"]):not([class~="fixed"]):not([class~="sticky"]):not([class~="sr-only"]):not([class*="hidden"]):not(.btn):not(.no-touch):not(.filter-chip) {
+        position: relative;
+    }
+    body :is(a, button)[class~="text-xs"]:not([class*="px-"]):not([class*="py-"]):not([class~="absolute"]):not([class~="fixed"]):not([class~="sticky"]):not([class~="sr-only"]):not([class*="hidden"]):not(.btn):not(.no-touch):not(.filter-chip)::after {
+        content: ""; position: absolute; inset: -.75rem -.375rem;
+    }
+
+    /* 4. Small icon buttons sitting inside a field (show / hide password ...): same trick, 28px -> 44px */
+    body button[class~="absolute"]:is([class~="p-1"], [class~="p-1.5"], [class~="p-2"])::after {
+        content: ""; position: absolute; inset: -.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body :is(a, button)[class*="rounded-"][class*="px-"][class*="py-"]:active { transform: none; }
+}

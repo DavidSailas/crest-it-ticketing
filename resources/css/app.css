@@ -20,7 +20,14 @@
     .btn-soft { color: #1a6b3c; background-color: #ecf7f0; }
     .btn-soft:hover { background-color: #d8f0e1; }
     .btn-danger { @apply bg-rose-50 text-rose-600 hover:bg-rose-100; }
+    .btn-danger-solid { @apply text-white shadow-sm; background-color: #dc2626; }
+    .btn-danger-solid:hover { background-color: #b91c1c; }
     .btn-sm { @apply min-h-[40px] px-3 text-[13px] sm:min-h-[32px] sm:text-xs; }
+    .btn-lg { @apply min-h-[48px] px-5 text-[15px] sm:min-h-[44px] sm:text-sm; }
+    /* full width on phones, natural width from tablets up */
+    .btn-block { @apply w-full sm:w-auto; }
+    /* square icon-only button: always a 44px target on phones */
+    .btn-icon { @apply min-h-[44px] min-w-[44px] px-0 sm:min-h-[40px] sm:min-w-[40px]; }
 }
 
 /* Buttons at the foot of a mobile card share the row; if there are too many they wrap neatly. */
@@ -31,20 +38,58 @@
    --------------------------------------------------------------------------- */
 @media (max-width: 639px) {
 
-    /* Page header: for the common "title + action buttons" shape, the title gets its own line and
-       the buttons share the next one equally, instead of being squeezed beside it. Headers with
-       other shapes (breadcrumbs, a lone title) are left alone — they only get to wrap.
-       (.app-header > div is the layout's container; its child is the page's own row.) */
+    /* Page header on phones: the title gets its own line, the actions sit under it.
+
+       The old rules guessed "the 2nd child is a group of buttons" with :nth-child and then stretched
+       ITS children. When the 2nd child was itself a single button (Management report, Announcements,
+       Create a role ...) that stretched the button's own icon to half the button's width and pushed the
+       label off to the side. These rules look at what each child actually IS:
+
+         [title block, <a>/<button>]       -> one full-width button
+         [title block, <div>/<form> group] -> the buttons share the row equally, wrapping if they must
+         [<a> back arrow, <h2>, ...]       -> left alone: arrow + title stay on one line
+
+       (.app-header > div is the layout's container; its first child is the page's own row.) */
     .app-header > div > div { flex-wrap: wrap; row-gap: .75rem; }
-    .app-header > div > div > :first-child:nth-last-child(2) { flex: 1 1 100%; min-width: 0; }
-    .app-header > div > div > :nth-child(2):last-child { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: .5rem; min-width: 0; }
-    /* Buttons share the row equally; one that can't fit its label wraps to the next row. */
-    .app-header > div > div > :nth-child(2):last-child > * { flex: 1 1 0%; min-width: max-content; }
-    .app-header > div > div > :nth-child(2):last-child > .relative > button,
-    .app-header > div > div > :nth-child(2):last-child > form > :is(label, button) { width: 100%; }
-    .app-header > div > div > :nth-child(2):last-child :is(a, button, label):not(.no-touch) {
-        min-height: 44px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
+    .app-header p.truncate { white-space: normal; overflow: visible; text-overflow: clip; }
+
+    .app-header > div > div > :is(div, h2):first-child:nth-last-child(2) { flex: 1 1 100%; min-width: 0; }
+
+    /* the action area: one button, or a group of them */
+    .app-header > div > div > :is(div, h2):first-child:nth-last-child(2) + :is(a, button) { flex: 1 1 100%; width: 100%; }
+    .app-header > div > div > :is(div, h2):first-child:nth-last-child(2) + :is(div, form) {
+        flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: .5rem; min-width: 0;
     }
+    /* in a group, each child (button, dropdown wrapper, form) takes an equal share; one that can't fit its label wraps down */
+    .app-header > div > div > :is(div, h2):first-child:nth-last-child(2) + :is(div, form) > * { flex: 1 1 0%; min-width: max-content; }
+    .app-header > div > div > :is(div, h2):first-child:nth-last-child(2) + :is(div, form) > :is(.relative, form) > :is(a, button, label) { width: 100%; }
+
+    /* the buttons themselves: same height, label centred (direct children only, so dropdown menu items are untouched) */
+    .app-header > div > div > :is(div, h2):first-child:nth-last-child(2) + :is(a, button):not(.no-touch),
+    .app-header > div > div > :is(div, h2):first-child:nth-last-child(2) + :is(div, form) > :is(a, button, label):not(.no-touch),
+    .app-header > div > div > :is(div, h2):first-child:nth-last-child(2) + :is(div, form) > :is(.relative, form) > :is(a, button, label):not(.no-touch) {
+        min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+        white-space: nowrap; border-radius: .75rem; font-size: .9375rem;
+    }
+
+    /* back arrows (icon-only links), alone or inside the title block: a real 44px target.
+       When it is the first thing on the line it is nudged left so the arrow still lines up with the page edge. */
+    .app-header a:has(> svg:only-child):not(.no-touch) {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 44px; min-height: 44px; border-radius: 9999px; flex: none;
+    }
+    .app-header a:has(> svg:only-child):not(.no-touch):first-child { margin: -.5rem 0 -.5rem -.75rem; }
+    .app-header a:has(> svg:only-child):not(.no-touch):active { background: rgb(0 0 0 / .06); }
+    html.dark .app-header a:has(> svg:only-child):not(.no-touch):active { background: rgb(255 255 255 / .08); }
+
+    /* the title next to a back arrow takes the rest of the line (and wraps itself) instead of dropping below the arrow */
+    .app-header > div > div > a:first-child:has(> svg:only-child) + :is(h2, div) { flex: 1 1 0%; min-width: 0; }
+
+    /* export / action dropdowns that open from a header button: never wider than the screen, and opening
+       toward the middle of the screen (left-aligned when the button is the first one, right-aligned otherwise) */
+    .app-header .relative > div.absolute { min-width: 12rem; max-width: calc(100vw - 2rem); }
+    .app-header .relative:first-child > div.absolute { left: 0; right: auto; }
+
     .app-header h2 { font-size: 1.25rem; line-height: 1.5rem; }
 
     /* Overview cards: compact, so the list starts on the first screen, not the fourth. */
@@ -563,9 +608,14 @@ html.dark :is(a, button).bg-white.border.border-gray-200 {
 html.dark :is(a, button).bg-white.border-gray-300:hover,
 html.dark :is(a, button).bg-white.border.border-gray-200:hover { background-color: #283443; border-color: #4a5a6c; color: #f1f4f8; }
 
-/* Primary: buttons coloured with an inline brand-green background */
-html.dark :is(a, button)[style*="background-color:#1a6b3c"] { background-color: #1f8148 !important; color: #fff; }
+/* Primary: buttons coloured with an inline brand-green background.
+   The label MUST be white: the "pale brand-green text" rule further up matches [style*="color:#1a6b3c"],
+   which is also a substring of "background-color:#1a6b3c", so without !important here every one of these
+   buttons got pale-green text (#5fd39a) on a green fill, about 2.6:1 contrast. White on #1f8148 is 4.8:1. */
+html.dark :is(a, button)[style*="background-color:#1a6b3c"] { background-color: #1f8148 !important; }
 html.dark :is(a, button)[style*="background-color:#1a6b3c"]:hover { background-color: #25995a !important; }
+/* any solid brand-green surface (buttons, avatar initials, the current page in pagination) keeps white text */
+html.dark [style*="background-color:#1a6b3c"], html.dark [style*="background-color: #1a6b3c"] { color: #fff !important; }
 
 /* Pills floating over photos (Enlarge, close) */
 html.dark [class*="bg-white/9"], html.dark [class*="bg-white/8"] {

@@ -6,6 +6,78 @@
         .rpt-bar { transition: opacity .15s ease; }
         .rpt-sticky-nav a[aria-current="true"] { color:#14532d; background:#e8f3ec; }
         @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+        /* ------------------------------------------------------------------
+           Phones & tablets: the sticky section bar must sit UNDER the app bar (h-16 + 1px border + notch),
+           not behind it, and in-page jumps must stop below both bars.
+           ------------------------------------------------------------------ */
+        @media (max-width: 1023px) {
+            body .rpt-sticky-nav { top: calc(4rem + 1px + env(safe-area-inset-top, 0px)); }
+            body .rpt-anchor { scroll-margin-top: calc(4rem + 1px + env(safe-area-inset-top, 0px) + 3.75rem); }
+        }
+
+        /* ------------------------------------------------------------------
+           Phones (under 640px)
+           ------------------------------------------------------------------ */
+        @media (max-width: 639px) {
+            /* Reporting period: one swipeable row of pills (solid green = selected) instead of a 3-row wrapped block */
+            body .rpt-period { padding: .875rem .75rem .75rem; }
+            body .rpt-seg {
+                flex: 1 1 100%; min-width: 0; display: flex; flex-wrap: nowrap; gap: .5rem;
+                margin-inline: -.75rem; padding: .125rem .75rem .25rem; border-radius: 0; background: transparent;
+                overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none;
+                -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 .75rem, #000 calc(100% - 1.5rem), transparent 100%);
+                        mask-image: linear-gradient(90deg, transparent 0, #000 .75rem, #000 calc(100% - 1.5rem), transparent 100%);
+            }
+            body .rpt-seg::-webkit-scrollbar { display: none; }
+            body .rpt-seg > .rpt-seg__item {
+                flex: 0 0 auto; min-height: 44px; padding: 0 1rem; display: inline-flex; align-items: center; gap: .4rem;
+                border-radius: 9999px; border: 1px solid #dfe5e1; background: #fff; color: #374151; box-shadow: none;
+                font-size: .9375rem; font-weight: 500; white-space: nowrap; scroll-snap-align: center;
+            }
+            body .rpt-seg > .rpt-seg__item:active { background: #eef3f0; }
+            body .rpt-seg > .rpt-seg__item.is-on { background: #1a6b3c; border-color: #1a6b3c; color: #fff; font-weight: 600; box-shadow: 0 6px 14px -8px rgba(26, 107, 60, .7); }
+            body .rpt-seg > .rpt-seg__item[aria-expanded="true"]:not(.is-on) { border-color: #1a6b3c; color: #14532d; }
+
+            /* Custom dates: From / To side by side, Apply full width */
+            body .rpt-dates { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; align-items: end; }
+            body .rpt-dates > div { min-width: 0; }
+            body .rpt-dates input[type="date"] { width: 100%; min-height: 44px; }
+            body .rpt-dates > button { grid-column: 1 / -1; width: 100%; min-height: 48px; }
+
+            /* Headline numbers: tighter cells; the last (odd) one becomes a slim full-width row */
+            body .rpt-kpi > div { padding: 1rem; }
+            body .rpt-kpi dt { font-size: .8125rem; line-height: 1.25rem; }
+            body .rpt-kpi > div.col-span-2 { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 1rem; }
+            body .rpt-kpi > div.col-span-2 > dt { grid-area: 1 / 1; }
+            body .rpt-kpi > div.col-span-2 > p  { grid-area: 2 / 1; }
+            body .rpt-kpi > div.col-span-2 > dd { grid-area: 1 / 2 / span 2 / 3; margin-top: 0; }
+
+            /* Section jump bar: bigger, rounder targets */
+            body .rpt-sticky-nav { padding-block: .375rem; scrollbar-width: none; }
+            body .rpt-sticky-nav::-webkit-scrollbar { display: none; }
+            body .rpt-sticky-nav a { padding: .625rem .9rem; border-radius: 9999px; }
+
+            /* Excel | PDF: one full-width, equally split control */
+            body .rpt-export { display: flex; width: 100%; }
+            body .rpt-export > a { flex: 1 1 0; justify-content: center; min-height: 44px; }
+
+            /* Engineer-activity filters: two columns; custom dates get their own row */
+            body .rpt-filters { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; width: 100%; align-items: end; }
+            body .rpt-filters > div { min-width: 0; }
+            body .rpt-filters select, body .rpt-filters input[type="date"] { width: 100%; min-height: 44px; }
+            body .rpt-filters > div[x-show] { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+            body .rpt-filters > div[x-show] > button { grid-column: 1 / -1; min-height: 48px; }
+        }
+
+        /* dark mode for the pills (the page is mostly styled by the shared dark rules in app.css) */
+        @media (max-width: 639px) {
+            html.dark body .rpt-seg { background: transparent; }  /* beats the shared html.dark .bg-gray-100 remap */
+            html.dark body .rpt-seg > .rpt-seg__item { background: #1b232c; border-color: #2a3542; color: #c9d1db; }
+            html.dark body .rpt-seg > .rpt-seg__item:active { background: #202a35; }
+            html.dark body .rpt-seg > .rpt-seg__item.is-on { background: #1f8148; border-color: #2f9e5f; color: #fff; }
+            html.dark body .rpt-seg > .rpt-seg__item[aria-expanded="true"]:not(.is-on) { border-color: #3fb97a; color: #7fe0b0; }
+        }
     </style>
 
     @php
@@ -45,25 +117,25 @@
     <div class="py-6 sm:py-8 max-w-[80rem] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
         {{-- Reporting period: one-click presets, custom dates on demand --}}
-        <div class="rpt-card p-3 sm:p-4" x-data="{ custom: {{ $selectedRange === 'custom' ? 'true' : 'false' }} }">
+        <div class="rpt-card rpt-period p-3 sm:p-4" x-data="{ custom: {{ $selectedRange === 'custom' ? 'true' : 'false' }} }">
             <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
                 <span class="text-sm font-medium text-gray-500 pl-1">Reporting period</span>
-                <div class="inline-flex flex-wrap gap-1 p-1 rounded-xl bg-gray-100" role="group" aria-label="Reporting period">
+                <div class="rpt-seg inline-flex flex-wrap gap-1 p-1 rounded-xl bg-gray-100" role="group" aria-label="Reporting period">
                     @foreach($presetRanges as $value => $label)
                         @php $active = $selectedRange === $value; @endphp
                         <a href="{{ route('admin.reports.index', ['range' => $value]) }}"
                            @if($active) aria-current="true" @endif
-                           class="px-3.5 py-1.5 rounded-lg text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 {{ $active ? 'bg-white text-green-800 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-900 hover:bg-white/60' }}">{{ $label }}</a>
+                           class="rpt-seg__item {{ $active ? 'is-on' : '' }} px-3.5 py-1.5 rounded-lg text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 {{ $active ? 'bg-white text-green-800 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-900 hover:bg-white/60' }}">{{ $label }}</a>
                     @endforeach
                     <button type="button" @click="custom = ! custom" :aria-expanded="custom.toString()"
-                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 {{ $selectedRange === 'custom' ? 'bg-white text-green-800 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-900 hover:bg-white/60' }}">
+                            class="rpt-seg__item {{ $selectedRange === 'custom' ? 'is-on' : '' }} inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 {{ $selectedRange === 'custom' ? 'bg-white text-green-800 shadow-sm ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-900 hover:bg-white/60' }}">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                         Custom
                     </button>
                 </div>
             </div>
 
-            <form method="GET" action="{{ route('admin.reports.index') }}" x-show="custom" x-cloak x-transition.opacity class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-end gap-3">
+            <form method="GET" action="{{ route('admin.reports.index') }}" x-show="custom" x-cloak x-transition.opacity class="rpt-dates mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-end gap-3">
                 <input type="hidden" name="range" value="custom">
                 <div>
                     <label for="rpt-from" class="block text-xs font-medium text-gray-500 mb-1">From</label>
@@ -90,7 +162,7 @@
 
         {{-- Headline numbers: one connected strip instead of five separate boxes --}}
         <div class="rpt-card overflow-hidden">
-            <dl class="grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+            <dl class="rpt-kpi grid grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
                 <div class="p-5 border-r border-gray-100 lg:border-r-0">
                     <dt class="text-sm text-gray-500">Tickets created</dt>
                     <dd class="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -314,7 +386,7 @@
                     <p class="text-sm text-gray-500 mt-0.5">Tickets resolved &middot; {{ $act['label'] }} &middot; <span class="font-medium text-gray-700">{{ $act['totalHandled'] }} total</span></p>
                 </div>
 
-                <form method="GET" action="{{ route('admin.reports.index') }}#it-activity" x-data="{ p: '{{ $act['period'] }}' }" class="flex flex-wrap items-end gap-3">
+                <form method="GET" action="{{ route('admin.reports.index') }}#it-activity" x-data="{ p: '{{ $act['period'] }}' }" class="rpt-filters flex flex-wrap items-end gap-3">
                     {{-- keep the main report period when this filter is applied --}}
                     @foreach(['range', 'from', 'to'] as $keep)
                         @if(request()->filled($keep))<input type="hidden" name="{{ $keep }}" value="{{ request($keep) }}">@endif
@@ -451,7 +523,7 @@
                         <h3 class="text-base font-semibold text-gray-900">{{ $t['title'] }}</h3>
                         <p class="text-sm text-gray-500 mt-0.5">{{ $rep['sub'] }} &middot; {{ $rangeLabel }} &middot; {{ count($t['rows']) }} {{ $rep['noun'] }}</p>
                     </div>
-                    <div class="inline-flex rounded-lg shadow-sm" role="group" aria-label="Export {{ $rep['noun'] }} report">
+                    <div class="rpt-export inline-flex rounded-lg shadow-sm" role="group" aria-label="Export {{ $rep['noun'] }} report">
                         <a href="{{ route('admin.reports.team.export', array_merge(request()->only('range', 'from', 'to'), ['team' => $rep['team'], 'format' => 'excel'])) }}"
                            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-l-lg text-sm font-medium border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-green-700">
                             <svg class="w-4 h-4 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5" /></svg>
@@ -530,6 +602,15 @@
 
         <p class="text-center text-xs text-gray-400 pt-2">Crest Forwarder Inc. &mdash; IT Service Desk &middot; Internal use only</p>
     </div>
+
+    {{-- Phones: if the selected period pill is off-screen (e.g. "All time"), scroll the row to it --}}
+    <script>
+        (function () {
+            var seg = document.querySelector('.rpt-seg'), on = seg && seg.querySelector('.is-on');
+            if (!on || seg.scrollWidth <= seg.clientWidth) return;
+            seg.scrollLeft += on.getBoundingClientRect().left - seg.getBoundingClientRect().left - (seg.clientWidth - on.offsetWidth) / 2;
+        })();
+    </script>
 
     {{-- Highlight the section jump link for whatever is on screen --}}
     <script>
