@@ -25,7 +25,7 @@
             </div>
 
             <div class="xl:col-span-2 min-w-0 xl:sticky xl:top-6">
-            <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden scroll-mt-6" x-data="ticketComments({
+            <div class="cm-card bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden scroll-mt-6" x-data="ticketComments({
                     ticketId: {{ $ticket->id }},
                     pollUrl: '{{ route('tickets.chat.poll', $ticket) }}',
                     sendUrl: '{{ route('tickets.comment', $ticket) }}',
@@ -55,7 +55,7 @@
                     </div>
                 </div>
 
-                <div x-ref="scrollArea" class="max-h-[55vh] min-h-[8rem] overflow-y-auto">
+                <div x-ref="scrollArea" class="cm-scroll max-h-[55vh] min-h-[8rem] overflow-y-auto">
                     <template x-if="comments.length === 0">
                         <div class="flex flex-col items-center justify-center text-center px-4 sm:px-6 py-14">
                             <svg class="w-9 h-9 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
@@ -64,25 +64,28 @@
                     </template>
 
                     <template x-for="comment in comments" :key="comment.id">
-                        <div class="flex gap-3 px-4 sm:px-6 py-4 border-b border-gray-50 last:border-0" :class="comment.is_mine ? 'bg-green-50/30' : ''">
+                        {{-- Desktop: a clean list. Phones: chat bubbles (yours on the right in green, theirs on the left). --}}
+                        <div class="cm flex gap-3 px-4 sm:px-6 py-4 border-b border-gray-50 last:border-0"
+                             :class="comment.is_mine ? 'cm--mine bg-green-50/30' : 'cm--theirs'">
                             {{-- Profile photo when the person has one, otherwise their initials --}}
                             <template x-if="comment.author_avatar">
-                                <img :src="comment.author_avatar" :alt="comment.author_name" class="w-9 h-9 rounded-full object-cover shrink-0">
+                                <img :src="comment.author_avatar" :alt="comment.author_name" class="cm__avatar w-9 h-9 rounded-full object-cover shrink-0">
                             </template>
                             <template x-if="!comment.author_avatar">
-                                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                                <div class="cm__avatar w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
                                      :style="`background-color: ${comment.is_it ? '#1a6b3c' : '#6b7280'}`"
                                      x-text="initials(comment.author_name)"></div>
                             </template>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="text-sm font-semibold text-gray-800" x-text="comment.author_name"></span>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide"
+                            <div class="cm__main min-w-0 flex-1">
+                                <div class="cm__head flex items-center gap-2 flex-wrap">
+                                    <span class="cm__name text-sm font-semibold text-gray-800" x-text="comment.author_name"></span>
+                                    <span class="cm__role px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide"
                                           :class="comment.is_it ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
                                           x-text="comment.is_it ? 'IT Support' : 'Requester'"></span>
-                                    <span class="text-xs text-gray-300" x-text="formatDateTime(comment.created_at)"></span>
+                                    <span class="cm__time text-xs text-gray-400" x-text="formatDateTime(comment.created_at)"></span>
                                 </div>
-                                <p class="text-sm text-gray-700 mt-1 whitespace-pre-line break-words leading-relaxed" x-text="comment.body"></p>
+                                <p class="cm__body text-sm text-gray-700 mt-1 whitespace-pre-line break-words leading-relaxed" x-text="comment.body"></p>
+                                <span class="cm__time-m" x-text="formatShort(comment.created_at)"></span>
                             </div>
                         </div>
                     </template>
@@ -171,6 +174,29 @@
                         return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                     },
 
+                    // "2:08 PM" for today, "Nov 10, 2:08 PM" for older (compact, used inside chat bubbles on phones)
+                    formatShort(iso) {
+                        const d = new Date(iso), t = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                        return d.toDateString() === new Date().toDateString()
+                            ? t
+                            : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + t;
+                    },
+
+                    // Grow the message box with what is typed (max ~6 lines), shrink back after sending
+                    autosize(el) {
+                        if (!el) return;
+                        el.style.height = 'auto';
+                        el.style.height = Math.min(el.scrollHeight + 2, 160) + 'px';
+                    },
+
+                    // Keep the newest comment in view after you post
+                    scrollToLatest() {
+                        const a = this.$refs.scrollArea;
+                        if (!a) return;
+                        if (a.scrollHeight > a.clientHeight + 1) { a.scrollTop = a.scrollHeight; }
+                        else if (a.lastElementChild) { a.lastElementChild.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+                    },
+
                     async poll() {
                         try {
                             const res = await fetch(`${pollUrl}?since_id=${this.latestId}`, {
@@ -234,6 +260,7 @@
                                 });
                                 this.latestId = Math.max(this.latestId, data.comment.id);
                                 this.draft = '';
+                                this.$nextTick(() => { this.autosize(this.$refs.input); this.scrollToLatest(); });
                             }
                         } catch (e) {
                             // leave the draft text in place so nothing is lost

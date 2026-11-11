@@ -1,5 +1,5 @@
 /* ===========================================================================
-   Mobile app shell + install banner.
+   Mobile app shell + install sheet.
    Plain CSS on purpose (no Tailwind build needed). Dark mode follows the
    existing  html.dark  switch.
    Phones and tablets (< 1024px): bottom tab bar + "More" sheet, no hamburger.
@@ -13,55 +13,96 @@
 a, button, [role="button"], label, select, summary { touch-action: manipulation; }
 html { -webkit-tap-highlight-color: rgba(26, 107, 60, .12); }
 
-/* ---------- Install banner ---------- */
-.pwa-install {
-    position: fixed; z-index: 80;
-    left: .75rem; right: .75rem; bottom: calc(.75rem + env(safe-area-inset-bottom, 0px));
-    max-width: 26rem; margin-inline: auto;
-    display: flex; align-items: center; gap: .75rem;
-    padding: .75rem .75rem .75rem .75rem;
-    background: #fff; color: #1d2b27;
-    border-radius: 1rem;
-    box-shadow: 0 18px 40px -12px rgba(5, 35, 30, .45), 0 0 0 1px rgba(15, 95, 58, .12);
-    font-family: inherit;
-    transform: translateY(1.5rem); opacity: 0; transition: transform .25s cubic-bezier(.2, .8, .2, 1), opacity .2s ease;
+/* ---------- Install sheet ----------
+   Phones: a bottom sheet over a dimmed page (tap outside / swipe-free "Not now" to close).
+   Laptops: a compact card in the corner, no dimming. Markup: resources/views/partials/pwa-install.blade.php */
+.pwa-sheet { position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-end; justify-content: center; font-family: inherit; }
+.pwa-sheet__backdrop { position: absolute; inset: 0; background: rgba(8, 24, 17, .5); opacity: 0; transition: opacity .25s ease; }
+.pwa-sheet.is-in .pwa-sheet__backdrop { opacity: 1; }
+.pwa-sheet__panel {
+    position: relative; width: 100%; max-width: 30rem; max-height: 92vh; max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain;
+    padding: .625rem 1.25rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    background: #fff; color: #1d2b27; border-radius: 1.5rem 1.5rem 0 0;
+    box-shadow: 0 -18px 50px -18px rgba(5, 35, 30, .55);
+    transform: translateY(100%); transition: transform .32s cubic-bezier(.2, .8, .2, 1);
 }
-.pwa-install.is-in { transform: none; opacity: 1; }
-.pwa-install__icon { flex: none; width: 2.75rem; height: 2.75rem; border-radius: .75rem; box-shadow: 0 0 0 1px #e5e7eb; background: #fff; object-fit: contain; }
-.pwa-install__text { min-width: 0; flex: 1 1 auto; }
-.pwa-install__title { margin: 0; font-size: .9375rem; font-weight: 700; line-height: 1.25; color: #0d4a2e; }
-.pwa-install__sub { margin: .125rem 0 0; font-size: .8125rem; line-height: 1.35; color: #5d6b66; }
-.pwa-install__sub svg { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -.2em; color: #1a6b3c; }
-.pwa-install__btn {
-    flex: none; min-height: 44px; padding: 0 1.1rem; border: 0; border-radius: .75rem;
-    background: #1a6b3c; color: #fff; font-family: inherit; font-weight: 600; font-size: .875rem; line-height: 1; cursor: pointer;
+.pwa-sheet.is-in .pwa-sheet__panel { transform: none; }
+.pwa-sheet__grab { display: block; width: 2.5rem; height: .3125rem; margin: 0 auto .875rem; border-radius: 9999px; background: #d9dedb; }
+.pwa-sheet__close {
+    position: absolute; top: .5rem; right: .5rem; width: 2.75rem; height: 2.75rem;
+    display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 9999px; background: transparent; color: #6b7280; cursor: pointer;
 }
-.pwa-install__btn:active { background: #14532d; }
-.pwa-install__close {
-    flex: none; width: 2.75rem; height: 2.75rem; margin: -.25rem -.25rem -.25rem 0;
-    display: inline-flex; align-items: center; justify-content: center;
-    border: 0; border-radius: 9999px; background: transparent; color: #6b7280; cursor: pointer;
-}
-.pwa-install__close:active { background: #f3f4f6; }
-.pwa-install__close svg { width: 1.25rem; height: 1.25rem; }
-.pwa-install :focus-visible { outline: 2px solid #1a6b3c; outline-offset: 2px; }
+.pwa-sheet__close:active { background: #f1f3f2; }
+.pwa-sheet__close svg { width: 1.25rem; height: 1.25rem; }
 
-/* Inside the app on phones the banner floats above the tab bar */
-@media (max-width: 1023px) {
-    .has-mnav .pwa-install { bottom: calc(var(--mnav-h) + env(safe-area-inset-bottom, 0px) + .75rem); }
+.pwa-sheet__head { display: flex; align-items: center; gap: .9rem; padding-right: 2.25rem; }
+.pwa-sheet__icon { flex: none; width: 4rem; height: 4rem; border-radius: 1.0625rem; background: #fff; object-fit: contain; box-shadow: 0 0 0 1px #e5e7eb, 0 8px 18px -8px rgba(15, 95, 58, .45); }
+.pwa-sheet__title { margin: 0; font-size: 1.3125rem; font-weight: 700; line-height: 1.2; color: #0d4a2e; }
+.pwa-sheet__host { margin: .25rem 0 0; display: flex; align-items: center; gap: .3rem; font-size: .8125rem; color: #5d6b66; overflow-wrap: anywhere; }
+.pwa-sheet__host svg { flex: none; width: .95rem; height: .95rem; color: #1a6b3c; }
+
+.pwa-sheet__perks { list-style: none; margin: 1.125rem 0 1.125rem; padding: 0; display: grid; gap: .75rem; }
+.pwa-sheet__perks li { display: flex; align-items: flex-start; gap: .75rem; }
+.pwa-sheet__perk-ico { flex: none; width: 2.25rem; height: 2.25rem; display: inline-flex; align-items: center; justify-content: center; border-radius: .75rem; background: #e8f3ec; color: #1a6b3c; }
+.pwa-sheet__perk-ico svg { width: 1.25rem; height: 1.25rem; }
+.pwa-sheet__perks b { display: block; font-size: .9375rem; font-weight: 600; line-height: 1.25; color: #1d2b27; }
+.pwa-sheet__perks small { display: block; margin-top: .125rem; font-size: .8125rem; line-height: 1.4; color: #5d6b66; }
+
+.pwa-sheet__cta {
+    width: 100%; min-height: 3.25rem; display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    border: 0; border-radius: .875rem; background: #1a6b3c; color: #fff; cursor: pointer;
+    font-family: inherit; font-size: 1rem; font-weight: 600; line-height: 1;
+    box-shadow: 0 10px 20px -10px rgba(26, 107, 60, .8);
 }
-/* Laptops: a compact card in the corner */
+.pwa-sheet__cta:active { background: #14532d; transform: translateY(1px); }
+.pwa-sheet__cta svg { width: 1.25rem; height: 1.25rem; }
+.pwa-sheet__later {
+    display: block; width: 100%; min-height: 2.75rem; margin-top: .25rem; border: 0; background: transparent; cursor: pointer;
+    font-family: inherit; font-size: .9375rem; font-weight: 500; color: #5d6b66;
+}
+.pwa-sheet__later:active { color: #1d2b27; }
+.pwa-sheet__fine { margin: 0; text-align: center; font-size: .75rem; color: #8a9690; }
+
+.pwa-sheet__steps { list-style: none; margin: 0 0 .5rem; padding: .25rem .875rem; display: grid; background: #f5f8f6; border-radius: 1rem; }
+.pwa-sheet__steps li { display: flex; align-items: flex-start; gap: .75rem; padding: .75rem 0; font-size: .9375rem; line-height: 1.45; color: #2c3a35; }
+.pwa-sheet__steps li + li { border-top: 1px solid #e3e9e5; }
+.pwa-sheet__n { flex: none; width: 1.625rem; height: 1.625rem; margin-top: .0625rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; background: #1a6b3c; color: #fff; font-size: .8125rem; font-weight: 700; }
+.pwa-sheet__inline { display: inline-block; width: 1.2em; height: 1.2em; vertical-align: -.25em; color: #1a6b3c; }
+.pwa-sheet__note { display: grid; gap: .25rem; margin-bottom: .75rem; padding: .875rem 1rem; border-radius: 1rem; background: #fff7e6; color: #7a4b00; font-size: .875rem; line-height: 1.45; }
+.pwa-sheet__note b:first-child { font-size: .9375rem; }
+.pwa-sheet :focus-visible { outline: 2px solid #1a6b3c; outline-offset: 2px; }
+.pwa-sheet__panel:focus, .pwa-sheet__panel:focus-visible { outline: none; }
+
+/* Laptops: compact corner card, page not dimmed */
 @media (min-width: 1024px) {
-    .pwa-install { left: auto; right: 1.5rem; bottom: 1.5rem; margin: 0; width: 24rem; }
+    .pwa-sheet { inset: auto 1.5rem 1.5rem auto; width: 25rem; display: block; }
+    .pwa-sheet__backdrop { display: none; }
+    .pwa-sheet__panel { max-width: none; border-radius: 1.25rem; padding-top: 1rem; box-shadow: 0 24px 50px -16px rgba(5, 35, 30, .5), 0 0 0 1px rgba(15, 95, 58, .12); transform: translateY(1.5rem); opacity: 0; transition: transform .25s cubic-bezier(.2, .8, .2, 1), opacity .2s ease; }
+    .pwa-sheet.is-in .pwa-sheet__panel { opacity: 1; }
+    .pwa-sheet__grab { display: none; }
 }
 
-html.dark .pwa-install { background: #171e26; color: #e4e8ee; box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .6), 0 0 0 1px #2a3542; }
-html.dark .pwa-install__title { color: #5fd39a; }
-html.dark .pwa-install__sub { color: #94a0ae; }
-html.dark .pwa-install__sub svg { color: #5fd39a; }
-html.dark .pwa-install__close { color: #94a0ae; }
-html.dark .pwa-install__close:active { background: #202a35; }
-html.dark .pwa-install__icon { box-shadow: 0 0 0 1px #2a3542; }
+html.dark .pwa-sheet__backdrop { background: rgba(0, 0, 0, .62); }
+html.dark .pwa-sheet__panel { background: #171e26; color: #e4e8ee; box-shadow: 0 -18px 50px -18px rgba(0, 0, 0, .8), 0 0 0 1px #2a3542; }
+html.dark .pwa-sheet__grab { background: #3a4654; }
+html.dark .pwa-sheet__close { color: #94a0ae; }
+html.dark .pwa-sheet__close:active { background: #202a35; }
+html.dark .pwa-sheet__icon { box-shadow: 0 0 0 1px #2a3542; }
+html.dark .pwa-sheet__title { color: #5fd39a; }
+html.dark .pwa-sheet__host, html.dark .pwa-sheet__perks small, html.dark .pwa-sheet__later { color: #94a0ae; }
+html.dark .pwa-sheet__host svg { color: #5fd39a; }
+html.dark .pwa-sheet__perk-ico { background: rgba(95, 211, 154, .12); color: #5fd39a; }
+html.dark .pwa-sheet__perks b { color: #e4e8ee; }
+html.dark .pwa-sheet__cta { background: #1f8148; color: #fff; box-shadow: 0 10px 20px -10px rgba(0, 0, 0, .8); }
+html.dark .pwa-sheet__cta:active { background: #176a3a; }
+html.dark .pwa-sheet__later:active { color: #fff; }
+html.dark .pwa-sheet__fine { color: #6f7b88; }
+html.dark .pwa-sheet__steps { background: #1b232c; }
+html.dark .pwa-sheet__steps li { color: #cdd5de; }
+html.dark .pwa-sheet__steps li + li { border-color: #2a3542; }
+html.dark .pwa-sheet__n { background: #1f8148; }
+html.dark .pwa-sheet__inline { color: #5fd39a; }
+html.dark .pwa-sheet__note { background: rgba(245, 158, 11, .14); color: #fcd34d; }
 
 /* ---------- Phones & tablets ---------- */
 .mnav, .msheet, .msheet-backdrop { display: none; }
@@ -200,7 +241,7 @@ html.dark .pwa-install__icon { box-shadow: 0 0 0 1px #2a3542; }
 html.pwa-standalone body { overscroll-behavior-y: none; }
 
 @media (prefers-reduced-motion: reduce) {
-    .pwa-install, .msheet-in, .msheet-out, .mfade-in, .mfade-out, .mnav__ico { transition: none !important; }
+    .pwa-sheet__panel, .pwa-sheet__backdrop, .msheet-in, .msheet-out, .mfade-in, .mfade-out, .mnav__ico { transition: none !important; }
 }
 
 /* ===========================================================================
@@ -323,4 +364,66 @@ html.pwa-standalone body { overscroll-behavior-y: none; }
 
 @media (prefers-reduced-motion: reduce) {
     body :is(a, button)[class*="rounded-"][class*="px-"][class*="py-"]:active { transform: none; }
+}
+
+/* ===========================================================================
+   Ticket comments (tickets/show): chat bubbles + a pinned composer on phones
+   Markup hooks: .cm-card  .cm-scroll  .cm (+ .cm--mine / .cm--theirs)  .cm__avatar/main/head/name/role/time/body/time-m  .cm-composer
+   Desktop keeps the original clean list; everything below 640px is the chat look.
+   =========================================================================== */
+.cm__time-m, .cm-send-ico { display: none; }
+
+@media (min-width: 640px) {
+    .cm-composer textarea { min-height: 5.25rem; }            /* the composer is a 1-row box on phones, 3 rows here */
+}
+
+@media (max-width: 639px) {
+    /* the card flows with the page: no scroll-inside-a-scroll. overflow:clip keeps the rounded corners and still allows sticky */
+    body .cm-card { overflow: visible; overflow: clip; border-radius: 1rem; }
+    body .cm-scroll { max-height: none; min-height: 0; overflow: visible; padding: .75rem 0 1rem; }
+
+    /* one message */
+    body .cm { align-items: flex-end; gap: .5rem; padding: .125rem .75rem; border: 0; background: transparent; }
+    body .cm + .cm { margin-top: .25rem; }
+    body .cm--mine { flex-direction: row-reverse; }
+    body .cm .cm__avatar { width: 1.75rem; height: 1.75rem; margin-bottom: .125rem; font-size: .625rem; }
+    body .cm--mine .cm__avatar { display: none; }
+
+    /* bubble */
+    body .cm__main { flex: 0 1 auto; max-width: 82%; padding: .5rem .8rem .375rem; border-radius: 1.125rem 1.125rem 1.125rem .3125rem; background: #eef1ef; color: #1d2b27; }
+    body .cm--mine .cm__main { border-radius: 1.125rem 1.125rem .3125rem 1.125rem; background: #1a6b3c; color: #fff; }
+    body .cm--mine .cm__head { display: none; }                /* you know who you are */
+    body .cm__head { gap: .125rem .4rem; margin-bottom: .125rem; align-items: baseline; }
+    body .cm__name { font-size: .78125rem; font-weight: 700; color: #0d4a2e; }
+    body .cm__role { padding: .0625rem .4rem; border-radius: 9999px; font-size: .6875rem; font-weight: 600; text-transform: none; letter-spacing: 0; }
+    body .cm__head .cm__time { display: none; }
+    body .cm__body { margin: 0; font-size: .9375rem; line-height: 1.45; color: inherit; }
+    body .cm__time-m { display: block; margin-top: .125rem; text-align: right; font-size: .6875rem; line-height: 1.2; opacity: .65; }
+
+    /* composer: pinned above the tab bar while you read, [ message box ][ round send ] */
+    body .cm-card [data-live="composer"] { position: sticky; bottom: calc(var(--mnav-h) + env(safe-area-inset-bottom, 0px)); z-index: 15; }
+    body .cm-composer { padding: .625rem .75rem; border-top: 1px solid #e5e7eb; background: #fff; box-shadow: 0 -12px 24px -18px rgba(16, 24, 40, .35); }
+    body .cm-composer .flex-1 { display: grid; grid-template-columns: 1fr auto; gap: .5rem; align-items: end; }
+    body .cm-composer .flex-1 > div { display: contents; }     /* lets the send button sit beside the box */
+    body .cm-composer .flex-1 > div > p { display: none; }     /* the Enter / Shift+Enter hint means nothing on a phone */
+    body .cm-composer textarea { min-height: 44px; max-height: 10rem; padding: .6rem 1rem; border-radius: 1.375rem; line-height: 1.4; }
+    body .cm-composer button[type="submit"] {
+        width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 9999px;
+        display: inline-flex; align-items: center; justify-content: center;
+        box-shadow: 0 6px 14px -8px rgba(26, 107, 60, .85);
+    }
+    body .cm-composer button[type="submit"] > span { display: none; }
+    body .cm-composer .cm-send-ico { display: block; width: 1.25rem; height: 1.25rem; margin-left: .125rem; }
+
+    /* while typing, the on-screen keyboard needs the space: hide the tab bar and drop the composer to the bottom */
+    body:has(.cm-composer textarea:focus) .mnav { display: none; }
+    body:has(.cm-composer textarea:focus) .cm-card [data-live="composer"] { bottom: 0; }
+
+    /* dark mode */
+    html.dark body .cm { background: transparent; }            /* the shared dark theme tints your rows; the bubble is enough */
+    html.dark body .cm__main { background: #1f2833; color: #e4e8ee; }
+    html.dark body .cm--mine .cm__main { background: #1f8148; color: #fff; }
+    html.dark body .cm__name { color: #5fd39a; }
+    html.dark body .cm__body { color: inherit; }
+    html.dark body .cm-composer { background: #171e26; border-color: #2a3542; box-shadow: 0 -12px 24px -18px rgba(0, 0, 0, .8); }
 }
