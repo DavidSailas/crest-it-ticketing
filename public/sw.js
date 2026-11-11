@@ -7,7 +7,7 @@
  *  - static files (compiled CSS/JS, logos, icons) are cached so the app opens fast, and refreshed in the background.
  * Bump VERSION to force every device to drop its old cache.
  */
-const VERSION = 'itsm-v1';
+const VERSION = 'itsm-v2';
 const STATIC_CACHE = VERSION + '-static';
 const SCOPE = self.registration.scope;                       // e.g. https://itsm.example.com/
 const OFFLINE_URL = new URL('offline.html', SCOPE).href;
