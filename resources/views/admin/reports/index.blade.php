@@ -62,6 +62,17 @@
             body .rpt-export { display: flex; width: 100%; }
             body .rpt-export > a { flex: 1 1 0; justify-content: center; min-height: 44px; }
 
+            /* Name + count on one line, the progress bar full-width underneath (it used to shrink to a sliver) */
+            body .rpt-act { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: .75rem; row-gap: .5rem; align-items: center; }
+            body .rpt-act__av    { grid-area: 1 / 1; }
+            body .rpt-act__name  { grid-area: 1 / 2; width: auto; min-width: 0; }
+            body .rpt-act__count { grid-area: 1 / 3; width: auto; }
+            body .rpt-act__bar   { grid-area: 2 / 1 / 3 / 4; }
+            body .rpt-act__bar, body .rpt-act__bar > div { height: .5rem; }
+
+            /* Team cards: the stat block sits in a soft panel; keep it readable in dark mode */
+            body .rpt-people__stats { background: #f5f8f6; }
+
             /* Engineer-activity filters: two columns; custom dates get their own row */
             body .rpt-filters { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; width: 100%; align-items: end; }
             body .rpt-filters > div { min-width: 0; }
@@ -72,6 +83,7 @@
 
         /* dark mode for the pills (the page is mostly styled by the shared dark rules in app.css) */
         @media (max-width: 639px) {
+            html.dark body .rpt-people__stats { background: #1b232c; }
             html.dark body .rpt-seg { background: transparent; }  /* beats the shared html.dark .bg-gray-100 remap */
             html.dark body .rpt-seg > .rpt-seg__item { background: #1b232c; border-color: #2a3542; color: #c9d1db; }
             html.dark body .rpt-seg > .rpt-seg__item:active { background: #202a35; }
@@ -425,19 +437,19 @@
                 @php $maxH = max(1, collect($act['rows'])->max('handled')); @endphp
                 <ul class="divide-y divide-gray-100 border-t border-gray-100">
                     @foreach($act['rows'] as $row)
-                        <li class="flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-3 hover:bg-gray-50/70 transition-colors">
-                            <span class="relative shrink-0">
+                        <li class="rpt-act flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-3 hover:bg-gray-50/70 transition-colors">
+                            <span class="rpt-act__av relative shrink-0">
                                 <span class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold" style="background-color:#e8f3ec; color:#14532d;">{{ $initials($row['name']) }}</span>
                                 <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white {{ $row['online'] ? 'bg-green-500' : 'bg-gray-300' }}" title="{{ $row['online'] ? 'Online' : 'Offline' }}"></span>
                             </span>
-                            <div class="w-36 sm:w-48 shrink-0 min-w-0">
+                            <div class="rpt-act__name w-36 sm:w-48 shrink-0 min-w-0">
                                 <p class="text-sm font-medium text-gray-900 truncate">{{ $row['name'] }}</p>
                                 <p class="text-xs text-gray-400">{{ $row['online'] ? 'Online' : 'Offline' }}</p>
                             </div>
-                            <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                            <div class="rpt-act__bar flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                                 <div class="h-full rounded-full" style="width: {{ ($row['handled'] / $maxH) * 100 }}%; background-color:#1a6b3c;"></div>
                             </div>
-                            <div class="w-20 shrink-0 text-right">
+                            <div class="rpt-act__count w-20 shrink-0 text-right">
                                 <span class="text-base font-semibold text-gray-900 tabular-nums">{{ $row['handled'] }}</span>
                                 <span class="text-xs text-gray-400">resolved</span>
                             </div>
@@ -453,7 +465,22 @@
                         @else
                             <h4 class="text-sm font-semibold text-gray-900 mb-3">Resolved tickets</h4>
                             <div class="rounded-xl bg-white ring-1 ring-gray-200 overflow-hidden">
-                                <table class="w-full text-sm">
+                                {{-- Phones: title on top, ticket # / category / when underneath --}}
+                                <ul class="sm:hidden divide-y divide-gray-100">
+                                    @foreach($act['tickets'] as $t)
+                                        <li>
+                                            <a href="{{ route('tickets.show', $t) }}" class="block px-4 py-3 active:bg-gray-50">
+                                                <p class="text-sm font-medium text-gray-900 leading-snug">{{ $t->title }}</p>
+                                                <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-500">
+                                                    <span class="font-mono text-gray-400">{{ $t->ticket_number }}</span>
+                                                    @if($t->category)<span aria-hidden="true">&middot;</span><span>{{ $t->category }}</span>@endif
+                                                    <span class="ml-auto whitespace-nowrap">{{ $t->resolved_at->format('M j, g:i A') }}</span>
+                                                </p>
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                                <table class="hidden sm:table w-full text-sm">
                                     <thead>
                                         <tr class="text-left text-xs font-medium text-gray-500 bg-gray-50 border-b border-gray-200">
                                             <th class="py-2.5 pl-4 pr-3">Ticket</th>
@@ -490,13 +517,13 @@
                 @php $maxA = max(1, collect($byAgent)->max()); @endphp
                 <ul class="space-y-3">
                     @foreach($byAgent as $agent => $count)
-                        <li class="flex items-center gap-3">
-                            <span class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style="background-color:#e8f3ec; color:#14532d;">{{ $initials($agent) }}</span>
-                            <span class="w-32 sm:w-44 shrink-0 text-sm text-gray-700 truncate">{{ $agent }}</span>
-                            <div class="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <li class="rpt-act flex items-center gap-3">
+                            <span class="rpt-act__av w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style="background-color:#e8f3ec; color:#14532d;">{{ $initials($agent) }}</span>
+                            <span class="rpt-act__name w-32 sm:w-44 shrink-0 text-sm text-gray-700 truncate">{{ $agent }}</span>
+                            <div class="rpt-act__bar flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                                 <div class="h-full rounded-full" style="width: {{ ($count / $maxA) * 100 }}%; background-color:#1a6b3c;"></div>
                             </div>
-                            <span class="w-10 shrink-0 text-sm font-semibold text-gray-900 text-right tabular-nums">{{ $count }}</span>
+                            <span class="rpt-act__count w-10 shrink-0 text-sm font-semibold text-gray-900 text-right tabular-nums">{{ $count }}</span>
                         </li>
                     @endforeach
                 </ul>
@@ -543,7 +570,45 @@
                         <p class="text-sm text-gray-400 mt-1">Accounts will appear here once they are created.</p>
                     </div>
                 @else
-                    <table class="w-full text-sm table-fixed border-t border-gray-200">
+                    {{-- Phones: one card per person. The table cannot fit 7-11 columns, so it used to drop Resolved / Closed / Avg. resolution. --}}
+                    <ul class="rpt-people sm:hidden border-t border-gray-100 divide-y divide-gray-100">
+                        @foreach($shown as $row)
+                            @php
+                                $sub = $rep['team'] === 'staff'
+                                    ? collect([$row[1] ?? null, $row[2] ?? null])->filter(fn ($v) => filled($v) && $v !== '—')->implode(' · ')
+                                    : (string) ($row[1] ?? '');
+                                $metricCols = collect(array_keys($row))->reject(fn ($i) => $i === 0 || $i === 1 || ($rep['team'] === 'staff' && $i === 2) || $i === $emphasisCol)->values();
+                            @endphp
+                            <li class="px-5 py-4">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold shrink-0" style="background-color:#e8f3ec; color:#14532d;">{{ $initials($row[0]) }}</span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[15px] font-semibold text-gray-900 truncate">{{ $row[0] }}</p>
+                                        <p class="text-xs text-gray-500 truncate">{{ $sub !== '' ? $sub : '—' }}</p>
+                                    </div>
+                                    <div class="text-right shrink-0">
+                                        <p class="text-2xl font-semibold text-gray-900 tabular-nums leading-none">{{ $row[$emphasisCol] }}</p>
+                                        <p class="mt-1 text-[11px] text-gray-400">{{ $t['headers'][$emphasisCol] }}</p>
+                                    </div>
+                                </div>
+                                <dl class="rpt-people__stats mt-3 grid grid-cols-3 gap-x-3 gap-y-3 rounded-xl bg-gray-50 px-3.5 py-3">
+                                    @foreach($metricCols as $i)
+                                        @php
+                                            $v = (string) $row[$i];
+                                            $empty = in_array($v, ['', '0', '—', '-'], true);
+                                            $good = preg_match('/resolved|closed/i', $t['headers'][$i]) === 1;
+                                        @endphp
+                                        <div class="min-w-0">
+                                            <dt class="text-[11px] leading-tight text-gray-400">{{ $t['headers'][$i] }}</dt>
+                                            <dd class="mt-0.5 text-sm font-semibold tabular-nums {{ $empty ? 'text-gray-400' : ($good ? 'text-green-700' : 'text-gray-900') }}">{{ $v === '' ? '—' : $v }}</dd>
+                                        </div>
+                                    @endforeach
+                                </dl>
+                            </li>
+                        @endforeach
+                    </ul>
+
+                    <table class="hidden sm:table w-full text-sm table-fixed border-t border-gray-200">
                         <thead>
                             <tr class="text-left text-xs font-medium text-gray-500 bg-gray-50 border-b border-gray-200">
                                 @foreach($t['headers'] as $i => $h)

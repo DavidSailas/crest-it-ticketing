@@ -1,10 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 min-w-0">
             <a href="{{ session('list_url.tickets', route('tickets.index')) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition shrink-0" title="Back to tickets">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </a>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $ticket->title }}</h2>
+            <div class="min-w-0">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 leading-none mb-1">Ticket</p>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight truncate" title="{{ $ticket->title }}">{{ $ticket->title }}</h2>
+            </div>
         </div>
     </x-slot>
 

@@ -1,22 +1,19 @@
 @include('admin.supplies._ticket-panel')
 
 <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
-    <div class="px-4 sm:px-6 py-5 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+    <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2">
-            <span class="text-xs font-mono font-semibold text-gray-400 mr-1">{{ $ticket->ticket_number }}</span>
+            <span class="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs font-mono font-semibold text-gray-600" title="Ticket number">{{ $ticket->ticket_number }}</span>
             <x-status-badge :status="$ticket->status" />
             <x-priority-badge :priority="$ticket->priority" />
         </div>
-        <div class="flex items-center gap-3">
-            @if((auth()->user()->isItSupport() || auth()->user()->isAdmin()) && ! $ticket->isFinished())
-                <a href="{{ route('tickets.edit', $ticket) }}"
-                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
-                    Edit
-                </a>
-            @endif
-            <div class="text-sm text-gray-400">{{ $ticket->created_at->format('M j, Y g:i A') }}</div>
-        </div>
+        @if((auth()->user()->isItSupport() || auth()->user()->isAdmin()) && ! $ticket->isFinished())
+            <a href="{{ route('tickets.edit', $ticket) }}"
+               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+                Edit ticket
+            </a>
+        @endif
     </div>
 
     @if($ticket->isCancelled())
@@ -43,51 +40,75 @@
     @endif
 
     <div class="px-4 sm:px-6 py-6">
-        <p class="text-gray-800 leading-relaxed break-words whitespace-pre-line">{{ $ticket->description }}</p>
+        <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Description</h4>
+        <p class="text-[15px] text-gray-800 leading-relaxed break-words whitespace-pre-line">{{ $ticket->description }}</p>
 
         @include('tickets.partials.vendor-info', ['ticket' => $ticket])
 
         @include('tickets.partials.attachments', ['ticket' => $ticket])
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-5 mt-6 pt-6 border-t border-gray-100 text-sm">
-            <div>
-                <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Requested by</p>
-                <p class="text-gray-800 font-medium flex items-center gap-1.5">
-                    {{ $ticket->creator->name }}
-                    @if($ticket->creator->is_vip)
-                        <x-vip-badge size="compact" />
-                    @endif
-                </p>
-                @if($ticket->isOnBehalf())
-                    <p class="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 mt-1.5 inline-block">
-                        On behalf of <strong>{{ $ticket->affectedPersonName() }}</strong>
-                    </p>
-                @endif
-            </div>
-            <div>
-                <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Department</p>
-                <p class="text-gray-800 font-medium">{{ $ticket->department ?? '—' }}</p>
-            </div>
-            <div>
-                <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Location</p>
-                <p class="text-gray-800 font-medium">{{ $ticket->location ?? '—' }}</p>
-            </div>
-            <div>
-                <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Category</p>
-                <p class="text-gray-800 font-medium">{{ $ticket->category }} @if($ticket->subcategory)<span class="text-gray-400">· {{ $ticket->subcategory }}</span>@endif</p>
-            </div>
-            <div>
-                <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Assigned to</p>
-                <p class="text-gray-800 font-medium">{{ $ticket->assigneeLabel() }}</p>
-            </div>
-            <div>
-                <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Created</p>
-                <p class="text-gray-800 font-medium">{{ $ticket->created_at->format('M j, Y g:i A') }}</p>
-            </div>
-            <div>
-                <p class="text-gray-400 text-xs uppercase tracking-wide mb-1">Resolved</p>
-                <p class="text-gray-800 font-medium">{{ $ticket->resolved_at?->format('M j, Y g:i A') ?? '—' }}</p>
-            </div>
+        <div class="mt-6 pt-6 border-t border-gray-100">
+            <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Details</h4>
+
+            {{-- Label left, value right: easy to scan top to bottom. Two columns from the sm breakpoint up. --}}
+            <dl class="grid grid-cols-1 sm:grid-flow-col sm:grid-rows-4 sm:gap-x-10 text-sm">
+                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
+                    <dt class="text-gray-500 shrink-0 pt-0.5">Requested by</dt>
+                    <dd class="min-w-0 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <span class="font-medium text-gray-800 truncate">{{ $ticket->creator->name }}</span>
+                            @if($ticket->creator->is_vip)
+                                <x-vip-badge size="compact" />
+                            @endif
+                            <x-avatar :user="$ticket->creator" size="xs" />
+                        </div>
+                        @if($ticket->isOnBehalf())
+                            <p class="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 mt-1.5 inline-block">
+                                On behalf of <strong>{{ $ticket->affectedPersonName() }}</strong>
+                            </p>
+                        @endif
+                    </dd>
+                </div>
+                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
+                    <dt class="text-gray-500 shrink-0">Department</dt>
+                    <dd class="font-medium text-gray-800 text-right min-w-0 break-words">{{ $ticket->department ?? '—' }}</dd>
+                </div>
+                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
+                    <dt class="text-gray-500 shrink-0">Location</dt>
+                    <dd class="font-medium text-gray-800 text-right min-w-0 break-words">{{ $ticket->location ?? '—' }}</dd>
+                </div>
+                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
+                    <dt class="text-gray-500 shrink-0">Category</dt>
+                    <dd class="font-medium text-gray-800 text-right min-w-0 break-words">{{ $ticket->category }} @if($ticket->subcategory)<span class="font-normal text-gray-400">· {{ $ticket->subcategory }}</span>@endif</dd>
+                </div>
+                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
+                    <dt class="text-gray-500 shrink-0">Assigned to</dt>
+                    <dd class="min-w-0 text-right">
+                        @if($ticket->assignee)
+                            <div class="flex items-center justify-end gap-2">
+                                <span class="font-medium text-gray-800 truncate">{{ $ticket->assigneeLabel() }}</span>
+                                <x-avatar :user="$ticket->assignee" size="xs" />
+                            </div>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                Unassigned
+                            </span>
+                        @endif
+                    </dd>
+                </div>
+                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
+                    <dt class="text-gray-500 shrink-0">Created</dt>
+                    <dd class="text-right">
+                        <span class="font-medium text-gray-800">{{ $ticket->created_at->format('M j, Y g:i A') }}</span>
+                        <span class="block text-xs text-gray-400">{{ $ticket->created_at->diffForHumans() }}</span>
+                    </dd>
+                </div>
+                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
+                    <dt class="text-gray-500 shrink-0">Resolved</dt>
+                    <dd class="font-medium text-gray-800 text-right">{{ $ticket->resolved_at?->format('M j, Y g:i A') ?? '—' }}</dd>
+                </div>
+            </dl>
         </div>
     </div>
 
@@ -108,9 +129,14 @@
                 $reassignLabel = ! $ticket->assigned_to ? 'Assign to an agent' : ($isMine ? 'Hand off to another agent' : 'Reassign to another agent');
             @endphp
             <div class="border-t border-gray-100 bg-gray-50/70" x-data="{ status: '{{ old('status', $ticket->status) }}' }">
-                <div class="px-4 sm:px-6 py-4 flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    Manage this ticket
+                <div class="px-4 sm:px-6 pt-5 pb-4 flex items-center gap-3">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 shrink-0">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Manage this ticket</p>
+                        <p class="text-xs text-gray-500">Accept it, assign an agent or move it to the next status.</p>
+                    </div>
                 </div>
 
                 <div class="px-4 sm:px-6 pb-5 space-y-4">

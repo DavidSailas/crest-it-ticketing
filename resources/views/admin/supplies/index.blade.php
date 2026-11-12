@@ -38,6 +38,9 @@
             border-radius: 9999px; background: #ecf7f0; color: #14532d; font-size: .75rem; font-weight: 500;
             box-shadow: inset 0 0 0 1px #bfe3cc; transition: background-color .15s ease; }
         .filter-chip:hover { background: #d8f0e1; }
+        /* the browser adds its own x to type=search inputs; we already have one, so hide it */
+        .supply-search input[type="search"]::-webkit-search-cancel-button,
+        .supply-search input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
         .filter-chip svg { width: .875rem; height: .875rem; opacity: .7; }
 
         /* Overview cards & category tiles — same look as the Asset Inventory page. */
@@ -248,16 +251,20 @@
         <form method="GET" action="{{ route('supplies.index') }}" data-live-filter class="bg-white shadow-sm rounded-2xl border border-gray-100 p-4 space-y-4"
               x-data="{ filters: {{ (count($chips) - (filled(request('search')) ? 1 : 0)) > 0 ? 'true' : 'false' }} }">
             <div class="flex items-center gap-2">
-            <div class="relative min-w-0 flex-1">
-                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
-                <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by name, model or both — e.g. HP 680" autocomplete="off" aria-label="Search supplies by name, brand, model or item code"
-                       class="block w-full pl-9 pr-9 rounded-lg border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ filled(request('search')) ? 'filter-active' : '' }}">
-                @if(filled(request('search')))
-                    <a href="{{ $toggle('search', null) }}" title="Clear search" aria-label="Clear search"
-                       class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </a>
-                @endif
+            <div class="min-w-0 flex-1">
+                {{-- The icon and the clear (x) button are centred on the INPUT only. They used to sit in a wrapper that also held the hint
+                     text below, so "50% down" landed on the bottom edge of the box. --}}
+                <div class="supply-search relative">
+                    <svg class="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
+                    <input type="search" name="search" value="{{ request('search') }}" placeholder="Search supplies" autocomplete="off" enterkeyhint="search" aria-label="Search supplies by name, brand, model or item code"
+                           class="block w-full min-h-[44px] pl-11 pr-11 rounded-xl border-gray-300 focus:border-green-700 focus:ring-green-700 text-sm {{ filled(request('search')) ? 'filter-active' : '' }}">
+                    @if(filled(request('search')))
+                        <a href="{{ $toggle('search', null) }}" title="Clear search" aria-label="Clear search"
+                           class="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </a>
+                    @endif
+                </div>
                 <p class="mt-1.5 hidden text-[11px] text-gray-400 sm:block">Type any mix of name, brand, model or item code (SUP-0042). Every word you type must match, so more words = a narrower result.</p>
             </div>
                 {{-- Phones: the dropdowns tuck away behind this button so the list stays in view. --}}
