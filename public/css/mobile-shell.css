@@ -427,3 +427,18 @@ html.pwa-standalone body { overscroll-behavior-y: none; }
     html.dark body .cm__body { color: inherit; }
     html.dark body .cm-composer { background: #171e26; border-color: #2a3542; box-shadow: 0 -12px 24px -18px rgba(0, 0, 0, .8); }
 }
+
+/* ---------- One-time "full-screen mode" hint (shown by public/js/pwa.js in the installed Android app) ---------- */
+.pwa-toast {
+    position: fixed; left: .75rem; right: .75rem; z-index: 95; max-width: 28rem; margin-inline: auto;
+    bottom: calc(var(--mnav-h, 3.75rem) + env(safe-area-inset-bottom, 0px) + .75rem);
+    display: flex; align-items: center; gap: .75rem; padding: .75rem .75rem .75rem 1rem;
+    border-radius: 1rem; background: #14231c; color: #eaf5ef; font-size: .875rem; line-height: 1.4;
+    box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .6); border: 1px solid rgba(95, 211, 154, .25);
+    opacity: 0; transform: translateY(.75rem); transition: opacity .25s ease, transform .25s ease;
+}
+.pwa-toast.is-in { opacity: 1; transform: none; }
+.pwa-toast b { color: #7fe0b0; }
+.pwa-toast button { flex: none; min-height: 40px; padding: 0 .9rem; border: 0; border-radius: .75rem; background: #1f8148; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.pwa-toast button:active { background: #176a3a; }
+@media (prefers-reduced-motion: reduce) { .pwa-toast { transition: none; } }

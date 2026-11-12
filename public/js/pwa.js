@@ -22,7 +22,8 @@
     var deferred    = null;                    // the browser's install prompt, once it offers one
     var timer       = null;
 
-    var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    var fullscreenApp = window.matchMedia('(display-mode: fullscreen)').matches;     // installed Android app in full screen
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || fullscreenApp || window.navigator.standalone === true;
     var ua    = window.navigator.userAgent || '';
     var isIos = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
     var isAndroid = /android/i.test(ua);
@@ -31,6 +32,35 @@
     var inApp = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|TikTok|Snapchat|MicroMessenger|; wv\)/i.test(ua);
 
     if (standalone) document.documentElement.classList.add('pwa-standalone');
+
+    // ---- browser bars follow light / dark ---------------------------------------------------------------
+    // The page picks light/dark before it paints, but the browser's top bar colour used to be set only then, so it
+    // stayed wrong after the user flipped the toggle. Keep it in step with the <html class="dark"> switch.
+    function syncThemeColor() {
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (!meta || !document.querySelector('.app-topbar')) return;     // only inside the app (the login page keeps its brand green)
+        meta.setAttribute('content', document.documentElement.classList.contains('dark') ? '#0f1419' : '#ffffff');
+    }
+    document.addEventListener('DOMContentLoaded', syncThemeColor);
+    if (window.MutationObserver) {
+        new MutationObserver(syncThemeColor).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // ---- full-screen hint -------------------------------------------------------------------------------
+    // The installed Android app hides the system bars. Tell people ONCE how to bring them back, so nobody feels stuck.
+    function fullscreenHint() {
+        var KEY = 'pwa_fs_hint_seen';
+        try { if (localStorage.getItem(KEY)) return; } catch (e) { return; }
+        var t = document.createElement('div');
+        t.className = 'pwa-toast'; t.setAttribute('role', 'status');
+        t.innerHTML = '<span><b>Full-screen mode.</b> Swipe from the top or bottom edge of the screen to show the clock and the Back / Home buttons.</span><button type="button">Got it</button>';
+        function done() { try { localStorage.setItem(KEY, '1'); } catch (e) {} t.classList.remove('is-in'); setTimeout(function () { t.remove(); }, 300); }
+        t.querySelector('button').addEventListener('click', done);
+        document.body.appendChild(t);
+        requestAnimationFrame(function () { t.classList.add('is-in'); });
+        setTimeout(done, 12000);
+    }
+    if (fullscreenApp && isAndroid) document.addEventListener('DOMContentLoaded', function () { setTimeout(fullscreenHint, 1500); });
 
     // ---- service worker -------------------------------------------------------------------------
     var cfg = window.PWA_CONFIG || {};
