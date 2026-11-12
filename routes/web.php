@@ -61,6 +61,34 @@ Route::get('/manifest.webmanifest', function () {
     ], JSON_UNESCAPED_SLASHES);
 })->name('pwa.manifest');
 
+// Open apps ask this every minute or so. It is a fingerprint of the views and compiled assets, so when you deploy a
+// new version the fingerprint changes and public/js/app-update.js refreshes the app by itself (no reinstall, no
+// "please refresh" message to employees). It exposes nothing private: just a hash. Cached for 30 s to stay cheap.
+Route::get('/app-version', function () {
+    $version = \Illuminate\Support\Facades\Cache::remember('app-version', 30, function () {
+        $parts = [];
+        foreach (['resources/views', 'public/build', 'public/css', 'public/js'] as $dir) {
+            $path = base_path($dir);
+            if (! is_dir($path)) {
+                continue;
+            }
+            $files = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)
+            );
+            foreach ($files as $file) {
+                if ($file->isFile()) {
+                    $parts[] = $file->getPathname().':'.$file->getMTime().':'.$file->getSize();
+                }
+            }
+        }
+        sort($parts);
+
+        return md5(implode('|', $parts));
+    });
+
+    return response()->json(['v' => $version])->header('Cache-Control', 'no-store');
+})->middleware('throttle:60,1')->name('app.version');
+
 // The "Confirm my email" button in the email. Signed, so it can't be forged, and it works even when the
 // person isn't logged in on that device.
 Route::get('/email/confirm/{user}/{hash}', [EmailConfirmationController::class, 'confirm'])

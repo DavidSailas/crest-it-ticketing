@@ -9,3 +9,6 @@
 <link rel="stylesheet" href="{{ asset('css/mobile-shell.css') }}?v={{ @filemtime(public_path('css/mobile-shell.css')) }}">
 <script>window.PWA_CONFIG = { sw: @json(url('sw.js')) };</script>
 <script src="{{ asset('js/pwa.js') }}?v={{ @filemtime(public_path('js/pwa.js')) }}" defer></script>
+{{-- Refreshes an open app by itself after a new version is deployed (see public/js/app-update.js and the /app-version route). --}}
+<script>window.APP_UPDATE_URL = @json(route('app.version', [], false));</script>
+<script src="{{ asset('js/app-update.js') }}?v={{ @filemtime(public_path('js/app-update.js')) }}" defer></script>
