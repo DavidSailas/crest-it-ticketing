@@ -1,20 +1,25 @@
-@include('admin.supplies._ticket-panel')
+{{-- Live region content. It sits inside a `display: contents` wrapper (see show.blade.php), so the two blocks
+     below are direct items of the page grid: the ticket itself on the left, the sidebar on the right. --}}
 
-<div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
-    <div class="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs font-mono font-semibold text-gray-600" title="Ticket number">{{ $ticket->ticket_number }}</span>
-            <x-status-badge :status="$ticket->status" />
-            <x-priority-badge :priority="$ticket->priority" />
+{{-- ===== Main column: the ticket ===== --}}
+<div class="min-w-0 space-y-6 xl:col-span-2 xl:col-start-1 xl:row-start-1">
+    @include('admin.supplies._ticket-panel')
+
+    <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+        <div class="px-5 sm:px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs font-mono font-semibold text-gray-600" title="Ticket number">{{ $ticket->ticket_number }}</span>
+                <x-status-badge :status="$ticket->status" />
+                <x-priority-badge :priority="$ticket->priority" />
+            </div>
+            @if((auth()->user()->isItSupport() || auth()->user()->isAdmin()) && ! $ticket->isFinished())
+                <a href="{{ route('tickets.edit', $ticket) }}"
+                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+                    Edit ticket
+                </a>
+            @endif
         </div>
-        @if((auth()->user()->isItSupport() || auth()->user()->isAdmin()) && ! $ticket->isFinished())
-            <a href="{{ route('tickets.edit', $ticket) }}"
-               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
-                Edit ticket
-            </a>
-        @endif
-    </div>
 
     @if($ticket->isCancelled())
         <div class="px-4 sm:px-6 py-4 bg-red-50/60 border-b border-red-100 flex items-start gap-3">
@@ -39,23 +44,66 @@
         </div>
     @endif
 
-    <div class="px-4 sm:px-6 py-6">
-        <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Description</h4>
-        <p class="text-[15px] text-gray-800 leading-relaxed break-words whitespace-pre-line">{{ $ticket->description }}</p>
+        <div class="px-5 sm:px-6 py-6">
+            <p class="text-xs text-gray-400 mb-4">
+                Opened by <span class="font-medium text-gray-600">{{ $ticket->creator->name }}</span>
+                · {{ $ticket->created_at->format('M j, Y g:i A') }} ({{ $ticket->created_at->diffForHumans() }})
+            </p>
 
-        @include('tickets.partials.vendor-info', ['ticket' => $ticket])
+            <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Description</h4>
+            <p class="text-[15px] text-gray-800 leading-relaxed break-words whitespace-pre-line">{{ $ticket->description }}</p>
 
-        @include('tickets.partials.attachments', ['ticket' => $ticket])
+            @include('tickets.partials.vendor-info', ['ticket' => $ticket])
 
-        <div class="mt-6 pt-6 border-t border-gray-100">
-            <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Details</h4>
+            @include('tickets.partials.attachments', ['ticket' => $ticket])
+        </div>
+    </div>
 
-            {{-- Label left, value right: easy to scan top to bottom. Two columns from the sm breakpoint up. --}}
-            <dl class="grid grid-cols-1 sm:grid-flow-col sm:grid-rows-4 sm:gap-x-10 text-sm">
-                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
+@if($ticket->solution)
+    <div class="bg-white shadow-sm rounded-xl border border-green-100 overflow-hidden">
+        <div class="px-4 sm:px-6 py-4 border-b border-green-100 bg-green-50/50 flex items-center gap-2.5">
+            <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </span>
+            <div>
+                <p class="text-sm font-semibold text-gray-800">Solution</p>
+                <p class="text-xs text-gray-500">
+                    Resolved by {{ $ticket->assignee->name ?? 'IT Support' }}
+                    @if($ticket->closed_at) · {{ $ticket->closed_at->format('M j, Y g:i A') }} @endif
+                </p>
+            </div>
+        </div>
+        <div class="px-4 sm:px-6 py-5">
+            <p class="text-gray-800 leading-relaxed whitespace-pre-line">{{ $ticket->solution }}</p>
+        </div>
+    </div>
+@endif
+</div>
+
+{{-- ===== Sidebar: details, manage, cancel ===== --}}
+<aside class="min-w-0 space-y-6 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+        <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-gray-100">
+                <h3 class="text-sm font-semibold text-gray-800">Details</h3>
+            </div>
+            <dl class="px-5 text-sm divide-y divide-gray-100">
+                <div class="flex items-start justify-between gap-4 py-3 ">
+                    <dt class="text-gray-500 shrink-0 pt-0.5">Assigned to</dt>
+                    <dd class="min-w-0 text-right">@if($ticket->assignee)
+                            <div class="flex items-center justify-end gap-2">
+                                <span class="font-medium text-gray-800 truncate">{{ $ticket->assigneeLabel() }}</span>
+                                <x-avatar :user="$ticket->assignee" size="xs" />
+                            </div>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                Unassigned
+                            </span>
+                        @endif</dd>
+                </div>
+                <div class="flex items-start justify-between gap-4 py-3 ">
                     <dt class="text-gray-500 shrink-0 pt-0.5">Requested by</dt>
-                    <dd class="min-w-0 text-right">
-                        <div class="flex items-center justify-end gap-2">
+                    <dd class="min-w-0 text-right"><div class="flex items-center justify-end gap-2">
                             <span class="font-medium text-gray-800 truncate">{{ $ticket->creator->name }}</span>
                             @if($ticket->creator->is_vip)
                                 <x-vip-badge size="compact" />
@@ -66,55 +114,43 @@
                             <p class="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 mt-1.5 inline-block">
                                 On behalf of <strong>{{ $ticket->affectedPersonName() }}</strong>
                             </p>
-                        @endif
-                    </dd>
+                        @endif</dd>
                 </div>
-                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
-                    <dt class="text-gray-500 shrink-0">Department</dt>
-                    <dd class="font-medium text-gray-800 text-right min-w-0 break-words">{{ $ticket->department ?? '—' }}</dd>
+                <div class="flex items-start justify-between gap-4 py-3 ">
+                    <dt class="text-gray-500 shrink-0 pt-0.5">Department</dt>
+                    <dd class="min-w-0 text-right"><span class="font-medium text-gray-800 break-words">{{ $ticket->department ?? '—' }}</span></dd>
                 </div>
-                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
-                    <dt class="text-gray-500 shrink-0">Location</dt>
-                    <dd class="font-medium text-gray-800 text-right min-w-0 break-words">{{ $ticket->location ?? '—' }}</dd>
+                <div class="flex items-start justify-between gap-4 py-3 ">
+                    <dt class="text-gray-500 shrink-0 pt-0.5">Location</dt>
+                    <dd class="min-w-0 text-right"><span class="font-medium text-gray-800 break-words">{{ $ticket->location ?? '—' }}</span></dd>
                 </div>
-                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
-                    <dt class="text-gray-500 shrink-0">Category</dt>
-                    <dd class="font-medium text-gray-800 text-right min-w-0 break-words">{{ $ticket->category }} @if($ticket->subcategory)<span class="font-normal text-gray-400">· {{ $ticket->subcategory }}</span>@endif</dd>
+                <div class="flex items-start justify-between gap-4 py-3 ">
+                    <dt class="text-gray-500 shrink-0 pt-0.5">Category</dt>
+                    <dd class="min-w-0 text-right"><span class="font-medium text-gray-800 break-words">{{ $ticket->category }}</span>@if($ticket->subcategory)<span class="block text-xs text-gray-400">{{ $ticket->subcategory }}</span>@endif</dd>
                 </div>
-                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
-                    <dt class="text-gray-500 shrink-0">Assigned to</dt>
-                    <dd class="min-w-0 text-right">
-                        @if($ticket->assignee)
-                            <div class="flex items-center justify-end gap-2">
-                                <span class="font-medium text-gray-800 truncate">{{ $ticket->assigneeLabel() }}</span>
-                                <x-avatar :user="$ticket->assignee" size="xs" />
-                            </div>
-                        @else
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                Unassigned
-                            </span>
-                        @endif
-                    </dd>
+                <div class="flex items-start justify-between gap-4 py-3 ">
+                    <dt class="text-gray-500 shrink-0 pt-0.5">Created</dt>
+                    <dd class="min-w-0 text-right"><span class="font-medium text-gray-800">{{ $ticket->created_at->format('M j, Y g:i A') }}</span>
+                        <span class="block text-xs text-gray-400">{{ $ticket->created_at->diffForHumans() }}</span></dd>
                 </div>
-                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
-                    <dt class="text-gray-500 shrink-0">Created</dt>
-                    <dd class="text-right">
-                        <span class="font-medium text-gray-800">{{ $ticket->created_at->format('M j, Y g:i A') }}</span>
-                        <span class="block text-xs text-gray-400">{{ $ticket->created_at->diffForHumans() }}</span>
-                    </dd>
+                <div class="flex items-start justify-between gap-4 py-3 ">
+                    <dt class="text-gray-500 shrink-0 pt-0.5">Resolved</dt>
+                    <dd class="min-w-0 text-right"><span class="font-medium text-gray-800">{{ $ticket->resolved_at?->format('M j, Y g:i A') ?? '—' }}</span></dd>
                 </div>
-                <div class="flex items-start justify-between gap-4 py-3 border-b border-gray-100">
-                    <dt class="text-gray-500 shrink-0">Resolved</dt>
-                    <dd class="font-medium text-gray-800 text-right">{{ $ticket->resolved_at?->format('M j, Y g:i A') ?? '—' }}</dd>
+                @if($ticket->closed_at)
+                <div class="flex items-start justify-between gap-4 py-3 ">
+                    <dt class="text-gray-500 shrink-0 pt-0.5">Closed</dt>
+                    <dd class="min-w-0 text-right"><span class="font-medium text-gray-800">{{ $ticket->closed_at->format('M j, Y g:i A') }}</span></dd>
                 </div>
+                @endif
             </dl>
         </div>
-    </div>
 
+    @if((auth()->user()->isItSupport() || auth()->user()->isAdmin()) && ! $ticket->isCancelled())
+        <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
     @if((auth()->user()->isItSupport() || auth()->user()->isAdmin()))
         @if($ticket->isClosed())
-            <div class="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center gap-2.5">
+            <div class="px-4 sm:px-5 py-4 bg-gray-50 border-t border-gray-100 flex items-center gap-2.5">
                 <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
                 <p class="text-sm text-gray-500">This ticket is closed — status and assignment are locked. See the solution below.</p>
             </div>
@@ -128,8 +164,8 @@
                 $canReassign = $isAdminUser || ! $ticket->assigned_to || $isMine;
                 $reassignLabel = ! $ticket->assigned_to ? 'Assign to an agent' : ($isMine ? 'Hand off to another agent' : 'Reassign to another agent');
             @endphp
-            <div class="border-t border-gray-100 bg-gray-50/70" x-data="{ status: '{{ old('status', $ticket->status) }}' }">
-                <div class="px-4 sm:px-6 pt-5 pb-4 flex items-center gap-3">
+            <div class="bg-gray-50/70" x-data="{ status: '{{ old('status', $ticket->status) }}' }">
+                <div class="px-4 sm:px-5 pt-5 pb-4 flex items-center gap-3">
                     <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 shrink-0">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </span>
@@ -139,7 +175,7 @@
                     </div>
                 </div>
 
-                <div class="px-4 sm:px-6 pb-5 space-y-4">
+                <div class="px-4 sm:px-5 pb-5 space-y-4">
                     {{-- Assignment: who has this ticket right now, and the one-click accept --}}
                     <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
                         <div class="flex items-center gap-3 min-w-0">
@@ -174,7 +210,7 @@
                         @endif
                     </div>
 
-                    <div class="grid grid-cols-1 {{ $canReassign ? 'sm:grid-cols-2' : '' }} gap-3">
+                    <div class="grid grid-cols-1 gap-3">
                         {{-- Status --}}
                         <form id="status-form" method="POST" action="{{ route('tickets.status', $ticket) }}"
                               class="rounded-lg border border-gray-200 bg-white p-3.5">
@@ -213,7 +249,7 @@
                                     </datalist>
                                     @error('vendor_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                 </div>
-                                <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                                <div class="grid grid-cols-1 gap-2.5">
                                     <div>
                                         <label for="vendor-ref" class="block text-xs font-medium text-gray-700 mb-1">Case / RMA no. <span class="font-normal text-gray-400">(optional)</span></label>
                                         <input id="vendor-ref" type="text" name="vendor_reference" value="{{ old('vendor_reference', $ticket->vendor_reference) }}" maxlength="80"
@@ -286,6 +322,8 @@
             </div>
         @endif
     @endif
+        </div>
+    @endif
 
     @php
         $viewer = auth()->user();
@@ -293,7 +331,7 @@
         $canCancel = $ticket->canBeCancelled() && ($isRequester || $viewer->isItSupport() || $viewer->isAdmin());
     @endphp
     @if($canCancel)
-        <div class="px-4 sm:px-6 py-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+        <div class="px-4 sm:px-5 py-4 bg-white shadow-sm rounded-xl border border-gray-100 flex flex-col items-start gap-3">
             <div class="min-w-0">
                 <p class="text-sm font-medium text-gray-800">{{ $isRequester ? 'Raised this by mistake or no longer need help?' : 'Duplicate or invalid request?' }}</p>
                 <p class="text-xs text-gray-500 mt-0.5">You can cancel this ticket until IT Support accepts it. After that, cancelling is no longer possible.</p>
@@ -322,24 +360,4 @@
             <form id="cancel-ticket-form" method="POST" action="{{ route('tickets.cancel', $ticket) }}" class="hidden">@csrf</form>
         </div>
     @endif
-</div>
-
-@if($ticket->solution)
-    <div class="bg-white shadow-sm rounded-xl border border-green-100 overflow-hidden">
-        <div class="px-4 sm:px-6 py-4 border-b border-green-100 bg-green-50/50 flex items-center gap-2.5">
-            <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 shrink-0">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </span>
-            <div>
-                <p class="text-sm font-semibold text-gray-800">Solution</p>
-                <p class="text-xs text-gray-500">
-                    Resolved by {{ $ticket->assignee->name ?? 'IT Support' }}
-                    @if($ticket->closed_at) · {{ $ticket->closed_at->format('M j, Y g:i A') }} @endif
-                </p>
-            </div>
-        </div>
-        <div class="px-4 sm:px-6 py-5">
-            <p class="text-gray-800 leading-relaxed whitespace-pre-line">{{ $ticket->solution }}</p>
-        </div>
-    </div>
-@endif
+</aside>

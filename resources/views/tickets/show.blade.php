@@ -19,15 +19,16 @@
             <div class="p-3 bg-red-50 text-red-800 text-sm rounded-lg border border-red-100">{{ session('error') }}</div>
         @endif
 
-        {{-- Wide monitors: ticket details on the left, conversation on the right.
-             Anything narrower than xl stacks them. --}}
-        <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 items-start">
+        {{-- Wide screens: the ticket + conversation on the left (2/3), a details / manage sidebar on the right (1/3).
+             Narrower than xl everything stacks: ticket, sidebar, conversation.
+             The live region is `display: contents`, so the blocks inside live-ticket.blade.php are items of THIS grid. --}}
+        <div class="grid grid-cols-1 xl:grid-cols-3 xl:grid-rows-[auto_1fr] gap-6 items-start">
             {{-- Live region: refreshed automatically when status / assignment change --}}
-            <div class="xl:col-span-3 min-w-0 space-y-6" data-live="ticket" data-hash="{{ $ticket->liveHash() }}">
+            <div class="contents" data-live="ticket" data-hash="{{ $ticket->liveHash() }}">
                 @include('tickets.partials.live-ticket')
             </div>
 
-            <div class="xl:col-span-2 min-w-0 xl:sticky xl:top-6">
+            <div class="min-w-0 xl:col-span-2 xl:col-start-1 xl:row-start-2">
             <div class="cm-card bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden scroll-mt-6" x-data="ticketComments({
                     ticketId: {{ $ticket->id }},
                     pollUrl: '{{ route('tickets.chat.poll', $ticket) }}',
@@ -137,7 +138,7 @@
                             if (!el) return;
                             el.innerHTML = region.html;
                             el.dataset.hash = region.hash;
-                            if (name === 'ticket') flash(el);
+                            if (name === 'ticket') Array.from(el.children).forEach(flash);
                         });
                     } catch (e) {
                         // A missed poll (network blip, expired session) just retries next tick.
