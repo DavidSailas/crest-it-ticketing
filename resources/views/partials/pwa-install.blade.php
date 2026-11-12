@@ -47,6 +47,26 @@
             </button>
         </div>
 
+        {{-- View 1b: Android where the browser does not hand us an install button (some browsers, or Chrome is not ready yet) --}}
+        <div data-pwa-view="manual" hidden>
+            <ol class="pwa-sheet__steps">
+                <li>
+                    <span class="pwa-sheet__n">1</span>
+                    <span>Tap the browser menu
+                        <svg class="pwa-sheet__inline" fill="currentColor" viewBox="0 0 24 24" aria-label="Menu"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+                        (top right, or bottom right in some browsers).</span>
+                </li>
+                <li>
+                    <span class="pwa-sheet__n">2</span>
+                    <span>Tap <b>Install app</b> or <b>Add to Home screen</b>.</span>
+                </li>
+                <li>
+                    <span class="pwa-sheet__n">3</span>
+                    <span>Tap <b>Install</b> (or <b>Add</b>). ITSM now appears on your home screen.</span>
+                </li>
+            </ol>
+        </div>
+
         {{-- View 2: iPhone / iPad --}}
         <div data-pwa-view="ios" hidden>
             <ol class="pwa-sheet__steps">

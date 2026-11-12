@@ -1,5 +1,5 @@
 {{-- Makes the site installable (Add to Home Screen / Install app). Included in both layouts. --}}
-<link rel="manifest" href="{{ route('pwa.manifest') }}">
+<link rel="manifest" href="{{ route('pwa.manifest') }}" crossorigin="use-credentials">
 <meta name="application-name" content="ITSM">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">

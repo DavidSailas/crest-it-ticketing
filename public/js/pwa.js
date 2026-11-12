@@ -3,6 +3,7 @@
  *
  * The install sheet (resources/views/partials/pwa-install.blade.php) shows ONE of three views:
  *   android : the browser has an install prompt  -> one-tap "Install app"
+ *   manual  : Android, but the browser gave us no install prompt (after ~6s) -> "menu -> Install app" steps
  *   ios     : iPhone / iPad (no install prompt)  -> 3 short steps with Share -> Add to Home Screen
  *   inapp   : Facebook / Messenger / Instagram ... can't install -> "open in your browser" + copy link
  * It stays out of the way:
@@ -16,12 +17,17 @@
     var STATE_KEY   = 'pwa_install_state';     // {n: times dismissed, at: last dismissed (ms), installed: bool}
     var SNOOZE_DAYS = [7, 30];                 // after the 1st and the 2nd (and later) "Not now"
     var AUTO_DELAY  = 4000;                    // ms after load / after the browser offers the prompt
+    var MANUAL_WAIT = 6000;                    // Android: wait this long for the browser's prompt before showing manual steps
+    var INSTALLED_DAYS = 60;                   // trust "installed" for this long after we last saw the app running
     var deferred    = null;                    // the browser's install prompt, once it offers one
     var timer       = null;
 
     var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     var ua    = window.navigator.userAgent || '';
     var isIos = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+    var isAndroid = /android/i.test(ua);
+    var manualReady = false;                   // true once we have waited MANUAL_WAIT without a browser prompt
+    var gotPrompt = false;                     // did the browser ever fire beforeinstallprompt?
     var inApp = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|TikTok|Snapchat|MicroMessenger|; wv\)/i.test(ua);
 
     if (standalone) document.documentElement.classList.add('pwa-standalone');
@@ -43,7 +49,7 @@
     }
     function snoozed() {
         var s = readState();
-        if (s.installed) return true;
+        if (s.installed && (Date.now() - (s.seen || 0)) < INSTALLED_DAYS * 864e5) return true;
         if (!s.at) return false;
         var days = SNOOZE_DAYS[Math.min((s.n || 1), SNOOZE_DAYS.length) - 1];
         return (Date.now() - s.at) < days * 864e5;
@@ -55,9 +61,10 @@
         if (deferred) return 'android';
         if (inApp) return 'inapp';
         if (isIos) return 'ios';
-        return null;                                   // nothing installable in this browser
+        if (isAndroid && manualReady) return 'manual';  // the browser stayed silent: show the menu steps instead
+        return null;                                   // desktop browser without an install prompt: nothing to offer
     }
-    function canInstall() { return !standalone && (!!deferred || isIos); }
+    function canInstall() { return !standalone && (!!deferred || isIos || (isAndroid && !inApp)); }
 
     function announce() {
         window.dispatchEvent(new CustomEvent('pwa-state', { detail: { canInstall: canInstall() } }));
@@ -86,7 +93,7 @@
         if (reason === 'later') {
             var s = readState(); s.n = (s.n || 0) + 1; s.at = Date.now(); writeState(s);
         } else if (reason === 'installed') {
-            var t = readState(); t.installed = true; writeState(t);
+            var t = readState(); t.installed = true; t.seen = Date.now(); writeState(t);
         }
     }
 
@@ -137,6 +144,8 @@
     window.addEventListener('beforeinstallprompt', function (e) {
         e.preventDefault();                            // we show our own sheet instead of the browser's mini-bar
         deferred = e;
+        gotPrompt = true;
+        if (sheet() && !sheet().hidden) show(true);    // the manual steps were up: upgrade to the one-tap button
         announce();
         scheduleAuto();
     });
@@ -162,9 +171,46 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
+        if (standalone) {                              // running as the installed app: remember it (shared with the browser tab)
+            var s = readState(); s.installed = true; s.seen = Date.now(); writeState(s);
+        }
         announce();
         if (isIos || inApp) scheduleAuto();            // these never get a beforeinstallprompt event
+        if (isAndroid && !inApp && !standalone) {      // give the browser a few seconds to offer its prompt, then fall back
+            setTimeout(function () { manualReady = true; if (!deferred) scheduleAuto(); }, MANUAL_WAIT - AUTO_DELAY > 0 ? MANUAL_WAIT - AUTO_DELAY : 0);
+        }
+        if (/[?&]pwa-debug\b/.test(location.search)) debugPanel();
     });
+
+    // ?pwa-debug  ->  a small panel that says what this phone / browser is doing (for testing; nothing changes for normal visitors)
+    function debugPanel() {
+        var box = document.createElement('div');
+        box.style.cssText = 'position:fixed;left:8px;right:8px;top:8px;z-index:2147483647;padding:10px 12px;border-radius:10px;background:#111;color:#9ef0c0;font:12px/1.5 monospace;white-space:pre-wrap;word-break:break-all;max-height:60vh;overflow:auto';
+        document.body.appendChild(box);
+        var lines = {};
+        function paint() { box.textContent = 'PWA debug (tap to close)\n' + Object.keys(lines).map(function (k) { return k + ': ' + lines[k]; }).join('\n'); }
+        box.addEventListener('click', function () { box.remove(); });
+        function set(k, v) { lines[k] = v; paint(); }
+        set('https', String(location.protocol === 'https:'));
+        set('browser', ua.replace(/\)\s.*/, ')').slice(0, 90));
+        set('android/ios/in-app', [isAndroid, isIos, inApp].join(' / '));
+        set('opened as installed app', String(standalone));
+        set('saved state', localStorage.getItem(STATE_KEY) || '(none)');
+        set('snoozed/installed', String(snoozed()));
+        set('browser install prompt', 'waiting...');
+        setTimeout(function () { set('browser install prompt', gotPrompt ? 'YES (one-tap install works)' : 'NOT received (manual steps will show)'); set('sheet view', String(currentView())); }, 7000);
+        if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function (r) { set('service worker', r.length ? 'registered: ' + (r[0].active ? r[0].active.state : 'installing') : 'NOT registered'); });
+        var link = document.querySelector('link[rel="manifest"]');
+        if (!link) { set('manifest', 'NO <link rel=manifest> in page'); return; }
+        fetch(link.href, { credentials: 'include' }).then(function (res) {
+            var type = res.headers.get('content-type') || '';
+            return res.text().then(function (t) {
+                var ok = false, info = '';
+                try { var j = JSON.parse(t); ok = true; info = ' start_url=' + j.start_url + ' icons=' + (j.icons || []).length; } catch (e) { info = ' NOT JSON: ' + t.slice(0, 60).replace(/\s+/g, ' '); }
+                set('manifest', res.status + ' ' + type.split(';')[0] + (ok ? ' OK' : '') + info);
+            });
+        }).catch(function (e) { set('manifest', 'FAILED to load: ' + e); });
+    }
 
     window.PWA = { canInstall: canInstall, install: install, isStandalone: function () { return standalone; } };
 })();
