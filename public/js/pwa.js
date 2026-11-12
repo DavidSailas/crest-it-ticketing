@@ -23,10 +23,16 @@
     var timer       = null;
 
     var fullscreenApp = window.matchMedia('(display-mode: fullscreen)').matches;     // installed Android app in full screen
-    var standalone = window.matchMedia('(display-mode: standalone)').matches || fullscreenApp || window.navigator.standalone === true;
+    // Any display mode other than a normal browser tab means "running as an installed app window". Installed windows on
+    // Windows / Brave / Edge can report minimal-ui or window-controls-overlay instead of standalone, so check them all.
+    var displayModes = ['standalone', 'minimal-ui', 'fullscreen', 'window-controls-overlay'].filter(function (m) {
+        try { return window.matchMedia('(display-mode: ' + m + ')').matches; } catch (e) { return false; }
+    });
+    var standalone = displayModes.length > 0 || window.navigator.standalone === true || /^android-app:\/\//.test(document.referrer || '');
     var ua    = window.navigator.userAgent || '';
     var isIos = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
     var isAndroid = /android/i.test(ua);
+    var isMobileDevice = /android|iphone|ipad|ipod|mobile/i.test(ua) || isIos || (navigator.userAgentData && navigator.userAgentData.mobile === true);
     var manualReady = false;                   // true once we have waited MANUAL_WAIT without a browser prompt
     var gotPrompt = false;                     // did the browser ever fire beforeinstallprompt?
     var inApp = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|TikTok|Snapchat|MicroMessenger|; wv\)/i.test(ua);
@@ -130,7 +136,7 @@
     // Show it a moment after load, but not while someone is typing (the login form is the first page people see).
     function scheduleAuto(tries) {
         clearTimeout(timer);
-        if (standalone || snoozed() || !currentView()) return;
+        if (standalone || !isMobileDevice || snoozed() || !currentView()) return;   // laptops: the browser's own install icon is enough
         timer = setTimeout(function () {
             var a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
             if (typing && (tries || 0) < 3) return scheduleAuto((tries || 0) + 1);
@@ -204,6 +210,16 @@
         if (standalone) {                              // running as the installed app: remember it (shared with the browser tab)
             var s = readState(); s.installed = true; s.seen = Date.now(); writeState(s);
         }
+        if (!standalone && navigator.getInstalledRelatedApps) {   // installed on this device but opened in a normal tab?
+            try {
+                navigator.getInstalledRelatedApps().then(function (apps) {
+                    if (apps && apps.length) {
+                        var r = readState(); r.installed = true; r.seen = Date.now(); writeState(r);
+                        clearTimeout(timer); hide();
+                    }
+                }).catch(function () {});
+            } catch (e) {}
+        }
         announce();
         if (isIos || inApp) scheduleAuto();            // these never get a beforeinstallprompt event
         if (isAndroid && !inApp && !standalone) {      // give the browser a few seconds to offer its prompt, then fall back
@@ -224,7 +240,8 @@
         set('https', String(location.protocol === 'https:'));
         set('browser', ua.replace(/\)\s.*/, ')').slice(0, 90));
         set('android/ios/in-app', [isAndroid, isIos, inApp].join(' / '));
-        set('opened as installed app', String(standalone));
+        set('opened as installed app', String(standalone) + '  (display-mode: ' + (displayModes.join(',') || 'browser') + ')');
+        set('phone/tablet (popup allowed)', String(isMobileDevice));
         set('saved state', localStorage.getItem(STATE_KEY) || '(none)');
         set('snoozed/installed', String(snoozed()));
         set('browser install prompt', 'waiting...');
